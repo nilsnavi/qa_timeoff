@@ -1,0 +1,22 @@
+{
+  "name": "qa-timeoff-miniapp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Telegram Mini App for QA team time off, vacation requests, balances and approvals.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @qa-timeoff/frontend",
+    "dev:frontend": "npm run dev --workspace @qa-timeoff/frontend",
+    "dev:backend": "npm run start:dev --workspace @qa-timeoff/backend",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "prisma:generate": "npm run prisma:generate --workspace @qa-timeoff/backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace @qa-timeoff/backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

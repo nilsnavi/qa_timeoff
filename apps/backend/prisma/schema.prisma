@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  LEAD
+  MANAGER
+  ADMIN
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum BalanceOperationType {
+  ADD
+  WRITE_OFF
+  MANUAL_CORRECTION
+  EXPIRED
+}
+
+enum VacationType {
+  ANNUAL
+  UNPAID
+  SICK_LEAVE
+  OTHER
+}
+
+model User {
+  id                String             @id @default(cuid())
+  telegramId        String             @unique
+  fullName          String
+  username          String?
+  email             String?            @unique
+  position          String?
+  role              Role               @default(EMPLOYEE)
+  teamId            String?
+  team              Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  managerId         String?
+  manager           User?              @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports     User[]             @relation("UserManager")
+  isActive          Boolean            @default(true)
+  timeBalance       TimeBalance?
+  balanceOperations BalanceOperation[] @relation("BalanceOperationUser")
+  createdOperations BalanceOperation[] @relation("BalanceOperationCreator")
+  timeOffRequests   TimeOffRequest[]   @relation("TimeOffRequestUser")
+  timeOffApprovals  TimeOffRequest[]   @relation("TimeOffRequestApprover")
+  vacationRequests  VacationRequest[]  @relation("VacationRequestUser")
+  vacationApprovals VacationRequest[]  @relation("VacationRequestApprover")
+  notifications     Notification[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimeBalance {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balanceHours    Int      @default(0)
+  totalAddedHours Int      @default(0)
+  totalUsedHours  Int      @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+model BalanceOperation {
+  id            String               @id @default(cuid())
+  userId        String
+  user          User                 @relation("BalanceOperationUser", fields: [userId], references: [id], onDelete: Cascade)
+  operationType BalanceOperationType
+  hours         Int
+  reason        String
+  createdById   String
+  createdBy     User                 @relation("BalanceOperationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime             @default(now())
+}
+
+model TimeOffRequest {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation("TimeOffRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime
+  hours           Int
+  reason          String
+  comment         String?
+  status          RequestStatus @default(PENDING)
+  approverId      String?
+  approver        User?         @relation("TimeOffRequestApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  approverComment String?
+  approvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model VacationRequest {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation("VacationRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  startDate       DateTime
+  endDate         DateTime
+  daysCount       Int
+  vacationType    VacationType
+  status          RequestStatus @default(PENDING)
+  comment         String?
+  approverId      String?
+  approver        User?         @relation("VacationRequestApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  approverComment String?
+  approvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
