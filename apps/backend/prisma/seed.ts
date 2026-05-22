@@ -1,208 +1,348 @@
-import { BalanceOperationType, PrismaClient, Role, VacationType } from '@prisma/client';
+import { BalanceOperationType, PrismaClient, RequestStatus, Role, VacationType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const seedTelegramIds = ['100000001', '100000002', '100000003', '100000004', '100000005', '100000006'];
+
 async function main() {
-  const qaTeam = await prisma.team.upsert({
-    where: { name: 'QA Team' },
-    update: {
-      description: 'Core quality assurance team',
-    },
-    create: {
-      name: 'QA Team',
-      description: 'Core quality assurance team',
-    },
+  const [qaTeam, sapEwmTeam, automationTeam] = await Promise.all([
+    upsertTeam('QA Team', 'Core quality assurance team'),
+    upsertTeam('SAP EWM Team', 'Warehouse management testing team'),
+    upsertTeam('Automation Team', 'Test automation and tooling team'),
+  ]);
+
+  const admin = await upsertUser({
+    telegramId: '100000001',
+    fullName: 'Admin',
+    username: 'admin',
+    email: 'admin@qa-timeoff.local',
+    position: 'System Administrator',
+    role: Role.ADMIN,
+    teamId: qaTeam.id,
   });
 
-  const admin = await prisma.user.upsert({
-    where: { telegramId: '100000001' },
-    update: {
-      fullName: 'Admin User',
-      username: 'qa_admin',
-      email: 'admin@qa-timeoff.local',
-      position: 'QA Admin',
-      role: Role.ADMIN,
-      teamId: qaTeam.id,
-      isActive: true,
-    },
-    create: {
-      telegramId: '100000001',
-      fullName: 'Admin User',
-      username: 'qa_admin',
-      email: 'admin@qa-timeoff.local',
-      position: 'QA Admin',
-      role: Role.ADMIN,
-      teamId: qaTeam.id,
-      isActive: true,
-      timeBalance: {
-        create: {
-          balanceHours: 40,
-          totalAddedHours: 40,
-          totalUsedHours: 0,
-        },
-      },
-    },
+  const manager = await upsertUser({
+    telegramId: '100000002',
+    fullName: 'Manager',
+    username: 'manager',
+    email: 'manager@qa-timeoff.local',
+    position: 'QA Manager',
+    role: Role.MANAGER,
+    teamId: qaTeam.id,
+    managerId: admin.id,
   });
 
-  const lead = await prisma.user.upsert({
-    where: { telegramId: '100000002' },
-    update: {
-      fullName: 'QA Lead',
-      username: 'qa_lead',
-      email: 'lead@qa-timeoff.local',
-      position: 'QA Lead',
-      role: Role.LEAD,
-      teamId: qaTeam.id,
-      managerId: admin.id,
-      isActive: true,
-    },
-    create: {
-      telegramId: '100000002',
-      fullName: 'QA Lead',
-      username: 'qa_lead',
-      email: 'lead@qa-timeoff.local',
-      position: 'QA Lead',
-      role: Role.LEAD,
-      teamId: qaTeam.id,
-      managerId: admin.id,
-      isActive: true,
-      timeBalance: {
-        create: {
-          balanceHours: 24,
-          totalAddedHours: 32,
-          totalUsedHours: 8,
-        },
-      },
-    },
+  const lead = await upsertUser({
+    telegramId: '100000003',
+    fullName: 'Lead',
+    username: 'lead',
+    email: 'lead@qa-timeoff.local',
+    position: 'QA Lead',
+    role: Role.LEAD,
+    teamId: qaTeam.id,
+    managerId: manager.id,
   });
 
-  const employees = await Promise.all([
-    prisma.user.upsert({
-      where: { telegramId: '100000003' },
-      update: {
-        fullName: 'Anna Tester',
-        username: 'anna_tester',
-        email: 'anna@qa-timeoff.local',
-        position: 'QA Engineer',
-        role: Role.EMPLOYEE,
-        teamId: qaTeam.id,
-        managerId: lead.id,
-        isActive: true,
-      },
-      create: {
-        telegramId: '100000003',
-        fullName: 'Anna Tester',
-        username: 'anna_tester',
-        email: 'anna@qa-timeoff.local',
-        position: 'QA Engineer',
-        role: Role.EMPLOYEE,
-        teamId: qaTeam.id,
-        managerId: lead.id,
-        isActive: true,
-        timeBalance: {
-          create: {
-            balanceHours: 16,
-            totalAddedHours: 24,
-            totalUsedHours: 8,
-          },
-        },
-      },
-    }),
-    prisma.user.upsert({
-      where: { telegramId: '100000004' },
-      update: {
-        fullName: 'Ivan Automation',
-        username: 'ivan_auto',
-        email: 'ivan@qa-timeoff.local',
-        position: 'Automation QA Engineer',
-        role: Role.EMPLOYEE,
-        teamId: qaTeam.id,
-        managerId: lead.id,
-        isActive: true,
-      },
-      create: {
-        telegramId: '100000004',
-        fullName: 'Ivan Automation',
-        username: 'ivan_auto',
-        email: 'ivan@qa-timeoff.local',
-        position: 'Automation QA Engineer',
-        role: Role.EMPLOYEE,
-        teamId: qaTeam.id,
-        managerId: lead.id,
-        isActive: true,
-        timeBalance: {
-          create: {
-            balanceHours: 8,
-            totalAddedHours: 16,
-            totalUsedHours: 8,
-          },
-        },
-      },
-    }),
+  const employee1 = await upsertUser({
+    telegramId: '100000004',
+    fullName: 'Employee 1',
+    username: 'employee_1',
+    email: 'employee1@qa-timeoff.local',
+    position: 'QA Engineer',
+    role: Role.EMPLOYEE,
+    teamId: qaTeam.id,
+    managerId: lead.id,
+  });
+
+  const employee2 = await upsertUser({
+    telegramId: '100000005',
+    fullName: 'Employee 2',
+    username: 'employee_2',
+    email: 'employee2@qa-timeoff.local',
+    position: 'SAP EWM QA Engineer',
+    role: Role.EMPLOYEE,
+    teamId: sapEwmTeam.id,
+    managerId: manager.id,
+  });
+
+  const employee3 = await upsertUser({
+    telegramId: '100000006',
+    fullName: 'Employee 3',
+    username: 'employee_3',
+    email: 'employee3@qa-timeoff.local',
+    position: 'Automation QA Engineer',
+    role: Role.EMPLOYEE,
+    teamId: automationTeam.id,
+    managerId: lead.id,
+  });
+
+  const users = [admin, manager, lead, employee1, employee2, employee3];
+  const userIds = users.map((user) => user.id);
+
+  await cleanSeedData(userIds);
+
+  await Promise.all([
+    upsertBalance(admin.id, 80, 96, 16),
+    upsertBalance(manager.id, 56, 72, 16),
+    upsertBalance(lead.id, 40, 56, 16),
+    upsertBalance(employee1.id, 32, 48, 16),
+    upsertBalance(employee2.id, 24, 40, 16),
+    upsertBalance(employee3.id, 16, 32, 16),
   ]);
 
   await prisma.balanceOperation.createMany({
     data: [
+      operation(admin.id, admin.id, BalanceOperationType.ADD, 96, 'Initial admin balance'),
+      operation(admin.id, admin.id, BalanceOperationType.WRITE_OFF, -16, 'Approved time off'),
+      operation(manager.id, admin.id, BalanceOperationType.ADD, 72, 'Initial manager balance'),
+      operation(manager.id, admin.id, BalanceOperationType.WRITE_OFF, -16, 'Approved vacation support day'),
+      operation(lead.id, admin.id, BalanceOperationType.ADD, 56, 'Initial lead balance'),
+      operation(lead.id, manager.id, BalanceOperationType.WRITE_OFF, -16, 'Approved time off'),
+      operation(employee1.id, admin.id, BalanceOperationType.ADD, 48, 'Initial employee balance'),
+      operation(employee1.id, lead.id, BalanceOperationType.WRITE_OFF, -16, 'Approved time off'),
+      operation(employee2.id, admin.id, BalanceOperationType.ADD, 40, 'Initial employee balance'),
+      operation(employee2.id, manager.id, BalanceOperationType.WRITE_OFF, -16, 'Approved time off'),
+      operation(employee3.id, admin.id, BalanceOperationType.ADD, 32, 'Initial employee balance'),
+      operation(employee3.id, lead.id, BalanceOperationType.WRITE_OFF, -16, 'Approved time off'),
+    ],
+  });
+
+  await prisma.timeOffRequest.createMany({
+    data: [
       {
-        userId: admin.id,
-        operationType: BalanceOperationType.ADD,
-        hours: 40,
-        reason: 'Initial admin balance',
-        createdById: admin.id,
+        userId: employee1.id,
+        date: date('2026-05-22'),
+        hours: 8,
+        reason: 'Personal appointment',
+        comment: 'Need the afternoon for personal matters',
+        status: RequestStatus.PENDING,
+      },
+      {
+        userId: employee2.id,
+        date: date('2026-05-27'),
+        hours: 4,
+        reason: 'Family matters',
+        comment: 'Short absence in the morning',
+        status: RequestStatus.PENDING,
+      },
+      {
+        userId: employee3.id,
+        date: date('2026-05-15'),
+        hours: 8,
+        reason: 'Release recovery day',
+        comment: 'Worked late during release',
+        status: RequestStatus.APPROVED,
+        approverId: lead.id,
+        approvedAt: date('2026-05-10'),
       },
       {
         userId: lead.id,
-        operationType: BalanceOperationType.ADD,
-        hours: 32,
-        reason: 'Initial lead balance',
-        createdById: admin.id,
+        date: date('2026-05-12'),
+        hours: 8,
+        reason: 'Overtime compensation',
+        status: RequestStatus.APPROVED,
+        approverId: manager.id,
+        approvedAt: date('2026-05-07'),
       },
       {
-        userId: employees[0].id,
-        operationType: BalanceOperationType.ADD,
-        hours: 24,
-        reason: 'Initial employee balance',
-        createdById: admin.id,
+        userId: manager.id,
+        date: date('2026-06-02'),
+        hours: 4,
+        reason: 'Medical appointment',
+        status: RequestStatus.PENDING,
       },
     ],
   });
 
-  await prisma.timeOffRequest.create({
-    data: {
-      userId: employees[0].id,
-      date: new Date('2026-05-22T00:00:00.000Z'),
-      hours: 8,
-      reason: 'Personal time off',
-      comment: 'Seed request',
-      status: 'PENDING',
-      approverId: lead.id,
-    },
+  await prisma.vacationRequest.createMany({
+    data: [
+      {
+        userId: employee1.id,
+        startDate: date('2026-06-03'),
+        endDate: date('2026-06-07'),
+        daysCount: 5,
+        vacationType: VacationType.ANNUAL,
+        status: RequestStatus.PENDING,
+        comment: 'Planned family trip',
+      },
+      {
+        userId: employee2.id,
+        startDate: date('2026-06-10'),
+        endDate: date('2026-06-14'),
+        daysCount: 5,
+        vacationType: VacationType.ANNUAL,
+        status: RequestStatus.APPROVED,
+        approverId: manager.id,
+        approvedAt: date('2026-05-18'),
+        comment: 'Approved summer vacation',
+      },
+      {
+        userId: employee3.id,
+        startDate: date('2026-05-29'),
+        endDate: date('2026-05-30'),
+        daysCount: 2,
+        vacationType: VacationType.SICK_LEAVE,
+        status: RequestStatus.APPROVED,
+        approverId: lead.id,
+        approvedAt: date('2026-05-20'),
+        comment: 'Medical certificate provided',
+      },
+      {
+        userId: lead.id,
+        startDate: date('2026-07-01'),
+        endDate: date('2026-07-05'),
+        daysCount: 5,
+        vacationType: VacationType.ANNUAL,
+        status: RequestStatus.PENDING,
+        comment: 'Planning ahead for July',
+      },
+      {
+        userId: manager.id,
+        startDate: date('2026-06-17'),
+        endDate: date('2026-06-18'),
+        daysCount: 2,
+        vacationType: VacationType.UNPAID,
+        status: RequestStatus.APPROVED,
+        approverId: admin.id,
+        approvedAt: date('2026-05-19'),
+        comment: 'Personal unpaid leave',
+      },
+    ],
   });
 
-  await prisma.vacationRequest.create({
-    data: {
-      userId: employees[1].id,
-      startDate: new Date('2026-06-03T00:00:00.000Z'),
-      endDate: new Date('2026-06-10T00:00:00.000Z'),
-      daysCount: 6,
-      vacationType: VacationType.ANNUAL,
-      status: 'PENDING',
-      comment: 'Seed vacation request',
-      approverId: lead.id,
-    },
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: admin.id,
+        title: 'Seed completed',
+        message: 'Demo teams, users, balances and requests were created',
+        type: 'SYSTEM',
+      },
+      {
+        userId: lead.id,
+        title: 'Pending request',
+        message: 'Employee 1 requested time off',
+        type: 'REQUEST_CREATED',
+      },
+      {
+        userId: manager.id,
+        title: 'Pending vacation',
+        message: 'Lead requested annual vacation',
+        type: 'REQUEST_CREATED',
+      },
+    ],
   });
 
-  await prisma.notification.create({
-    data: {
-      userId: admin.id,
-      title: 'Seed completed',
-      message: 'QA Team, admin and test users were created',
-      type: 'SYSTEM',
+  console.log('Seed completed');
+}
+
+function upsertTeam(name: string, description: string) {
+  return prisma.team.upsert({
+    where: { name },
+    update: { description },
+    create: { name, description },
+  });
+}
+
+function upsertUser({
+  telegramId,
+  fullName,
+  username,
+  email,
+  position,
+  role,
+  teamId,
+  managerId,
+}: {
+  telegramId: string;
+  fullName: string;
+  username: string;
+  email: string;
+  position: string;
+  role: Role;
+  teamId: string;
+  managerId?: string;
+}) {
+  return prisma.user.upsert({
+    where: { telegramId },
+    update: {
+      fullName,
+      username,
+      email,
+      position,
+      role,
+      teamId,
+      managerId,
+      isActive: true,
+    },
+    create: {
+      telegramId,
+      fullName,
+      username,
+      email,
+      position,
+      role,
+      teamId,
+      managerId,
+      isActive: true,
+      timeBalance: {
+        create: {},
+      },
     },
   });
 }
 
+function upsertBalance(userId: string, balanceHours: number, totalAddedHours: number, totalUsedHours: number) {
+  return prisma.timeBalance.upsert({
+    where: { userId },
+    update: {
+      balanceHours,
+      totalAddedHours,
+      totalUsedHours,
+    },
+    create: {
+      userId,
+      balanceHours,
+      totalAddedHours,
+      totalUsedHours,
+    },
+  });
+}
+
+async function cleanSeedData(userIds: string[]) {
+  await prisma.notification.deleteMany({
+    where: { userId: { in: userIds } },
+  });
+  await prisma.timeOffRequest.deleteMany({
+    where: { userId: { in: userIds } },
+  });
+  await prisma.vacationRequest.deleteMany({
+    where: { userId: { in: userIds } },
+  });
+  await prisma.balanceOperation.deleteMany({
+    where: { userId: { in: userIds } },
+  });
+}
+
+function operation(userId: string, createdById: string, operationType: BalanceOperationType, hours: number, reason: string) {
+  return {
+    userId,
+    createdById,
+    operationType,
+    hours,
+    reason,
+  };
+}
+
+function date(value: string) {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
 main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
   .finally(async () => {
     await prisma.$disconnect();
   });

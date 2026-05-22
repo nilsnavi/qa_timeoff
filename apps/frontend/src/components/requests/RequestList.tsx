@@ -18,21 +18,21 @@ export function RequestList({
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-bold text-slate-500">{request.user.fullName}</p>
-              <h2 className="text-lg font-black text-slate-950">Time off</h2>
+              <h2 className="text-lg font-black text-slate-950">Отгул</h2>
             </div>
             <StatusBadge status={request.status} />
           </div>
           <p className="text-sm font-semibold text-slate-600">
-            {request.date} · {request.hours} h
+            {request.date} · {request.hours} ч
           </p>
           <p className="mt-2 text-sm text-slate-500">{request.reason}</p>
           {request.status === 'PENDING' && onApprove && onReject && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               <Button variant="secondary" onClick={() => onReject(request.id)}>
-                <X size={18} /> Reject
+                <X size={18} /> Отклонить
               </Button>
               <Button onClick={() => onApprove(request.id)}>
-                <Check size={18} /> Approve
+                <Check size={18} /> Одобрить
               </Button>
             </div>
           )}

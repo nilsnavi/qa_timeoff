@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY apps/frontend/package.json apps/frontend/package.json
 COPY packages/shared/package.json packages/shared/package.json
-RUN npm install
+RUN npm ci
 COPY apps/frontend apps/frontend
 COPY packages/shared packages/shared
 RUN npm run build --workspace @qa-timeoff/frontend

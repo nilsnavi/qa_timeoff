@@ -12,13 +12,17 @@ export interface User {
   role: Role;
   teamId?: string;
   team?: Team;
+  managerId?: string;
+  manager?: User;
   isActive: boolean;
+  timeBalance?: TimeBalance;
 }
 
 export interface Team {
   id: string;
   name: string;
   description?: string;
+  users?: User[];
 }
 
 export interface TimeBalance {
@@ -33,9 +37,11 @@ export interface TimeBalance {
 export interface BalanceOperation {
   id: string;
   userId: string;
+  user?: User;
   operationType: 'ADD' | 'WRITE_OFF' | 'MANUAL_CORRECTION' | 'EXPIRED';
   hours: number;
   reason: string;
+  createdBy?: User;
   createdAt: string;
 }
 
@@ -46,8 +52,11 @@ export interface TimeOffRequest {
   hours: number;
   reason: string;
   comment?: string;
+  approverComment?: string;
   status: RequestStatus;
   user: User;
+  approver?: User;
+  createdAt?: string;
 }
 
 export interface VacationRequest {
@@ -59,12 +68,15 @@ export interface VacationRequest {
   vacationType: VacationType;
   status: RequestStatus;
   comment?: string;
+  approverComment?: string;
   user: User;
+  approver?: User;
+  createdAt?: string;
 }
 
 export interface CalendarEvent {
   id: string;
-  absenceType: 'TIME_OFF' | 'VACATION';
+  absenceType: 'TIME_OFF' | 'VACATION' | 'HOLIDAY';
   startDate: string;
   endDate: string;
   employee: User;
@@ -73,6 +85,8 @@ export interface CalendarEvent {
   hours?: number;
   daysCount?: number;
   vacationType?: VacationType;
+  reason?: string;
+  comment?: string;
 }
 
 export interface NotificationItem {

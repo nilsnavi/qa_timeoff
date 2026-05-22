@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
+import { getStatusLabel, hapticImpact } from '../../shared/utils';
 
 type FieldBaseProps = {
   label?: string;
@@ -17,6 +18,7 @@ export function Button({
   variant = 'primary',
   size = 'md',
   className,
+  onClick,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -35,6 +37,10 @@ export function Button({
         variant === 'danger' && 'bg-rose-500 text-white shadow-lg shadow-rose-300/30',
         className,
       )}
+      onClick={(event) => {
+        hapticImpact(variant === 'danger' ? 'medium' : 'light');
+        onClick?.(event);
+      }}
       {...props}
     >
       {children}
@@ -124,7 +130,7 @@ export function StatusBadge({ status }: { status: string }) {
     CANCELLED: 'neutral',
   };
 
-  return <Badge tone={tones[status] ?? 'neutral'}>{status}</Badge>;
+  return <Badge tone={tones[status] ?? 'neutral'}>{getStatusLabel(status)}</Badge>;
 }
 
 export function Header({
@@ -153,10 +159,17 @@ export function Header({
 export function BottomNavigation({
   items,
 }: {
-  items: Array<{ to: string; label: string; icon: ElementType<{ size?: string | number }>; active?: boolean; onClick?: () => void }>;
+  items: Array<{
+    to: string;
+    label: string;
+    icon: ElementType<{ size?: string | number }>;
+    active?: boolean;
+    badge?: number;
+    onClick?: () => void;
+  }>;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-4 pb-4">
+    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-4 pb-[calc(1rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))]">
       <div className="glass grid grid-cols-5 gap-1 rounded-[28px] p-2">
         {items.map((item) => (
           <button
@@ -168,7 +181,14 @@ export function BottomNavigation({
               item.active ? 'app-gradient text-white shadow-lg shadow-blue-500/25' : 'text-slate-500 dark:text-slate-400',
             )}
           >
-            <item.icon size={19} />
+            <span className="relative">
+              <item.icon size={19} />
+              {!!item.badge && (
+                <span className="absolute -right-2.5 -top-2 grid min-h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white dark:ring-slate-950">
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
+              )}
+            </span>
             <span>{item.label}</span>
           </button>
         ))}
@@ -199,7 +219,7 @@ export function Modal({
       <section className="glass w-full max-w-md rounded-[28px] p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-black text-slate-950 dark:text-white">{title}</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal">
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Закрыть окно">
             <X size={18} />
           </Button>
         </div>
@@ -253,7 +273,57 @@ export function EmptyState({
   );
 }
 
-export function Loader({ label = 'Loading' }: { label?: string }) {
+export function ErrorState({
+  title = 'Что-то пошло не так',
+  description = 'Не удалось загрузить данные. Попробуйте повторить запрос.',
+  actionLabel = 'Повторить',
+  onRetry,
+}: {
+  title?: string;
+  description?: string;
+  actionLabel?: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <Card className="grid place-items-center py-10 text-center">
+      <div className="grid max-w-xs gap-3">
+        <AlertCircle className="mx-auto text-rose-500" size={34} />
+        <h2 className="text-lg font-black text-slate-950 dark:text-white">{title}</h2>
+        {description && <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{description}</p>}
+        {onRetry && (
+          <Button variant="secondary" onClick={onRetry}>
+            {actionLabel}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={clsx('animate-pulse rounded-[18px] bg-white/60 dark:bg-slate-800/70', className)} />;
+}
+
+export function SkeletonCard({ rows = 3 }: { rows?: number }) {
+  return (
+    <Card>
+      <div className="flex items-start gap-3">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-[20px]" />
+        <div className="grid flex-1 gap-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2">
+        {Array.from({ length: rows }).map((_, index) => (
+          <Skeleton key={index} className="h-10 w-full" />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+export function Loader({ label = 'Загрузка' }: { label?: string }) {
   return (
     <div className="grid min-h-32 place-items-center">
       <div className="flex items-center gap-3 rounded-[24px] bg-white/70 px-5 py-4 text-sm font-black text-slate-600 shadow-soft dark:bg-slate-900/70 dark:text-slate-300">
