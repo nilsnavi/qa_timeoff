@@ -65,7 +65,6 @@ export function ManagerRequestsPage() {
   );
   const isLoading = (timeOffQuery.isLoading || vacationsQuery.isLoading) && allRequests.length === 0;
   const hasError = (timeOffQuery.isError || vacationsQuery.isError) && allRequests.length === 0;
-  const isMutating = false;
 
   const invalidateRequests = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -145,7 +144,7 @@ export function ManagerRequestsPage() {
             <RequestCard
               key={`${request.kind}-${request.id}`}
               request={request}
-              disabled={approve.isPending || reject.isPending || isMutating}
+              disabled={approve.isPending || reject.isPending}
               onApprove={async () => {
                 if (await confirmTelegram('Согласовать заявку?', `${request.employeeName}: ${request.typeLabel}`)) {
                   approve.mutate(request);
@@ -160,57 +159,21 @@ export function ManagerRequestsPage() {
         </div>
       )}
 
-      <Modal
-        open={!!rejectTarget}
-        title="Отклонить заявку"
+      <RejectModal
+        target={rejectTarget}
+        comment={rejectComment}
+        pending={reject.isPending}
+        onCommentChange={setRejectComment}
         onClose={() => {
           setRejectTarget(null);
           setRejectComment('');
         }}
-        footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setRejectTarget(null);
-                setRejectComment('');
-              }}
-            >
-              Отмена
-            </Button>
-            <Button
-              variant="danger"
-              disabled={!rejectComment.trim() || reject.isPending || !rejectTarget}
-              onClick={() => {
-                if (rejectTarget) {
-                  reject.mutate({ request: rejectTarget, comment: rejectComment.trim() });
-                }
-              }}
-            >
-              Отклонить
-            </Button>
-          </div>
-        }
-      >
-        <div className="grid gap-3">
-          {rejectTarget && (
-            <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-              <p className="font-black text-slate-950 dark:text-white">{rejectTarget.employeeName}</p>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                {rejectTarget.typeLabel} · {rejectTarget.dateLabel}
-              </p>
-            </div>
-          )}
-          <Textarea
-            label="Комментарий"
-            value={rejectComment}
-            maxLength={500}
-            hint={`${rejectComment.length}/500`}
-            placeholder="Напишите причину отказа"
-            onChange={(event) => setRejectComment(event.target.value)}
-          />
-        </div>
-      </Modal>
+        onSubmit={() => {
+          if (rejectTarget) {
+            reject.mutate({ request: rejectTarget, comment: rejectComment.trim() });
+          }
+        }}
+      />
     </>
   );
 }
@@ -282,6 +245,59 @@ function RequestCard({
         </Button>
       </div>
     </Card>
+  );
+}
+
+function RejectModal({
+  target,
+  comment,
+  pending,
+  onCommentChange,
+  onClose,
+  onSubmit,
+}: {
+  target: ManagerRequestCard | null;
+  comment: string;
+  pending: boolean;
+  onCommentChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Modal
+      open={!!target}
+      title="Отклонить заявку"
+      onClose={onClose}
+      footer={
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Отмена
+          </Button>
+          <Button variant="danger" disabled={!comment.trim() || pending || !target} onClick={onSubmit}>
+            Отклонить
+          </Button>
+        </div>
+      }
+    >
+      <div className="grid gap-3">
+        {target && (
+          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
+            <p className="font-black text-slate-950 dark:text-white">{target.employeeName}</p>
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+              {target.typeLabel} · {target.dateLabel}
+            </p>
+          </div>
+        )}
+        <Textarea
+          label="Комментарий"
+          value={comment}
+          maxLength={500}
+          hint={`${comment.length}/500`}
+          placeholder="Напишите причину отказа"
+          onChange={(event) => onCommentChange(event.target.value)}
+        />
+      </div>
+    </Modal>
   );
 }
 
