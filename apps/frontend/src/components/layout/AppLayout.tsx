@@ -74,19 +74,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
         title={`Привет, ${dashboard.user.fullName.split(' ')[0]}`}
         subtitle={demoMode ? 'Демо-режим' : undefined}
         action={
-          <div className="relative grid h-12 w-12 place-items-center rounded-[20px] bg-white/75 text-slate-700 shadow-soft dark:bg-slate-900/70 dark:text-slate-200">
-            <button
-              type="button"
-              aria-label="Уведомления"
-              className="grid h-full w-full place-items-center rounded-[20px]"
-              onClick={() => {
-                hapticSelection();
-                navigate('/notifications');
-              }}
-            >
-              <Bell size={21} />
-            </button>
-            {!!unread && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400" />}
+          <div className="flex items-center gap-2">
+            <div className="flex h-12 min-w-[124px] max-w-[150px] items-center justify-center rounded-[20px] bg-white/75 px-3 shadow-soft ring-1 ring-white/70 dark:bg-slate-900/70 dark:ring-slate-700">
+              <img src="/dm-logo.svg" alt="Деловые Линии" className="max-h-7 w-full object-contain" />
+            </div>
+            <div className="relative grid h-12 w-12 place-items-center rounded-[20px] bg-white/75 text-slate-700 shadow-soft dark:bg-slate-900/70 dark:text-slate-200">
+              <button
+                type="button"
+                aria-label="Уведомления"
+                className="grid h-full w-full place-items-center rounded-[20px]"
+                onClick={() => {
+                  hapticSelection();
+                  navigate('/notifications');
+                }}
+              >
+                <Bell size={21} />
+              </button>
+              {!!unread && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400" />}
+            </div>
           </div>
         }
       />
