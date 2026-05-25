@@ -25,16 +25,8 @@ export function AdminPage() {
   const [balanceConfirm, setBalanceConfirm] = useState<BalanceDraft | null>(null);
   const [operationTarget, setOperationTarget] = useState<User | null>(null);
 
-  const usersQuery = useQuery({
-    queryKey: ['users'],
-    queryFn: api.users,
-    enabled: isAdmin,
-  });
-  const teamsQuery = useQuery({
-    queryKey: ['teams'],
-    queryFn: api.teams,
-    enabled: isAdmin,
-  });
+  const usersQuery = useQuery({ queryKey: ['users'], queryFn: api.users, enabled: isAdmin });
+  const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams, enabled: isAdmin });
   const operationsQuery = useQuery({
     queryKey: ['balance', 'operations', operationTarget?.id],
     queryFn: () => api.userOperations(operationTarget!.id),
@@ -54,7 +46,6 @@ export function AdminPage() {
           .filter(Boolean)
           .some((value) => value!.toLowerCase().includes(query));
       const matchesTeam = teamFilter === 'ALL' || (teamFilter === 'NO_TEAM' ? !user.teamId : user.teamId === teamFilter);
-
       return matchesSearch && matchesTeam;
     });
   }, [search, teamFilter, users]);
@@ -119,13 +110,7 @@ export function AdminPage() {
   }
 
   if (usersQuery.isError && users.length === 0) {
-    return (
-      <ErrorState
-        title="Пользователи не загрузились"
-        description="Не удалось получить список сотрудников."
-        onRetry={() => usersQuery.refetch()}
-      />
-    );
+    return <ErrorState title="Пользователи не загрузились" description="Не удалось получить список сотрудников." onRetry={() => usersQuery.refetch()} />;
   }
 
   return (
@@ -164,6 +149,7 @@ export function AdminPage() {
             <UserCard
               key={user.id}
               user={user}
+              teams={teams}
               teamName={user.team?.name ?? (user.teamId ? teamNames.get(user.teamId) : undefined)}
               disabled={updateUser.isPending || addBalance.isPending || writeOffBalance.isPending}
               onEdit={() => setEditTarget(user)}
@@ -178,7 +164,6 @@ export function AdminPage() {
                   updateUser.mutate({ id: user.id, payload: { teamId: teamId || undefined } });
                 }
               }}
-              teams={teams}
               onAddHours={() => {
                 setBalanceTarget(user);
                 setBalanceAction('add');
@@ -193,7 +178,8 @@ export function AdminPage() {
         </div>
       )}
 
-      <CreateUserModal
+      <UserFormModal
+        mode="create"
         open={createOpen}
         users={users}
         teams={teams}
@@ -207,14 +193,16 @@ export function AdminPage() {
         }}
       />
 
-      <EditUserModal
-        user={editTarget}
+      <UserFormModal
+        mode="edit"
+        open={!!editTarget}
+        target={editTarget}
         users={users}
         teams={teams}
         pending={updateUser.isPending}
         error={updateUser.isError ? 'Не удалось обновить пользователя' : undefined}
         onClose={() => setEditTarget(null)}
-        onSubmit={(id, payload) => updateUser.mutate({ id, payload })}
+        onSubmit={(payload) => editTarget && updateUser.mutate({ id: editTarget.id, payload })}
       />
 
       <BalanceModal
@@ -293,9 +281,7 @@ function UserCard({
   return (
     <Card>
       <div className="mb-4 flex items-start gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] app-gradient text-base font-black text-white">
-          {getInitials(user.fullName)}
-        </div>
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] app-gradient text-base font-black text-white">{getInitials(user.fullName)}</div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -347,55 +333,9 @@ function UserCard({
           <History size={16} />
           История
         </Button>
-        <div className="hidden items-center justify-end text-right text-xs font-bold text-slate-400 sm:flex">
-          ID {user.telegramId}
-        </div>
+        <div className="hidden items-center justify-end text-right text-xs font-bold text-slate-400 sm:flex">ID {user.telegramId}</div>
       </div>
     </Card>
-  );
-}
-
-function CreateUserModal(props: {
-  open: boolean;
-  users: User[];
-  teams: Team[];
-  pending: boolean;
-  error?: string;
-  onClose: () => void;
-  onSubmit: (payload: Parameters<typeof api.createUser>[0]) => void;
-}) {
-  return <UserFormModal mode="create" {...props} />;
-}
-
-function EditUserModal({
-  user,
-  users,
-  teams,
-  pending,
-  error,
-  onClose,
-  onSubmit,
-}: {
-  user: User | null;
-  users: User[];
-  teams: Team[];
-  pending: boolean;
-  error?: string;
-  onClose: () => void;
-  onSubmit: (id: string, payload: Parameters<typeof api.updateUser>[1]) => void;
-}) {
-  return (
-    <UserFormModal
-      mode="edit"
-      open={!!user}
-      target={user}
-      users={users}
-      teams={teams}
-      pending={pending}
-      error={error}
-      onClose={onClose}
-      onSubmit={(payload) => user && onSubmit(user.id, payload)}
-    />
   );
 }
 
@@ -433,10 +373,7 @@ function UserFormModal({
   });
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-
+    if (!open) return;
     setForm({
       telegramId: target?.telegramId ?? '',
       fullName: target?.fullName ?? '',
@@ -557,11 +494,7 @@ function BalanceModal({
           <Button variant="secondary" onClick={onClose}>
             Отмена
           </Button>
-          <Button
-            variant={action === 'add' ? 'primary' : 'danger'}
-            disabled={!user || hours <= 0 || !reason.trim() || pending}
-            onClick={() => onSubmit({ hours, reason: reason.trim() })}
-          >
+          <Button variant={action === 'add' ? 'primary' : 'danger'} disabled={!user || hours <= 0 || !reason.trim() || pending} onClick={() => onSubmit({ hours, reason: reason.trim() })}>
             Далее
           </Button>
         </div>
@@ -639,7 +572,7 @@ function OperationsModal({
   onClose: () => void;
 }) {
   return (
-    <Modal open={!!user} title="Audit log" onClose={onClose}>
+    <Modal open={!!user} title="История операций" onClose={onClose}>
       <div className="grid gap-3">
         {user && (
           <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
@@ -648,13 +581,7 @@ function OperationsModal({
           </div>
         )}
         {loading && <Loader label="Загружаем историю" />}
-        {error && !loading && (
-          <ErrorState
-            title="История не загрузилась"
-            description="Не удалось получить операции пользователя."
-            onRetry={onRetry}
-          />
-        )}
+        {error && !loading && <ErrorState title="История не загрузилась" description="Не удалось получить операции пользователя." onRetry={onRetry} />}
         {!loading && !error && operations.length === 0 && <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Операций пока нет</p>}
         {!loading &&
           operations.map((operation) => (
