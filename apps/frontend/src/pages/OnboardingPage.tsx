@@ -11,19 +11,19 @@ const slides = [
     title: 'Ваше время под контролем',
     description: 'Баланс отгулов, история операций и статусы заявок всегда рядом.',
     icon: Clock3,
-    accent: 'from-violet-500 to-blue-600',
+    accent: 'from-violet-500 via-blue-600 to-sky-500',
   },
   {
     title: 'Отгулы и отпуска в 2 клика',
     description: 'Создавайте заявки быстро, а руководитель увидит их сразу.',
     icon: MousePointer2,
-    accent: 'from-blue-500 to-cyan-500',
+    accent: 'from-blue-500 via-cyan-500 to-emerald-400',
   },
   {
     title: 'Календарь команды всегда под рукой',
     description: 'Смотрите отпуска, отгулы и ближайшие события без лишнего шума.',
     icon: CalendarDays,
-    accent: 'from-emerald-500 to-blue-500',
+    accent: 'from-emerald-500 via-blue-500 to-violet-500',
   },
 ];
 
@@ -53,7 +53,7 @@ export function OnboardingPage() {
   return (
     <main className="mx-auto flex min-h-[var(--tg-viewport-height)] w-full max-w-xl flex-col px-5 py-5 safe-area">
       <div className="flex items-center justify-between">
-        <div className="h-2 w-28 overflow-hidden rounded-full bg-white/70 dark:bg-slate-800">
+        <div className="h-2 w-28 overflow-hidden rounded-full bg-white/70 shadow-sm dark:bg-slate-800">
           <div className="h-full rounded-full app-gradient transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
         <button type="button" className="min-h-10 px-3 text-sm font-black text-slate-500 dark:text-slate-300" onClick={finish}>
@@ -64,7 +64,7 @@ export function OnboardingPage() {
       <section className="grid flex-1 place-items-center py-8">
         <div className="w-full text-center">
           <div className={`mx-auto grid h-72 w-full max-w-sm place-items-center rounded-[36px] bg-gradient-to-br ${slide.accent} p-8 text-white shadow-2xl shadow-blue-500/20`}>
-            <div className="grid h-40 w-40 place-items-center rounded-[48px] bg-white/20 ring-1 ring-white/25">
+            <div className="grid h-40 w-40 place-items-center rounded-[48px] bg-white/20 ring-1 ring-white/25 backdrop-blur">
               <Icon size={82} strokeWidth={1.7} />
             </div>
           </div>
