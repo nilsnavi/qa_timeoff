@@ -28,7 +28,10 @@ services:
       NODE_ENV: production
       API_PORT: 3000
       DATABASE_URL: "postgresql://${POSTGRES_USER:-qa_timeoff}:${POSTGRES_PASSWORD:-qa_timeoff}@postgres:5432/${POSTGRES_DB:-qa_timeoff}?schema=public"
-      JWT_SECRET: ${JWT_SECRET:-qa-timeoff-dev-secret}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
     depends_on:
       postgres:
         condition: service_healthy
