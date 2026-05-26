@@ -1,4 +1,5 @@
 import type { BalanceOperation, CalendarEvent, Dashboard, NotificationItem, RequestStatus, Role, Team, TimeOffRequest, User, VacationRequest, VacationType } from '../types';
+import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
@@ -14,20 +15,49 @@ export const setAccessToken = (token?: string) => {
 };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(await response.text());
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new NetworkError('No internet connection');
   }
 
-  return response.json() as Promise<T>;
+  const timeoutMs = 15000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...options.headers,
+      },
+    });
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw mapApiError(response.status, text);
+    }
+
+    if (!text) {
+      return {} as T;
+    }
+
+    return JSON.parse(text) as T;
+  } catch (error) {
+    if (error instanceof ApiError || error instanceof NetworkError) {
+      throw error;
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new TimeoutError('Request timeout exceeded');
+    }
+
+    throw new NetworkError(error instanceof Error ? error.message : 'Unknown network error');
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export const api = {

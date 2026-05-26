@@ -8,7 +8,16 @@ interface ValidatedEnv {
   TELEGRAM_BOT_TOKEN: string;
   FRONTEND_URL?: string;
   CORS_ORIGIN?: string;
+  ALLOWED_ORIGINS?: string;
+  RATE_LIMIT_TTL: number;
+  RATE_LIMIT_MAX: number;
+  LOG_LEVEL: LogLevel;
+  LOG_DIR?: string;
+  CACHE_TTL: number;
+  REDIS_URL?: string;
 }
+
+type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';
 
 const nodeEnvs: NodeEnv[] = ['development', 'test', 'production'];
 
@@ -54,6 +63,32 @@ function parsePort(value: unknown) {
   return port;
 }
 
+function parsePositiveInt(value: unknown, key: string, fallback: number) {
+  const parsed = Number(value ?? fallback);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${key} must be a positive integer`);
+  }
+
+  return parsed;
+}
+
+function parseLogLevel(value: unknown): LogLevel {
+  const allowed: LogLevel[] = ['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'];
+
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return 'info';
+  }
+
+  const normalized = value.trim().toLowerCase() as LogLevel;
+
+  if (!allowed.includes(normalized)) {
+    throw new Error(`LOG_LEVEL must be one of: ${allowed.join(', ')}`);
+  }
+
+  return normalized;
+}
+
 export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
   const NODE_ENV = parseNodeEnv(config.NODE_ENV);
   const API_PORT = parsePort(config.API_PORT);
@@ -62,6 +97,13 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
   const TELEGRAM_BOT_TOKEN = requiredString(config, 'TELEGRAM_BOT_TOKEN');
   const FRONTEND_URL = optionalString(config, 'FRONTEND_URL');
   const CORS_ORIGIN = optionalString(config, 'CORS_ORIGIN');
+  const ALLOWED_ORIGINS = optionalString(config, 'ALLOWED_ORIGINS');
+  const RATE_LIMIT_TTL = parsePositiveInt(config.RATE_LIMIT_TTL, 'RATE_LIMIT_TTL', 60);
+  const RATE_LIMIT_MAX = parsePositiveInt(config.RATE_LIMIT_MAX, 'RATE_LIMIT_MAX', 100);
+  const LOG_LEVEL = parseLogLevel(config.LOG_LEVEL);
+  const LOG_DIR = optionalString(config, 'LOG_DIR');
+  const CACHE_TTL = parsePositiveInt(config.CACHE_TTL, 'CACHE_TTL', 300);
+  const REDIS_URL = optionalString(config, 'REDIS_URL');
 
   if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
     throw new Error('JWT_SECRET must be at least 32 characters in production');
@@ -75,5 +117,12 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
     TELEGRAM_BOT_TOKEN,
     FRONTEND_URL,
     CORS_ORIGIN,
+    ALLOWED_ORIGINS,
+    RATE_LIMIT_TTL,
+    RATE_LIMIT_MAX,
+    LOG_LEVEL,
+    LOG_DIR,
+    CACHE_TTL,
+    REDIS_URL,
   };
 }
