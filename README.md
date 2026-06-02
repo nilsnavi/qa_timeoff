@@ -5,7 +5,7 @@ Telegram Mini App для учета отсутствий QA-команды: от
 ## Стек
 
 - Frontend: React 18, Vite, TypeScript, TailwindCSS, React Router, TanStack Query, Telegram WebApp API.
-- Backend: NestJS, TypeScript, Prisma, PostgreSQL, JWT, Swagger.
+- Backend: NestJS, TypeScript, Prisma, PostgreSQL, Redis, JWT, Swagger.
 - Infra: Docker, Docker Compose, Nginx.
 - Monorepo: npm workspaces (`apps/*`, `packages/*`).
 
@@ -33,42 +33,74 @@ npm run dev:frontend
 npm run seed --workspace @qa-timeoff/backend
 ```
 
-## Запуск через Docker
+## Запуск через Docker (рекомендуется)
+
+Требования: **Docker 24+** и **Docker Compose v2**.
 
 ```bash
-docker compose up --build
+# 1. Подготовить переменные окружения (один корневой .env на все сервисы)
+cp .env.example .env
+# Отредактировать .env: задать JWT_SECRET, TELEGRAM_BOT_TOKEN
+# На первом запуске можно поставить RUN_SEED=true для демо-данных
+
+# 2. Собрать образы и поднять весь стек
+docker compose up -d --build
+
+# 3. Логи (по желанию)
+docker compose logs -f backend
 ```
 
-Адреса:
+Когда все контейнеры готовы:
 
-- App: `http://localhost:8080`
-- API через nginx: `http://localhost:8080/api`
-- Swagger через nginx: `http://localhost:8080/api/docs`
+| Назначение     | URL                                  |
+| -------------- | ------------------------------------ |
+| Mini App UI    | http://localhost:8080                |
+| API через nginx| http://localhost:8080/api            |
+| Swagger        | http://localhost:8080/api/docs       |
+| API напрямую   | http://localhost:3000                |
+| PostgreSQL     | localhost:5432 (user `qa_timeoff`)   |
+| Redis          | localhost:6379                       |
 
-PostgreSQL хранит данные в volume `postgres-data`.
+Backend-контейнер на старте автоматически выполняет `prisma migrate deploy`,
+поэтому схема БД всегда синхронна с кодом. Установите `RUN_SEED=true` в `.env`
+чтобы дополнительно загрузить демо-данные при первом запуске.
 
-## Переменные окружения
+### Полезные команды Docker
 
-Backend:
+```bash
+# Остановить всё
+docker compose down
 
-```env
-DATABASE_URL=postgresql://qa_timeoff:qa_timeoff@localhost:5432/qa_timeoff?schema=public
-JWT_SECRET=change-me
-API_PORT=3000
+# Остановить и стереть volume БД (полный сброс)
+docker compose down -v
+
+# Пересобрать один сервис после изменений в коде
+docker compose build backend && docker compose up -d backend
+
+# Открыть shell внутри backend-контейнера
+docker compose exec backend sh
+
+# Запустить seed вручную в любой момент
+docker compose exec backend node apps/backend/dist/prisma/seed.js
 ```
 
-Frontend:
+### Переменные окружения (`.env`)
 
-```env
-VITE_API_URL=/api
-```
-
-Docker Compose задает backend-переменные автоматически:
-
-- `POSTGRES_DB`, default `qa_timeoff`
-- `POSTGRES_USER`, default `qa_timeoff`
-- `POSTGRES_PASSWORD`, default `qa_timeoff`
-- `JWT_SECRET`, default `qa-timeoff-dev-secret`
+| Переменная                  | По умолчанию             | Назначение                                       |
+| --------------------------- | ------------------------ | ------------------------------------------------ |
+| `APP_PORT`                  | `8080`                   | Порт хоста для nginx (UI + `/api`)               |
+| `BACKEND_PORT`              | `3000`                   | Прямой порт backend на хосте                     |
+| `POSTGRES_PORT`             | `5432`                   | Порт PostgreSQL на хосте                         |
+| `REDIS_PORT`                | `6379`                   | Порт Redis на хосте                              |
+| `POSTGRES_DB/USER/PASSWORD` | `qa_timeoff`             | Учётные данные БД                                |
+| `JWT_SECRET`                | —                        | **Обязательная** длинная случайная строка        |
+| `TELEGRAM_BOT_TOKEN`        | —                        | **Обязателен** для реальной Telegram-авторизации |
+| `RUN_SEED`                  | `false`                  | Сидирование демо-данных при старте backend       |
+| `VITE_API_URL`              | `/api`                   | Базовый URL API, инлайнится во фронтенд при сборке|
+| `CORS_ORIGIN`/`ALLOWED_ORIGINS` | `http://localhost:8080` | Разрешённые источники для CORS                |
+| `RATE_LIMIT_TTL`/`MAX`      | `60` / `100`             | Лимиты запросов                                  |
+| `LOG_LEVEL`/`LOG_DIR`       | `info` / `logs`          | Логирование                                      |
+| `CACHE_TTL`/`REDIS_URL`     | `300` / `redis://redis:6379` | Кэширование через Redis                      |
 
 ## Команды Prisma
 
