@@ -55,3 +55,26 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Local deploy files
+deploy.sh
+server.js
+status.txt
+docker-compose.yml.backup
+
+# Local environment
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# SSH
+*.pem
+*.key
+
+# Local configs
+/tmp/
+/backup/
