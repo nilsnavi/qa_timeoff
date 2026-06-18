@@ -36,6 +36,7 @@ RUN apk add --no-cache bash openssl
 # for "prisma migrate deploy" at startup. This keeps the image self-contained
 # and avoids a second npm install round-trip.
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/node_modules apps/backend/node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
 
