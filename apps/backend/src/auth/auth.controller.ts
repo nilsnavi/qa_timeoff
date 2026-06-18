@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { IsString } from 'class-validator';
@@ -14,10 +14,14 @@ class TelegramAuthDto {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthController.name);
+
+  constructor(private readonly authService: AuthService) { }
 
   @Post('telegram')
   telegram(@Body() dto: TelegramAuthDto) {
+    this.logger.log(`Telegram auth request received`);
+    this.logger.log(`initData length: ${dto.initData?.length ?? 0}`);
     return this.authService.telegramLogin(dto.initData);
   }
 

@@ -60,6 +60,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       # Set RUN_SEED=true in your .env to apply prisma/seed.ts on first start
       RUN_SEED: ${RUN_SEED:-false}
+      ADMIN_TELEGRAM_ID: ${ADMIN_TELEGRAM_ID:-}
     depends_on:
       postgres:
         condition: service_healthy

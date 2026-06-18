@@ -203,6 +203,11 @@ declare global {
     Telegram?: {
       WebApp?: {
         initData?: string;
+        initDataUnsafe?: Record<string, any>;
+        version?: string;
+        platform?: string;
+        colorScheme?: string;
+        isExpanded?: boolean;
         themeParams?: {
           bg_color?: string;
           text_color?: string;

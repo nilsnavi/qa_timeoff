@@ -15,6 +15,7 @@ interface ValidatedEnv {
   LOG_DIR?: string;
   CACHE_TTL: number;
   REDIS_URL?: string;
+  ADMIN_TELEGRAM_ID?: string;
 }
 
 type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';
@@ -104,6 +105,7 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
   const LOG_DIR = optionalString(config, 'LOG_DIR');
   const CACHE_TTL = parsePositiveInt(config.CACHE_TTL, 'CACHE_TTL', 300);
   const REDIS_URL = optionalString(config, 'REDIS_URL');
+  const ADMIN_TELEGRAM_ID = optionalString(config, 'ADMIN_TELEGRAM_ID');
 
   if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
     throw new Error('JWT_SECRET must be at least 32 characters in production');
@@ -124,5 +126,6 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
     LOG_DIR,
     CACHE_TTL,
     REDIS_URL,
+    ADMIN_TELEGRAM_ID,
   };
 }
