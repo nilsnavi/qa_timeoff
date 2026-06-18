@@ -1,0 +1,6 @@
+NAME                  IMAGE                 COMMAND                  SERVICE    CREATED         STATUS                     PORTS
+qa-timeoff-backend    qa_timeoff-backend    "/usr/local/bin/dock…"   backend    5 minutes ago   Up 5 minutes (healthy)     0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+qa-timeoff-frontend   qa_timeoff-frontend   "/docker-entrypoint.…"   frontend   5 minutes ago   Up 5 minutes (unhealthy)   80/tcp
+qa-timeoff-nginx      nginx:1.27-alpine     "/docker-entrypoint.…"   nginx      5 minutes ago   Up 5 minutes               0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+qa-timeoff-postgres   postgres:16-alpine    "docker-entrypoint.s…"   postgres   5 minutes ago   Up 5 minutes (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+qa-timeoff-redis      redis:7-alpine        "docker-entrypoint.s…"   redis      5 minutes ago   Up 5 minutes (healthy)     0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
