@@ -39,7 +39,7 @@ export class AiForecastService {
     const lookbackMonths = params?.monthsLookback ?? 3;
 
     const startDate = new Date(now.getFullYear(), now.getMonth() - lookbackMonths, 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
+
 
     // Get all active users
     const userWhere: { isActive: boolean; teamId?: string } = { isActive: true };
@@ -152,7 +152,7 @@ export class AiForecastService {
 
       // Predict next month overtime based on average + trend
       const absencePenalty = userAbsenceHours.get(user.id) ?? 0;
-      let predictedOvertime = Math.max(0, avgMonthlyOvertime + Math.round(trend * 0.5) - Math.round(absencePenalty * 0.3));
+      const predictedOvertime = Math.max(0, avgMonthlyOvertime + Math.round(trend * 0.5) - Math.round(absencePenalty * 0.3));
       totalPredictedOvertime += predictedOvertime;
 
       // Determine risk level
