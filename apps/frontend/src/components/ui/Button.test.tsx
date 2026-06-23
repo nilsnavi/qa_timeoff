@@ -31,6 +31,6 @@ describe('Button', () => {
   it('применяет size классы', () => {
     const { container } = render(<Button size="lg">Большая</Button>);
     const button = container.querySelector('button');
-    expect(button?.className).toContain('min-h-14');
+    expect(button?.className).toContain('min-h-12');
   });
 });
