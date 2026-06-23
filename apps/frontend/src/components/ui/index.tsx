@@ -11,7 +11,7 @@ type FieldBaseProps = {
 };
 
 const fieldClass =
-  'min-h-12 w-full rounded-[20px] border border-white/70 bg-white/75 px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-violet-400/25 dark:border-slate-700/60 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-500';
+  'min-h-10 w-full rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-sm font-medium text-white outline-none transition placeholder:text-white/30 focus:border-[#4C7DFF]/50 focus:ring-2 focus:ring-[#4C7DFF]/20';
 
 export function Button({
   children,
@@ -27,14 +27,14 @@ export function Button({
   return (
     <button
       className={clsx(
-        'inline-flex items-center justify-center gap-2 rounded-[22px] font-bold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
-        size === 'sm' && 'min-h-10 px-3 text-xs',
-        size === 'md' && 'min-h-12 px-5 text-sm',
-        size === 'lg' && 'min-h-14 px-6 text-base',
-        variant === 'primary' && 'bg-gradient-to-r from-[#4F7CFF] to-[#7C5CFF] text-white shadow-lg shadow-blue-500/25',
-        variant === 'secondary' && 'bg-white/80 text-slate-800 ring-1 ring-white/70 dark:bg-slate-900/70 dark:text-slate-100 dark:ring-slate-700',
-        variant === 'ghost' && 'bg-transparent text-slate-600 dark:text-slate-300',
-        variant === 'danger' && 'bg-rose-500 text-white shadow-lg shadow-rose-300/30',
+        'inline-flex items-center justify-center gap-1.5 rounded-[10px] font-semibold transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50',
+        size === 'sm' && 'min-h-8 px-2.5 text-[11px]',
+        size === 'md' && 'min-h-10 px-4 text-xs',
+        size === 'lg' && 'min-h-12 px-5 text-sm',
+        variant === 'primary' && 'bg-gradient-to-r from-[#4C7DFF] to-[#7C5CFF] text-white shadow-lg shadow-blue-500/20',
+        variant === 'secondary' && 'bg-white/[0.06] text-white/80 ring-1 ring-white/10 hover:bg-white/[0.10]',
+        variant === 'ghost' && 'bg-transparent text-white/50 hover:text-white/80',
+        variant === 'danger' && 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/20 hover:bg-rose-500/30',
         className,
       )}
       onClick={(event) => {
@@ -49,13 +49,13 @@ export function Button({
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={clsx('glass-strong rounded-card-lg p-5 md:p-6', className)}>{children}</section>;
+  return <section className={clsx('enterprise-card p-3.5', className)}>{children}</section>;
 }
 
 export function Input({ label, hint, error, className, ...props }: FieldBaseProps & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <FieldShell label={label} hint={hint} error={error}>
-      <input className={clsx(fieldClass, error && 'border-rose-300 focus:ring-rose-300/30', className)} {...props} />
+      <input className={clsx(fieldClass, error && 'border-rose-500/50 focus:ring-rose-500/20', className)} {...props} />
     </FieldShell>
   );
 }
@@ -70,7 +70,7 @@ export function Textarea({ label, hint, error, className, ...props }: FieldBaseP
   return (
     <FieldShell label={label} hint={hint} error={error}>
       <textarea
-        className={clsx(fieldClass, 'min-h-28 resize-none py-3', error && 'border-rose-300 focus:ring-rose-300/30', className)}
+        className={clsx(fieldClass, 'min-h-24 resize-none py-2.5', error && 'border-rose-500/50 focus:ring-rose-500/20', className)}
         {...props}
       />
     </FieldShell>
@@ -87,7 +87,7 @@ export function Select({
 }: FieldBaseProps & React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   return (
     <FieldShell label={label} hint={hint} error={error}>
-      <select className={clsx(fieldClass, error && 'border-rose-300 focus:ring-rose-300/30', className)} {...props}>
+      <select className={clsx(fieldClass, error && 'border-rose-500/50 focus:ring-rose-500/20', className)} {...props}>
         {children}
       </select>
     </FieldShell>
@@ -106,13 +106,13 @@ export function Badge({
   return (
     <span
       className={clsx(
-        'inline-flex min-h-7 items-center rounded-full px-3 text-xs font-black',
-        tone === 'neutral' && 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-        tone === 'info' && 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200',
-        tone === 'success' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200',
-        tone === 'warning' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-200',
-        tone === 'danger' && 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-200',
-        tone === 'gradient' && 'bg-gradient-to-r from-[#4F7CFF] to-[#7C5CFF] text-white',
+        'inline-flex min-h-6 items-center rounded-full px-2.5 text-[10px] font-bold tracking-wide uppercase',
+        tone === 'neutral' && 'bg-white/[0.06] text-white/50',
+        tone === 'info' && 'bg-blue-500/15 text-blue-400',
+        tone === 'success' && 'bg-emerald-500/15 text-emerald-400',
+        tone === 'warning' && 'bg-amber-500/15 text-amber-400',
+        tone === 'danger' && 'bg-rose-500/15 text-rose-400',
+        tone === 'gradient' && 'bg-gradient-to-r from-[#4C7DFF] to-[#7C5CFF] text-white',
         className,
       )}
     >
@@ -145,11 +145,11 @@ export function Header({
   action?: ReactNode;
 }) {
   return (
-    <header className="mb-5 flex items-center justify-between gap-4">
+    <header className="flex items-center justify-between gap-3">
       <div className="min-w-0">
-        {eyebrow && <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/30">{eyebrow}</p>}
-        <h1 className="truncate text-xl font-black tracking-tight text-white">{title}</h1>
-        {subtitle && <p className="text-xs font-bold text-blue-400">{subtitle}</p>}
+        {eyebrow && <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-white/30">{eyebrow}</p>}
+        <h1 className="truncate text-[18px] font-bold tracking-tight text-white">{title}</h1>
+        {subtitle && <p className="text-[11px] font-medium text-blue-400">{subtitle}</p>}
       </div>
       {action}
     </header>
@@ -169,30 +169,29 @@ export function BottomNavigation({
   }>;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-4 pb-[calc(0.75rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))]">
-      <div className="rounded-[28px] border border-white/[0.06] bg-[rgba(11,18,32,0.85)] px-2 py-1.5 shadow-[0_-4px_30px_rgba(0,0,0,0.4)] backdrop-blur-[22px]">
-        <div className="grid grid-cols-5 gap-0.5">
+    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-4 pb-[calc(0.5rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))] lg:hidden">
+      <div className="rounded-2xl border border-white/[0.05] bg-[rgba(11,18,32,0.9)] px-1.5 py-1 shadow-[0_-2px_20px_rgba(0,0,0,0.4)] backdrop-blur-[16px]">
+        <div className="grid grid-cols-5 gap-0">
           {items.map((item) => (
             <button
               key={item.to}
               type="button"
               onClick={item.onClick}
               className={clsx(
-                'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[10px] font-bold transition-all active:scale-95',
+                'relative flex min-h-[44px] flex-col items-center justify-center gap-0 rounded-xl text-[9px] font-bold transition-all active:scale-95',
                 item.active
-                  ? 'bg-gradient-to-b from-[#4F7CFF]/20 to-[#7C5CFF]/10 text-white shadow-[0_0_16px_rgba(79,124,255,0.15)]'
-                  : 'text-white/30 hover:text-white/60',
+                  ? 'text-white'
+                  : 'text-white/25 hover:text-white/50',
               )}
             >
               <span className="relative">
-                <item.icon size={18} />
+                <item.icon size={16} />
                 {!!item.badge && (
-                  <span className="absolute -right-2.5 -top-2 grid min-h-[14px] min-w-[14px] place-items-center rounded-full bg-rose-500 px-[3px] text-[9px] font-black leading-none text-white ring-2 ring-[#0B1220]">
+                  <span className="absolute -right-2 -top-1.5 grid min-h-[12px] min-w-[12px] place-items-center rounded-full bg-rose-500 px-[2px] text-[8px] font-black leading-none text-white ring-2 ring-[#0B1220]">
                     {item.badge > 9 ? '9+' : item.badge}
                   </span>
                 )}
               </span>
-              <span>{item.label}</span>
             </button>
           ))}
         </div>
@@ -214,21 +213,19 @@ export function Modal({
   footer?: ReactNode;
   onClose: () => void;
 }) {
-  if (!open) {
-    return null;
-  }
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/40 p-4 backdrop-blur-sm sm:place-items-center">
-      <section className="glass w-full max-w-md rounded-[28px] p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">{title}</h2>
+      <section className="enterprise-card w-full max-w-md p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-white">{title}</h2>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Закрыть окно">
-            <X size={18} />
+            <X size={14} />
           </Button>
         </div>
         <div>{children}</div>
-        {footer && <div className="mt-5">{footer}</div>}
+        {footer && <div className="mt-4">{footer}</div>}
       </section>
     </div>
   );
@@ -246,11 +243,11 @@ export function Toast({
   const Icon = tone === 'error' ? AlertCircle : CheckCircle2;
 
   return (
-    <div className="glass fixed inset-x-4 top-4 z-50 mx-auto flex max-w-md items-start gap-3 rounded-[24px] p-4">
-      <Icon className={tone === 'error' ? 'text-rose-500' : 'text-emerald-500'} size={22} />
+    <div className="enterprise-card fixed inset-x-4 top-4 z-50 mx-auto flex max-w-md items-start gap-2.5 p-3">
+      <Icon className={tone === 'error' ? 'text-rose-400' : 'text-emerald-400'} size={16} />
       <div>
-        <p className="font-black text-slate-950 dark:text-white">{title}</p>
-        {message && <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{message}</p>}
+        <p className="text-xs font-bold text-white">{title}</p>
+        {message && <p className="text-[11px] font-medium text-white/50">{message}</p>}
       </div>
     </div>
   );
@@ -266,11 +263,11 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <Card className="grid place-items-center py-10 text-center">
-      <div className="grid max-w-xs gap-3">
-        <div className="mx-auto h-14 w-14 rounded-[24px] app-gradient opacity-90" />
-        <h2 className="text-lg font-black text-slate-950 dark:text-white">{title}</h2>
-        {description && <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{description}</p>}
+    <Card className="grid place-items-center py-8 text-center">
+      <div className="grid max-w-xs gap-2.5">
+        <div className="mx-auto h-10 w-10 rounded-[10px] app-gradient opacity-80" />
+        <h2 className="text-sm font-bold text-white">{title}</h2>
+        {description && <p className="text-xs font-medium text-white/50">{description}</p>}
         {action}
       </div>
     </Card>
@@ -289,11 +286,11 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <Card className="grid place-items-center py-10 text-center">
-      <div className="grid max-w-xs gap-3">
-        <AlertCircle className="mx-auto text-rose-500" size={34} />
-        <h2 className="text-lg font-black text-slate-950 dark:text-white">{title}</h2>
-        {description && <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{description}</p>}
+    <Card className="grid place-items-center py-8 text-center">
+      <div className="grid max-w-xs gap-2.5">
+        <AlertCircle className="mx-auto text-rose-400" size={24} />
+        <h2 className="text-sm font-bold text-white">{title}</h2>
+        {description && <p className="text-xs font-medium text-white/50">{description}</p>}
         {onRetry && (
           <Button variant="secondary" onClick={onRetry}>
             {actionLabel}
@@ -305,22 +302,22 @@ export function ErrorState({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={clsx('animate-pulse rounded-[18px] bg-white/60 dark:bg-slate-800/70', className)} />;
+  return <div className={clsx('animate-pulse rounded-[10px] bg-white/[0.04]', className)} />;
 }
 
 export function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
     <Card>
-      <div className="flex items-start gap-3">
-        <Skeleton className="h-12 w-12 shrink-0 rounded-[20px]" />
-        <div className="grid flex-1 gap-2">
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-4 w-1/2" />
+      <div className="flex items-start gap-2.5">
+        <Skeleton className="h-10 w-10 shrink-0 rounded-[10px]" />
+        <div className="grid flex-1 gap-1.5">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
         </div>
       </div>
-      <div className="mt-4 grid gap-2">
+      <div className="mt-3 grid gap-1.5">
         {Array.from({ length: rows }).map((_, index) => (
-          <Skeleton key={index} className="h-10 w-full" />
+          <Skeleton key={index} className="h-8 w-full" />
         ))}
       </div>
     </Card>
@@ -329,9 +326,9 @@ export function SkeletonCard({ rows = 3 }: { rows?: number }) {
 
 export function Loader({ label = 'Загрузка' }: { label?: string }) {
   return (
-    <div className="grid min-h-32 place-items-center">
-      <div className="flex items-center gap-3 rounded-[24px] bg-white/70 px-5 py-4 text-sm font-black text-slate-600 shadow-soft dark:bg-slate-900/70 dark:text-slate-300">
-        <Loader2 className="animate-spin text-blue-500" size={20} />
+    <div className="grid min-h-24 place-items-center">
+      <div className="flex items-center gap-2 rounded-[10px] bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/60">
+        <Loader2 className="animate-spin text-[#4C7DFF]" size={16} />
         {label}
       </div>
     </div>
@@ -340,10 +337,10 @@ export function Loader({ label = 'Загрузка' }: { label?: string }) {
 
 function FieldShell({ label, hint, error, children }: FieldBaseProps & { children: ReactNode }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
+    <label className="grid gap-1.5 text-xs font-semibold text-white/60">
       {label && <span>{label}</span>}
       {children}
-      {(hint || error) && <span className={clsx('text-xs font-bold', error ? 'text-rose-500' : 'text-slate-400')}>{error ?? hint}</span>}
+      {(hint || error) && <span className={clsx('text-[10px] font-medium', error ? 'text-rose-400' : 'text-white/30')}>{error ?? hint}</span>}
     </label>
   );
 }
