@@ -215,3 +215,127 @@ Seed создает пользователей с Telegram ID:
 | EMPLOYEE | Employee 3 | `100000006` | `employee_3` | Automation Team |
 
 Также seed добавляет балансы, операции баланса, pending и approved заявки на отгулы и отпуска.
+
+---
+
+## Резервное копирование и восстановление БД
+
+В проекте два уровня бэкапов:
+
+1. **Автоматический (через Docker)** — встроенный сервис `db-backup` в [`docker-compose.yml`](docker-compose.yml:82) делает дамп каждый день в 3:00 ночи и хранит 30 дней.
+2. **Ручной (на хосте)** — скрипты [`scripts/backup-db.sh`](scripts/backup-db.sh) и [`scripts/restore-db.sh`](scripts/restore-db.sh) для запуска вручную на сервере.
+
+### Автоматический backup (Docker)
+
+Сервис `db-backup` уже включён в `docker compose up -d`. Он:
+
+- каждое утро в 03:00 выполняет `pg_dump` из контейнера `qa-timeoff-postgres`
+- сохраняет архив в Docker volume `db-backups`
+- удаляет архивы старше 30 дней
+
+Настройка через переменные `.env`:
+
+| Переменная                  | По умолчанию | Описание                        |
+| --------------------------- | ------------ | ------------------------------- |
+| `BACKUP_RETENTION_DAYS`     | `30`         | Дней хранить архивы             |
+| `BACKUP_SCHEDULE`           | `0 3 * * *`  | Cron-расписание (UTC)           |
+
+Посмотреть сохранённые архивы:
+
+```bash
+docker compose exec db-backup ls -lh /backups
+```
+
+Вручную запустить backup внутри контейнера:
+
+```bash
+docker compose exec db-backup /usr/local/bin/backup.sh
+```
+
+### Ручной backup (на хосте)
+
+Скрипт [`scripts/backup-db.sh`](scripts/backup-db.sh) делает дамп на файловую систему хоста.
+
+```bash
+# 1. Убедиться, что контейнеры запущены
+sudo docker compose up -d
+
+# 2. Запустить backup
+sudo ./scripts/backup-db.sh
+```
+
+Результат:
+
+```
+/opt/backups/qa_timeoff/
+  ├── qa_timeoff_2026-06-23_06-00.sql.gz
+  ├── qa_timeoff_2026-06-22_06-00.sql.gz
+  └── ...
+```
+
+Переменные окружения:
+
+| Переменная        | По умолчанию             | Описание                        |
+| ----------------- | ------------------------ | ------------------------------- |
+| `BACKUP_DIR`      | `/opt/backups/qa_timeoff` | Куда сохранять архивы           |
+| `RETENTION_DAYS`  | `30`                     | Дней хранить архивы             |
+| `POSTGRES_USER`   | `qa_timeoff`             | Пользователь БД                 |
+| `POSTGRES_DB`     | `qa_timeoff`             | Имя базы данных                 |
+
+### Настройка cron на сервере
+
+Чтобы backup запускался автоматически, добавьте задачу в cron на **хост-машине** (не в контейнере):
+
+```bash
+sudo crontab -e
+```
+
+```cron
+# QA TimeOff — ежедневный backup в 03:00
+0 3 * * * /opt/qa_timeoff/scripts/backup-db.sh >> /var/log/qa-timeoff-backup.log 2>&1
+```
+
+Проверить логи:
+
+```bash
+tail -f /var/log/qa-timeoff-backup.log
+```
+
+> **Важно:** Путь `/opt/qa_timeoff` замените на актуальный путь к проекту на сервере.
+
+### Восстановление базы
+
+Скрипт [`scripts/restore-db.sh`](scripts/restore-db.sh) восстанавливает базу из ранее созданного архива.
+
+```bash
+# 1. Убедиться, что контейнеры запущены
+sudo docker compose up -d
+
+# 2. Запустить restore (интерактивный режим — выберите backup из списка)
+sudo ./scripts/restore-db.sh
+
+# Или указать файл напрямую:
+sudo BACKUP_FILE=/opt/backups/qa_timeoff/qa_timeoff_2026-06-23_06-00.sql.gz ./scripts/restore-db.sh
+
+# Для unattended (CI / экстренное восстановление):
+sudo FORCE=1 BACKUP_FILE=/path/to/dump.sql.gz ./scripts/restore-db.sh
+```
+
+Что делает скрипт:
+
+1. Создаёт **safety backup** текущего состояния БД (на случай отката).
+2. Разрывает все активные подключения к БД.
+3. Удаляет и пересоздаёт базу данных.
+4. Восстанавливает данные из указанного архива.
+5. Проверяет количество таблиц после restore.
+
+> **Внимание:** Restore перезаписывает текущую базу! Перед восстановлением всегда создаётся автоматический safety backup в `/opt/backups/qa_timeoff/__pre_restore_*.sql.gz`.
+
+### Где хранятся backups
+
+| Источник             | Путь                                              | Ручное удаление       |
+| -------------------- | ------------------------------------------------- | --------------------- |
+| Docker-сервис        | `docker volume: db-backups`                       | `docker compose down -v` |
+| Хост-скрипты         | `/opt/backups/qa_timeoff/`                        | `sudo rm -rf /opt/backups` |
+
+Backup-файлы **не хранятся в Git** — они исключены через [`.gitignore`](.gitignore).

@@ -78,3 +78,7 @@ logs/
 # Local configs
 /tmp/
 /backup/
+
+# Database backups (host-side)
+/opt/backups/
+scripts/*.sql.gz
