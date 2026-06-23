@@ -3,10 +3,8 @@
     admin off
 }
 
-# Main domain — replace with your actual domain in production
-{$DOMAIN}:{$APP_PORT:-443} {
-    tls {$EMAIL:off}
-
+# Main domain — reverse proxy (SSL handled by system nginx)
+:80 {
     # Security headers
     header {
         X-Content-Type-Options "nosniff"
