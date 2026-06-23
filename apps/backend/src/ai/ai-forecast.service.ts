@@ -40,7 +40,6 @@ export class AiForecastService {
 
     const startDate = new Date(now.getFullYear(), now.getMonth() - lookbackMonths, 1);
 
-
     // Get all active users
     const userWhere: { isActive: boolean; teamId?: string } = { isActive: true };
     if (params?.teamId) userWhere.teamId = params.teamId;

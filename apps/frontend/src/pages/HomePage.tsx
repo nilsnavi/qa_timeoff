@@ -75,6 +75,11 @@ export function HomePage() {
   const { dashboard, data, isError, isLoading, refetch } = useDashboard();
   const navigate = useNavigate();
 
+  // Calendar state (must be before early returns — Rules of Hooks)
+  const today = new Date();
+  const [calYear] = useState(today.getFullYear());
+  const [calMonth] = useState(today.getMonth()); // 0-based
+
   if (isError && !data) {
     return (
       <ErrorState
@@ -120,11 +125,7 @@ export function HomePage() {
   const rejectedCount = allRequests.filter((r) => r.status === 'REJECTED').length;
   const totalCount = allRequests.length;
 
-  // ── Calendar state ───────────────────────────────────────────────
-  const today = new Date();
-  const [calYear] = useState(today.getFullYear());
-  const [calMonth] = useState(today.getMonth()); // 0-based
-
+  // ── Calendar derived state ───────────────────────────────────────
   const daysInMonth = getDaysInMonth(calYear, calMonth);
   const firstDayOffset = getFirstDayOfMonth(calYear, calMonth);
   const todayDate = today.getDate();
