@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -47,5 +47,29 @@ export class BalanceController {
   @Get('operations/:userId')
   getUserOperations(@CurrentUser() currentUser: User, @Param('userId') userId: string) {
     return this.balanceService.getUserOperations(currentUser, userId);
+  }
+
+  // ── Time Wallet endpoints ──────────────────────────────────────────
+
+  @Get('history')
+  @ApiQuery({ name: 'days', required: false, type: Number })
+  getBalanceHistory(@CurrentUser() currentUser: User, @Query('days') days?: number) {
+    return this.balanceService.getBalanceHistory(currentUser.id, days ?? 30);
+  }
+
+  @Get('summary')
+  getBalanceSummary(@CurrentUser() currentUser: User) {
+    return this.balanceService.getBalanceSummary(currentUser.id);
+  }
+
+  @Get('ledger')
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  getBalanceLedger(
+    @CurrentUser() currentUser: User,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.balanceService.getBalanceLedger(currentUser.id, page ?? 1, limit ?? 50);
   }
 }

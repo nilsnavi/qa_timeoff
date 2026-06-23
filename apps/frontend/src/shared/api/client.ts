@@ -74,6 +74,15 @@ export const api = {
   dashboard: () => request<Dashboard>('/dashboard'),
   me: () => request<User>('/auth/me'),
   balanceMe: () => request<Dashboard['balance']>('/balance/me'),
+  balanceHistory: (days?: number) => request(`/balance/history${days ? `?days=${days}` : ''}`),
+  balanceSummary: () => request('/balance/summary'),
+  balanceLedger: (page?: number, limit?: number) => {
+    const search = new URLSearchParams();
+    if (page) search.set('page', String(page));
+    if (limit) search.set('limit', String(limit));
+    const qs = search.toString();
+    return request(`/balance/ledger${qs ? `?${qs}` : ''}`);
+  },
   balanceOperations: () => request<BalanceOperation[]>('/balance/operations'),
   addBalance: (payload: { userId: string; hours: number; reason: string }) =>
     request('/balance/add', { method: 'POST', body: JSON.stringify(payload) }),

@@ -1,47 +1,111 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDownCircle, ArrowUpCircle, CircleSlash, RotateCw, SlidersHorizontal } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Badge, Card, EmptyState, ErrorState, Select, Skeleton, SkeletonCard } from '../components/ui';
+import { Clock, History as HistoryIcon, Plus, TrendingUp, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Badge, ErrorState, Skeleton } from '../components/ui';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
-import type { BalanceOperation } from '../shared/types';
-import { getOperationTypeLabel } from '../shared/utils';
+import { getRoleLabel } from '../shared/utils';
 
-type OperationFilter = 'ALL' | BalanceOperation['operationType'];
+// ─── Types ──────────────────────────────────────────────────────────────
+interface HistoryEntry {
+  date: string;
+  balance: number;
+  accrued: number;
+  used: number;
+}
 
+interface LedgerEntry {
+  id: string;
+  type: 'overtime' | 'leave' | 'adjustment';
+  value: number;
+  status: 'pending' | 'approved';
+  createdBy: string;
+  timestamp: string;
+  comment: string;
+}
+
+interface LedgerResponse {
+  items: LedgerEntry[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+interface SummaryResponse {
+  accruedHours: number;
+  usedHours: number;
+  overtimeMultiplier: number;
+  pendingRequests: number;
+  overtimeHours: number;
+  leaveHours: number;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+const MONTHS_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+function formatTS(ts: string) {
+  const d = new Date(ts);
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────
 export function BalancePage() {
   const { dashboard } = useDashboard();
-  const [filter, setFilter] = useState<OperationFilter>('ALL');
+  const navigate = useNavigate();
+  const user = dashboard.user;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'MANAGER';
+
+  const [chartDays, setChartDays] = useState(30);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerLimit] = useState(20);
+
+  // Balance query
   const balanceQuery = useQuery({
     queryKey: ['balance', 'me'],
     queryFn: api.balanceMe,
     enabled: !!localStorage.getItem('qa-timeoff-token'),
   });
-  const operationsQuery = useQuery({
-    queryKey: ['balance', 'operations'],
-    queryFn: api.balanceOperations,
+
+  // History query (chart data)
+  const historyQuery = useQuery({
+    queryKey: ['balance', 'history', chartDays],
+    queryFn: () => api.balanceHistory(chartDays),
+    enabled: !!localStorage.getItem('qa-timeoff-token'),
+  });
+
+  // Summary query
+  const summaryQuery = useQuery({
+    queryKey: ['balance', 'summary'],
+    queryFn: () => api.balanceSummary(),
+    enabled: !!localStorage.getItem('qa-timeoff-token'),
+  });
+
+  // Ledger query
+  const ledgerQuery = useQuery({
+    queryKey: ['balance', 'ledger', ledgerPage, ledgerLimit],
+    queryFn: () => api.balanceLedger(ledgerPage, ledgerLimit),
     enabled: !!localStorage.getItem('qa-timeoff-token'),
   });
 
   const balance = balanceQuery.data ?? dashboard.balance;
-  const operations = operationsQuery.data ?? dashboard.operations;
-  const filteredOperations = useMemo(
-    () => operations.filter((operation) => filter === 'ALL' || operation.operationType === filter),
-    [filter, operations],
-  );
-  const usedPercent = balance.totalAddedHours > 0 ? Math.min(100, Math.round((balance.totalUsedHours / balance.totalAddedHours) * 100)) : 0;
-  const isInitialLoading = (balanceQuery.isLoading || operationsQuery.isLoading) && !balanceQuery.data && !operationsQuery.data;
-  const hasError = balanceQuery.isError || operationsQuery.isError;
+  const history = (historyQuery.data ?? []) as HistoryEntry[];
+  const summary = summaryQuery.data as SummaryResponse | undefined;
+  const ledger = ledgerQuery.data as LedgerResponse | undefined;
 
-  if (hasError && !balanceQuery.data && !operationsQuery.data) {
+  const usedPercent = balance.totalAddedHours > 0
+    ? Math.min(100, Math.round((balance.totalUsedHours / balance.totalAddedHours) * 100))
+    : 0;
+
+  const isInitialLoading = balanceQuery.isLoading && !balanceQuery.data;
+  const hasError = balanceQuery.isError;
+
+  if (hasError && !balanceQuery.data) {
     return (
       <ErrorState
         title="Баланс не загрузился"
-        description="Не удалось получить баланс или историю операций."
-        onRetry={() => {
-          balanceQuery.refetch();
-          operationsQuery.refetch();
-        }}
+        description="Не удалось получить данные баланса."
+        onRetry={() => balanceQuery.refetch()}
       />
     );
   }
@@ -50,200 +114,324 @@ export function BalancePage() {
     return <BalanceSkeleton />;
   }
 
+  const initials = user.fullName.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
+
+  // SVG chart dimensions
+  const chartW = 400;
+  const chartH = 140;
+  const chartPad = { top: 10, right: 10, bottom: 20, left: 40 };
+  const chartInnerW = chartW - chartPad.left - chartPad.right;
+  const chartInnerH = chartH - chartPad.top - chartPad.bottom;
+
+  // Compute chart points
+  const chartData = history;
+  const maxVal = Math.max(...chartData.map((d) => d.balance), 1);
+  const minVal = Math.min(...chartData.map((d) => d.balance), 0);
+  const range = maxVal - minVal || 1;
+
+  const points = chartData.map((d, i) => {
+    const x = chartPad.left + (i / Math.max(chartData.length - 1, 1)) * chartInnerW;
+    const y = chartPad.top + chartInnerH - ((d.balance - minVal) / range) * chartInnerH;
+    return `${x},${y}`;
+  });
+
+  const areaPoints = `0,${chartH - chartPad.bottom} ${points.join(' ')} ${chartW - chartPad.right},${chartH - chartPad.bottom}`;
+
+  // Pagination
+  const totalPages = ledger ? Math.ceil(ledger.total / ledger.limit) : 1;
+
   return (
-    <>
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between gap-5">
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Текущий баланс</p>
-            <div className="mt-1 flex items-end gap-2">
-              <span className="text-5xl font-black leading-none text-slate-950 transition-all duration-500 dark:text-white">{balance.balanceHours}</span>
-              <span className="pb-1 text-base font-black text-slate-500 dark:text-slate-400">ч</span>
+    <div className="dashboard-grid">
+      {/* ═══ LEFT COLUMN (70%) ═══ */}
+      <div className="flex flex-col gap-3">
+
+        {/* ── Main Balance Card (Ring progress) ──────────────── */}
+        <div className="enterprise-card p-4">
+          <div className="flex items-center justify-between gap-6">
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Текущий баланс</div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-4xl font-bold text-white tabular-nums">{balance.balanceHours}</span>
+                <span className="text-sm font-semibold text-white/40">часов</span>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#4C7DFF] to-emerald-400 transition-all duration-700"
+                    style={{ width: `${usedPercent}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-semibold text-white/40">{usedPercent}% использовано</span>
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-[11px] text-white/40">
+                  Начислено: <strong className="text-white/80">{balance.totalAddedHours} ч</strong>
+                </span>
+                <span className="text-[11px] text-white/40">
+                  Использовано: <strong className="text-white/80">{balance.totalUsedHours} ч</strong>
+                </span>
+              </div>
             </div>
-            <p className="mt-2 text-xs font-bold text-blue-600 dark:text-blue-300">Использовано {usedPercent}% от начисленного</p>
+            <RingProgress percent={usedPercent} size={110} />
           </div>
-          <BalanceDonut usedPercent={usedPercent} />
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-3">
-        <MetricCard label="Всего начислено" value={balance.totalAddedHours} icon={<ArrowUpCircle size={22} />} className="text-emerald-500" />
-        <MetricCard label="Всего использовано" value={balance.totalUsedHours} icon={<ArrowDownCircle size={22} />} className="text-rose-500" />
-      </div>
-
-      <Card>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-black text-slate-950 dark:text-white">История операций</h2>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Показано: {filteredOperations.length}</p>
-          </div>
-          <SlidersHorizontal className="text-blue-500" size={22} />
         </div>
 
-        <Select label="Фильтр операций" value={filter} onChange={(event) => setFilter(event.target.value as OperationFilter)}>
-          <option value="ALL">Все операции</option>
-          <option value="ADD">Начисление</option>
-          <option value="WRITE_OFF">Списание</option>
-          <option value="MANUAL_CORRECTION">Корректировка</option>
-          <option value="EXPIRED">Сгорание часов</option>
-        </Select>
+        {/* ── KPI Cards ──────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="enterprise-card p-3.5 hover-lift">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Всего начислено</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold text-emerald-400">{summary?.accruedHours ?? balance.totalAddedHours}</span>
+              <span className="text-[11px] font-medium text-white/40">ч</span>
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-white/30">
+              <TrendingUp size={12} />
+              <span>включая переработки ×{summary?.overtimeMultiplier ?? 1.5}</span>
+            </div>
+          </div>
+          <div className="enterprise-card p-3.5 hover-lift">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Всего использовано</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold text-rose-400">{summary?.usedHours ?? balance.totalUsedHours}</span>
+              <span className="text-[11px] font-medium text-white/40">ч</span>
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-white/30">
+              <Clock size={12} />
+              <span>отгулы + отпуска</span>
+            </div>
+          </div>
+        </div>
 
-        <div className="mt-4 grid gap-2">
-          {filteredOperations.length === 0 ? (
-            <EmptyState title="Операций нет" description="История появится после начисления, списания или корректировки часов." />
+        {/* ── Chart ──────────────────────────────────────────── */}
+        <div className="enterprise-card p-3.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">Динамика баланса</span>
+            <div className="flex gap-1">
+              {[7, 30, 90, 365].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => { setChartDays(d); }}
+                  className={`rounded-md px-2 py-0.5 text-[9px] font-semibold transition-colors ${
+                    chartDays === d
+                      ? 'bg-[#4C7DFF]/20 text-[#4C7DFF]'
+                      : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {d}д
+                </button>
+              ))}
+            </div>
+          </div>
+          {chartData.length === 0 ? (
+            <div className="flex h-[140px] items-center justify-center">
+              <p className="text-xs text-white/30">Нет данных за выбранный период</p>
+            </div>
           ) : (
-            filteredOperations.map((operation, index) => <OperationRow key={operation.id} operation={operation} index={index} />)
+            <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full h-[140px]">
+              {/* Grid lines */}
+              {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+                const y = chartPad.top + chartInnerH - frac * chartInnerH;
+                const val = Math.round(minVal + frac * range);
+                return (
+                  <g key={frac}>
+                    <line x1={chartPad.left} y1={y} x2={chartW - chartPad.right} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+                    <text x={chartPad.left - 4} y={y + 3} textAnchor="end" className="fill-white/20 text-[8px]">{val}</text>
+                  </g>
+                );
+              })}
+              {/* Area fill */}
+              <polygon points={areaPoints} fill="url(#balanceChartGrad)" opacity={0.3} />
+              {/* Line */}
+              <polyline points={points.join(' ')} fill="none" stroke="#4C7DFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              {/* Gradient def */}
+              <defs>
+                <linearGradient id="balanceChartGrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#4C7DFF" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#4C7DFF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+            </svg>
           )}
         </div>
-      </Card>
-    </>
+      </div>
+
+      {/* ═══ RIGHT COLUMN (30%) ═══ */}
+      <div className="flex flex-col gap-3">
+
+        {/* ── Employee Info ──────────────────────────────────── */}
+        <div className="enterprise-card p-3.5">
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              <div className="grid h-10 w-10 place-items-center rounded-[10px] app-gradient text-xs font-bold text-white shadow-sm">
+                {initials}
+              </div>
+              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#111A2E] bg-emerald-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="truncate text-sm font-semibold text-white">{user.fullName}</span>
+                <Badge tone="gradient" className="text-[9px]">{getRoleLabel(user.role)}</Badge>
+              </div>
+              <span className="text-[11px] font-medium text-white/40">{user.position ?? 'QA-команда'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Ledger ─────────────────────────────────────────── */}
+        <div className="enterprise-card p-3.5 flex-1">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">Журнал операций</span>
+            <span className="text-[9px] text-white/30">{ledger?.total ?? 0} записей</span>
+          </div>
+
+          <div className="flex flex-col gap-1 max-h-[360px] overflow-y-auto">
+            {!ledger || ledger.items.length === 0 ? (
+              <p className="text-xs text-white/30 py-4 text-center">Нет операций</p>
+            ) : (
+              ledger.items.map((entry) => (
+                <LedgerRow key={entry.id} entry={entry} />
+              ))
+            )}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-2.5 flex items-center justify-between border-t border-white/[0.04] pt-2.5">
+              <button
+                type="button"
+                onClick={() => setLedgerPage((p) => Math.max(1, p - 1))}
+                disabled={ledgerPage <= 1}
+                className="rounded-md bg-white/[0.04] px-2.5 py-1 text-[9px] font-semibold text-white/50 hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Назад
+              </button>
+              <span className="text-[9px] text-white/30">Стр. {ledgerPage} из {totalPages}</span>
+              <button
+                type="button"
+                onClick={() => setLedgerPage((p) => Math.min(totalPages, p + 1))}
+                disabled={ledgerPage >= totalPages}
+                className="rounded-md bg-white/[0.04] px-2.5 py-1 text-[9px] font-semibold text-white/50 hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Вперед →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Quick Actions ──────────────────────────────────── */}
+        <div className="enterprise-card p-3.5">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">Быстрые действия</div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <ActionBtn icon={Clock} label="Запросить отгул" onClick={() => navigate('/timeoff/new')} />
+            <ActionBtn icon={HistoryIcon} label="Запросить отпуск" onClick={() => navigate('/vacation/new')} />
+            {isAdmin && (
+              <>
+                <ActionBtn icon={UserPlus} label="Назначить часы" onClick={() => navigate('/admin')} />
+                <ActionBtn icon={Plus} label="Корректировка" onClick={() => navigate('/admin')} />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  icon,
-  className,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  className: string;
-}) {
-  return (
-    <Card>
-      <div className={`mb-3 ${className}`}>{icon}</div>
-      <p className="text-3xl font-black text-slate-950 transition-all duration-500 dark:text-white">{value}</p>
-      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{label}</p>
-    </Card>
-  );
-}
+// ─── Sub-components ─────────────────────────────────────────────────────
 
-function BalanceDonut({ usedPercent }: { usedPercent: number }) {
-  const radius = 44;
-  const circumference = 2 * Math.PI * radius;
-  const dash = (usedPercent / 100) * circumference;
+/* Ring Progress */
+function RingProgress({ percent, size }: { percent: number; size: number }) {
+  const r = (size - 12) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (percent / 100) * circ;
 
   return (
-    <div className="relative h-28 w-28 shrink-0">
-      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-        <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(148,163,184,0.22)" strokeWidth="14" />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
         <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          stroke="url(#balanceGradient)"
-          strokeLinecap="round"
-          strokeWidth="14"
-          strokeDasharray={`${dash} ${circumference - dash}`}
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="url(#ringGrad)" strokeLinecap="round" strokeWidth="6"
+          strokeDasharray={`${dash} ${circ - dash}`}
           className="transition-all duration-700 ease-out"
         />
         <defs>
-          <linearGradient id="balanceGradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#7c3aed" />
-            <stop offset="100%" stopColor="#2563eb" />
+          <linearGradient id="ringGrad" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#4C7DFF" />
+            <stop offset="100%" stopColor="#22C55E" />
           </linearGradient>
         </defs>
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-center">
-        <div>
-          <p className="text-2xl font-black text-slate-950 dark:text-white">{usedPercent}%</p>
-          <p className="text-[11px] font-black text-slate-500 dark:text-slate-400">использовано</p>
+      <div className="absolute inset-0 grid place-items-center">
+        <div className="text-center">
+          <div className="text-lg font-bold text-white">{percent}%</div>
+          <div className="text-[8px] font-medium text-white/30 uppercase tracking-wider">исп.</div>
         </div>
       </div>
     </div>
   );
 }
 
-function OperationRow({ operation, index }: { operation: BalanceOperation; index: number }) {
-  const style = resolveOperationStyle(operation);
-  const Icon = style.icon;
+/* Ledger Row */
+function LedgerRow({ entry }: { entry: LedgerEntry }) {
+  const typeLabel: Record<string, string> = { overtime: 'Переработка', leave: 'Отгул/Отпуск', adjustment: 'Корректировка' };
+  const typeColor: Record<string, string> = {
+    overtime: 'bg-emerald-500/10 text-emerald-400',
+    leave: 'bg-rose-500/10 text-rose-400',
+    adjustment: 'bg-blue-500/10 text-blue-400',
+  };
 
   return (
-    <div
-      className="flex items-center justify-between gap-3 rounded-[20px] bg-white/65 p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-white/80 dark:bg-slate-900/60 dark:hover:bg-slate-900/80"
-      style={{ animation: `fadeIn 260ms ease-out ${index * 35}ms both` }}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[16px] ${style.bg} ${style.text}`}>
-          <Icon size={19} />
-        </span>
-        <div className="min-w-0">
-          <p className="truncate font-black text-slate-900 dark:text-white">{operation.reason}</p>
-          <div className="mt-1 flex items-center gap-2">
-            <Badge tone={style.tone}>{style.label}</Badge>
-            <span className="text-xs font-bold text-slate-400">{new Date(operation.createdAt).toLocaleDateString('ru-RU')}</span>
-          </div>
-        </div>
-      </div>
-      <span className={`shrink-0 text-xl font-black ${style.text}`}>
-        {operation.hours > 0 ? '+' : ''}
-        {operation.hours}
+    <div className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-white/[0.03]">
+      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[10px] font-bold ${typeColor[entry.type] ?? 'bg-white/5 text-white/40'}`}>
+        {entry.value > 0 ? '+' : ''}{entry.value}
       </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-white/80">{typeLabel[entry.type] ?? entry.type}</span>
+          <span className={`text-[8px] font-semibold uppercase ${entry.value > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {entry.value > 0 ? '+' : ''}{entry.value}ч
+          </span>
+        </div>
+        <div className="truncate text-[9px] text-white/30">{entry.comment}</div>
+        <div className="text-[8px] text-white/20">{entry.createdBy} · {formatTS(entry.timestamp)}</div>
+      </div>
     </div>
   );
 }
 
+/* Action Button */
+function ActionBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-2.5 py-2 text-[10px] font-semibold text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white/80 active:scale-95"
+    >
+      <Icon size={12} />
+      {label}
+    </button>
+  );
+}
+
+// ─── Skeleton ───────────────────────────────────────────────────────────
 function BalanceSkeleton() {
   return (
-    <>
-      <Card>
-        <div className="flex items-center justify-between gap-5">
-          <div className="grid flex-1 gap-3">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-12 w-28" />
-            <Skeleton className="h-3 w-44" />
-          </div>
-          <Skeleton className="h-28 w-28 rounded-full" />
+    <div className="dashboard-grid">
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-[130px] rounded-[12px]" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-[80px] rounded-[12px]" />
+          <Skeleton className="h-[80px] rounded-[12px]" />
         </div>
-      </Card>
-      <div className="grid grid-cols-2 gap-3">
-        <SkeletonCard rows={1} />
-        <SkeletonCard rows={1} />
+        <Skeleton className="h-[180px] rounded-[12px]" />
       </div>
-      <SkeletonCard rows={5} />
-    </>
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-[60px] rounded-[12px]" />
+        <Skeleton className="h-[360px] rounded-[12px]" />
+        <Skeleton className="h-[80px] rounded-[12px]" />
+      </div>
+    </div>
   );
-}
-
-function resolveOperationStyle(operation: BalanceOperation) {
-  if (operation.operationType === 'ADD') {
-    return {
-      label: getOperationTypeLabel(operation.operationType),
-      tone: 'success' as const,
-      bg: 'bg-emerald-100 dark:bg-emerald-950',
-      text: 'text-emerald-500',
-      icon: ArrowUpCircle,
-    };
-  }
-
-  if (operation.operationType === 'WRITE_OFF') {
-    return {
-      label: getOperationTypeLabel(operation.operationType),
-      tone: 'danger' as const,
-      bg: 'bg-rose-100 dark:bg-rose-950',
-      text: 'text-rose-500',
-      icon: ArrowDownCircle,
-    };
-  }
-
-  if (operation.operationType === 'EXPIRED') {
-    return {
-      label: getOperationTypeLabel(operation.operationType),
-      tone: 'neutral' as const,
-      bg: 'bg-slate-100 dark:bg-slate-800',
-      text: 'text-slate-500',
-      icon: CircleSlash,
-    };
-  }
-
-  return {
-    label: getOperationTypeLabel(operation.operationType),
-    tone: 'info' as const,
-    bg: 'bg-blue-100 dark:bg-blue-950',
-    text: 'text-blue-500',
-    icon: RotateCw,
-  };
 }
