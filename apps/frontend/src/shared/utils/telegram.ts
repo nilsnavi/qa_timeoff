@@ -227,9 +227,15 @@ function hexToRgba(hex: string, alpha: number) {
 }
 
 function ensureMockTelegram() {
-  if (window.Telegram?.WebApp) return; // already exists (real or mocked)
-
-  if (!import.meta.env.DEV) return; // only mock in development
+  // In dev mode, if the Telegram.WebApp exists but has no real initData
+  // (i.e. we're outside Telegram), replace the stub with the dev mock.
+  if (import.meta.env.DEV) {
+    if (window.Telegram?.WebApp?.initData) return; // real Telegram data
+    // Fall through to apply the mock below
+  } else {
+    if (window.Telegram?.WebApp) return; // already exists (real Telegram)
+    return; // production without Telegram — not supported
+  }
 
   const mockWebApp: NonNullable<Window['Telegram']>['WebApp'] = {
     initData: '',
