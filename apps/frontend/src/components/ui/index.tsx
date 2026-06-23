@@ -31,7 +31,7 @@ export function Button({
         size === 'sm' && 'min-h-10 px-3 text-xs',
         size === 'md' && 'min-h-12 px-5 text-sm',
         size === 'lg' && 'min-h-14 px-6 text-base',
-        variant === 'primary' && 'app-gradient text-white shadow-lg shadow-blue-500/25',
+        variant === 'primary' && 'bg-gradient-to-r from-[#4F7CFF] to-[#7C5CFF] text-white shadow-lg shadow-blue-500/25',
         variant === 'secondary' && 'bg-white/80 text-slate-800 ring-1 ring-white/70 dark:bg-slate-900/70 dark:text-slate-100 dark:ring-slate-700',
         variant === 'ghost' && 'bg-transparent text-slate-600 dark:text-slate-300',
         variant === 'danger' && 'bg-rose-500 text-white shadow-lg shadow-rose-300/30',
@@ -49,7 +49,7 @@ export function Button({
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={clsx('glass rounded-[24px] p-5 md:p-6', className)}>{children}</section>;
+  return <section className={clsx('glass-strong rounded-card-lg p-5 md:p-6', className)}>{children}</section>;
 }
 
 export function Input({ label, hint, error, className, ...props }: FieldBaseProps & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -112,7 +112,7 @@ export function Badge({
         tone === 'success' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200',
         tone === 'warning' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-200',
         tone === 'danger' && 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-200',
-        tone === 'gradient' && 'app-gradient text-white',
+        tone === 'gradient' && 'bg-gradient-to-r from-[#4F7CFF] to-[#7C5CFF] text-white',
         className,
       )}
     >
@@ -147,9 +147,9 @@ export function Header({
   return (
     <header className="mb-5 flex items-center justify-between gap-4">
       <div className="min-w-0">
-        {eyebrow && <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{eyebrow}</p>}
-        <h1 className="truncate text-2xl font-black tracking-normal text-slate-950 dark:text-white">{title}</h1>
-        {subtitle && <p className="text-xs font-bold text-blue-600 dark:text-blue-300">{subtitle}</p>}
+        {eyebrow && <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/30">{eyebrow}</p>}
+        <h1 className="truncate text-xl font-black tracking-tight text-white">{title}</h1>
+        {subtitle && <p className="text-xs font-bold text-blue-400">{subtitle}</p>}
       </div>
       {action}
     </header>
@@ -169,29 +169,33 @@ export function BottomNavigation({
   }>;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-4 pb-[calc(1rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))]">
-      <div className="glass grid grid-cols-5 gap-1 rounded-[28px] p-2">
-        {items.map((item) => (
-          <button
-            key={item.to}
-            type="button"
-            onClick={item.onClick}
-            className={clsx(
-              'relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-[20px] text-[11px] font-bold transition',
-              item.active ? 'app-gradient text-white shadow-lg shadow-blue-500/25' : 'text-slate-500 dark:text-slate-400',
-            )}
-          >
-            <span className="relative">
-              <item.icon size={19} />
-              {!!item.badge && (
-                <span className="absolute -right-2.5 -top-2 grid min-h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white dark:ring-slate-950">
-                  {item.badge > 9 ? '9+' : item.badge}
-                </span>
+    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl px-4 pb-[calc(0.75rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))]">
+      <div className="rounded-[28px] border border-white/[0.06] bg-[rgba(11,18,32,0.85)] px-2 py-1.5 shadow-[0_-4px_30px_rgba(0,0,0,0.4)] backdrop-blur-[22px]">
+        <div className="grid grid-cols-5 gap-0.5">
+          {items.map((item) => (
+            <button
+              key={item.to}
+              type="button"
+              onClick={item.onClick}
+              className={clsx(
+                'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[10px] font-bold transition-all active:scale-95',
+                item.active
+                  ? 'bg-gradient-to-b from-[#4F7CFF]/20 to-[#7C5CFF]/10 text-white shadow-[0_0_16px_rgba(79,124,255,0.15)]'
+                  : 'text-white/30 hover:text-white/60',
               )}
-            </span>
-            <span>{item.label}</span>
-          </button>
-        ))}
+            >
+              <span className="relative">
+                <item.icon size={18} />
+                {!!item.badge && (
+                  <span className="absolute -right-2.5 -top-2 grid min-h-[14px] min-w-[14px] place-items-center rounded-full bg-rose-500 px-[3px] text-[9px] font-black leading-none text-white ring-2 ring-[#0B1220]">
+                    {item.badge > 9 ? '9+' : item.badge}
+                  </span>
+                )}
+              </span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </nav>
   );

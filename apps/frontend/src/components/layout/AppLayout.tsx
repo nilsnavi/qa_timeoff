@@ -249,22 +249,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
         title={`Привет, ${dashboard.user.fullName.split(' ')[0]}`}
         action={
           <div className="flex items-center gap-2">
-            <div className="flex h-12 min-w-[124px] max-w-[150px] items-center justify-center rounded-[20px] bg-white/75 px-3 shadow-soft ring-1 ring-white/70 dark:bg-slate-900/70 dark:ring-slate-700">
-              <img src="/dm-logo.svg" alt="Деловые Линии" className="max-h-7 w-full object-contain" />
+            <div className="flex h-10 min-w-[108px] max-w-[130px] items-center justify-center rounded-pill border border-white/10 bg-white/[0.06] px-3">
+              <img src="/dm-logo.svg" alt="Деловые Линии" className="max-h-5 w-full object-contain opacity-80" />
             </div>
-            <div className="relative grid h-12 w-12 place-items-center rounded-[20px] bg-white/75 text-slate-700 shadow-soft dark:bg-slate-900/70 dark:text-slate-200">
+            <div className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-white/60 transition-colors hover:bg-white/[0.10] hover:text-white">
               <button
                 type="button"
                 aria-label="Уведомления"
-                className="grid h-full w-full place-items-center rounded-[20px]"
+                className="grid h-full w-full place-items-center rounded-xl"
                 onClick={() => {
                   hapticSelection();
                   navigate('/notifications');
                 }}
               >
-                <Bell size={21} />
+                <Bell size={18} />
               </button>
-              {!!unread && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400" />}
+              {!!unread && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 shadow-lg shadow-rose-500/40" />
+              )}
             </div>
           </div>
         }
@@ -272,12 +274,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="grid gap-4">{children}</div>
 
+      {/* Floating Action Button */}
       <NavLink
         to="/timeoff/new"
         onClick={() => hapticSelection()}
-        className="fixed bottom-[calc(6rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))] right-[calc(50%-17rem)] z-20 grid h-14 w-14 place-items-center rounded-2xl bg-sky-500 text-white shadow-lg shadow-sky-300/50 max-[600px]:right-5"
+        className="fixed bottom-[calc(6rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))] right-[calc(50%-17rem)] z-20 grid h-12 w-12 place-items-center rounded-xl app-gradient text-white shadow-lg shadow-blue-500/30 animate-pulse-glow max-[600px]:right-5"
       >
-        <Plus size={24} />
+        <Plus size={20} />
       </NavLink>
 
       <BottomNavigation

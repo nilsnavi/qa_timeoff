@@ -3,37 +3,26 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   --tg-viewport-height: 100vh;
   --tg-safe-top: 0px;
   --tg-safe-right: 0px;
   --tg-safe-bottom: 0px;
   --tg-safe-left: 0px;
-  --app-bg: #eef3ff;
-  --app-text: #111827;
-  --app-muted: #64748b;
-  --app-surface: rgba(255, 255, 255, 0.74);
-  --app-surface-strong: rgba(255, 255, 255, 0.9);
-  --app-border: rgba(255, 255, 255, 0.78);
-  --app-ring: rgba(124, 58, 237, 0.32);
-  --app-shadow: 0 20px 60px rgba(67, 56, 202, 0.16);
-  --app-gradient: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
-  background: var(--app-bg);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --app-bg: #0b1020;
-    --app-text: #eef2ff;
-    --app-muted: #94a3b8;
-    --app-surface: rgba(15, 23, 42, 0.74);
-    --app-surface-strong: rgba(15, 23, 42, 0.92);
-    --app-border: rgba(148, 163, 184, 0.18);
-    --app-ring: rgba(129, 140, 248, 0.42);
-    --app-shadow: 0 20px 60px rgba(0, 0, 0, 0.36);
-  }
+  /* Dark Premium palette */
+  --app-bg: #0B1220;
+  --app-text: #E8EDF5;
+  --app-muted: #7B8AA8;
+  --app-surface: rgba(255, 255, 255, 0.04);
+  --app-surface-strong: rgba(255, 255, 255, 0.08);
+  --app-border: rgba(255, 255, 255, 0.06);
+  --app-ring: rgba(79, 124, 255, 0.25);
+  --app-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --app-gradient: linear-gradient(135deg, #4F7CFF 0%, #7C5CFF 100%);
+
+  background: var(--app-bg);
+  font-family: Inter, 'SF Pro Display', ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
@@ -41,10 +30,12 @@ body {
   min-width: 320px;
   min-height: var(--tg-viewport-height);
   background:
-    radial-gradient(circle at 15% 0%, rgba(124, 58, 237, 0.24), transparent 32rem),
-    radial-gradient(circle at 85% 10%, rgba(37, 99, 235, 0.22), transparent 28rem),
-    linear-gradient(160deg, var(--app-bg) 0%, var(--app-bg) 100%);
+    radial-gradient(ellipse at 20% 0%, rgba(79, 124, 255, 0.12), transparent 40rem),
+    radial-gradient(ellipse at 80% 15%, rgba(124, 92, 255, 0.10), transparent 35rem),
+    linear-gradient(180deg, #0B1220 0%, #0D1528 50%, #0B1220 100%);
   color: var(--app-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -54,16 +45,44 @@ textarea {
   font: inherit;
 }
 
+/* ── Glass morphism utilities ──────────────────────────────── */
+
 .glass {
   border: 1px solid var(--app-border);
   background: var(--app-surface);
   box-shadow: var(--app-shadow);
   backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
+
+.glass-strong {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ── Gradient brand ────────────────────────────────────────── */
 
 .app-gradient {
   background: var(--app-gradient);
 }
+
+/* ── Dark scrollbar ────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+/* ── Safe area ─────────────────────────────────────────────── */
 
 .safe-area {
   padding-top: max(1rem, var(--tg-safe-top), env(safe-area-inset-top));
@@ -71,6 +90,8 @@ textarea {
   padding-bottom: calc(1rem + max(var(--tg-safe-bottom), env(safe-area-inset-bottom)));
   padding-left: max(1rem, var(--tg-safe-left), env(safe-area-inset-left));
 }
+
+/* ── Animations ────────────────────────────────────────────── */
 
 @keyframes fadeIn {
   from {
@@ -81,4 +102,51 @@ textarea {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(79, 124, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(79, 124, 255, 0.4);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out both;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ── Progress bar fill animation ───────────────────────────── */
+
+.progress-fill {
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
