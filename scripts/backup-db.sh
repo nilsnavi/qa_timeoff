@@ -41,9 +41,14 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     # Try docker compose as fallback
     if [ -f "${COMPOSE_DIR}/docker-compose.yml" ]; then
         info "Container '${CONTAINER_NAME}' not running. Attempting to start stack…"
-        cd "${COMPOSE_DIR}"
-        docker compose up -d postgres 2>/dev/null || true
-        sleep 3
+        docker compose -f "${COMPOSE_DIR}/docker-compose.yml" up -d postgres 2>/dev/null || true
+        # Wait for container to be healthy
+        for i in $(seq 1 10); do
+            if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+                break
+            fi
+            sleep 2
+        done
     fi
     if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
         error "Container '${CONTAINER_NAME}' is not running. Start the stack first:\n  cd ${COMPOSE_DIR} && docker compose up -d"

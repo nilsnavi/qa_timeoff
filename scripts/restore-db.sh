@@ -148,7 +148,7 @@ info "Dropping and recreating the database…"
 
 # Terminate existing connections and drop/recreate the database
 docker exec -i "${CONTAINER_NAME}" \
-    psql -U "${POSTGRES_USER:-qa_timeoff}" -d postgres <<-EOSQL
+    psql -U "${POSTGRES_USER:-qa_timeoff}" -d postgres <<EOSQL
     UPDATE pg_database SET datallowconn = 'false' WHERE datname = '${POSTGRES_DB:-qa_timeoff}';
     SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${POSTGRES_DB:-qa_timeoff}';
     DROP DATABASE IF EXISTS "${POSTGRES_DB:-qa_timeoff}";
