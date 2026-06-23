@@ -24,6 +24,10 @@ export class CreateUserDto {
   @IsOptional()
   position?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  hourlyRate?: number;
+
   @ApiPropertyOptional({ enum: Role })
   @IsEnum(Role)
   @IsOptional()

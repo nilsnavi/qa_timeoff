@@ -9,6 +9,7 @@ export interface User {
   username?: string;
   email?: string;
   position?: string;
+  hourlyRate?: number;
   role: Role;
   teamId?: string;
   team?: Team;
@@ -16,6 +17,62 @@ export interface User {
   manager?: User;
   isActive: boolean;
   timeBalance?: TimeBalance;
+}
+
+export interface PositionHistory {
+  id: string;
+  userId: string;
+  position: string;
+  changedBy: string;
+  changer: { id: string; fullName: string };
+  changedAt: string;
+}
+
+export interface Overtime {
+  id: string;
+  userId: string;
+  user?: { id: string; fullName: string; telegramId: string; team?: Team };
+  hours: number;
+  date: string;
+  reason: string;
+  createdById: string;
+  createdBy?: { id: string; fullName: string };
+  createdAt: string;
+}
+
+export interface OvertimeCalendarEntry {
+  date: string;
+  userId: string;
+  userName: string;
+  team: Team | null;
+  totalHours: number;
+  color: string;
+  records: Overtime[];
+}
+
+export interface OvertimeReport {
+  departments: Array<{
+    department: string;
+    users: Array<{ userId: string; fullName: string; totalHours: number }>;
+    departmentTotal: number;
+  }>;
+  topEmployees: Array<{ userId: string; fullName: string; teamName: string; totalHours: number }>;
+  totalOvertimeHours: number;
+  period: { start: string; end: string };
+}
+
+export interface PayrollReport {
+  employees: Array<{
+    userId: string;
+    fullName: string;
+    hourlyRate: number;
+    teamName: string;
+    totalHours: number;
+    totalCost: number;
+    details: Array<{ date: string; hours: number; dayType: string; multiplier: number; cost: number }>;
+  }>;
+  grandTotal: number;
+  period: { start: string; end: string };
 }
 
 export interface Team {
@@ -106,4 +163,90 @@ export interface Dashboard {
   teamCalendar: TimeOffRequest[];
   operations: BalanceOperation[];
   notifications: NotificationItem[];
+}
+
+// ── KPI ─────────────────────────────────────────────────────────────
+
+export interface KpiPeriod {
+  id: string;
+  userId: string;
+  user?: {
+    id: string;
+    fullName: string;
+    position?: string;
+    team?: { id: string; name: string };
+  };
+  month: number;
+  year: number;
+  plannedHours: number;
+  actualWorkedHours: number;
+  overtimeHours: number;
+  approvedRequests: number;
+  rejectedRequests: number;
+  cancelledRequests: number;
+  responseTimeAvgHours: number;
+  workloadScore: number;
+  reliabilityScore: number;
+  kpiScore: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KpiResponse {
+  items: KpiPeriod[];
+  total: number;
+}
+
+export interface KpiRecalculationResult {
+  results: Array<{ userId: string; fullName: string; kpiScore: number }>;
+  period: { month: number; year: number };
+}
+
+// ── Analytics / Workload ────────────────────────────────────────────
+
+export interface WorkloadReport {
+  workloadByDay: Array<{ date: string; hours: number }>;
+  workloadByUser: Array<{ userId: string; fullName: string; totalHours: number }>;
+  workloadByTeam: Array<{ teamName: string; totalHours: number }>;
+  overtimeTrend: Array<{ month: string; hours: number }>;
+  absenceTrend: Array<{ date: string; hours: number }>;
+  topOverloaded: Array<{ userId: string; fullName: string; totalHours: number }>;
+}
+
+// ── AI Forecast ─────────────────────────────────────────────────────
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface AiForecast {
+  generatedAt: string;
+  riskLevel: RiskLevel;
+  predictedOvertimeHours: number;
+  overloadedUsers: Array<{
+    userId: string;
+    fullName: string;
+    teamName: string;
+    currentOvertime: number;
+    predictedOvertime: number;
+    riskLevel: RiskLevel;
+  }>;
+  recommendations: string[];
+  period: { start: string; end: string };
+}
+
+// ── Audit Log ───────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string;
+  actorId: string;
+  actor: { id: string; fullName: string };
+  action: string;
+  entityType: string;
+  entityId?: string;
+  payload?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AuditLogResponse {
+  items: AuditLogEntry[];
+  total: number;
 }

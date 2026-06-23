@@ -36,6 +36,13 @@ enum VacationType {
   OTHER
 }
 
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model User {
   id                String             @id @default(cuid())
   telegramId        String             @unique
@@ -43,6 +50,8 @@ model User {
   username          String?
   email             String?            @unique
   position          String?
+  hourlyRate        Int                @default(0)
+  currency          String             @default("RUB")
   role              Role               @default(EMPLOYEE)
   teamId            String?
   team              Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
@@ -58,8 +67,48 @@ model User {
   vacationRequests  VacationRequest[]  @relation("VacationRequestUser")
   vacationApprovals VacationRequest[]  @relation("VacationRequestApprover")
   notifications     Notification[]
+  positionHistory   PositionHistory[]  @relation("PositionHistoryUser")
+  positionChangedBy PositionHistory[]  @relation("PositionHistoryChanger")
+  overtimes         Overtime[]
+  createdOvertimes  Overtime[]         @relation("OvertimeCreator")
+  cancelledOvertimes Overtime[]        @relation("OvertimeCanceller")
+  kpiPeriods        KpiPeriod[]
+  auditLogs         AuditLog[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+}
+
+model PositionHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("PositionHistoryUser", fields: [userId], references: [id], onDelete: Cascade)
+  position  String
+  changedBy String
+  changer   User     @relation("PositionHistoryChanger", fields: [changedBy], references: [id], onDelete: Restrict)
+  changedAt DateTime @default(now())
+}
+
+enum OvertimeStatus {
+  APPROVED
+  CANCELLED
+}
+
+model Overtime {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hours           Int
+  date            DateTime
+  reason          String
+  multiplier      Float          @default(1.0)
+  calculatedCost  Float?
+  status          OvertimeStatus @default(APPROVED)
+  cancelledById   String?
+  cancelledBy     User?          @relation("OvertimeCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  cancelledAt     DateTime?
+  createdById     String
+  createdBy       User           @relation("OvertimeCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt       DateTime       @default(now())
 }
 
 model Team {
@@ -137,4 +186,37 @@ model Notification {
   type      String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model KpiPeriod {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month               Int
+  year                Int
+  plannedHours        Int      @default(0)
+  actualWorkedHours   Int      @default(0)
+  overtimeHours       Int      @default(0)
+  approvedRequests    Int      @default(0)
+  rejectedRequests    Int      @default(0)
+  cancelledRequests   Int      @default(0)
+  responseTimeAvgHours Float   @default(0)
+  workloadScore       Float    @default(0)
+  reliabilityScore    Float    @default(0)
+  kpiScore            Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([userId, month, year])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  action     String
+  entityType String
+  entityId   String?
+  payload    Json?
+  createdAt  DateTime @default(now())
 }

@@ -17,6 +17,7 @@ async function main() {
     username: 'admin',
     email: 'admin@qa-timeoff.local',
     position: 'System Administrator',
+    hourlyRate: 2000,
     role: Role.ADMIN,
     teamId: qaTeam.id,
   });
@@ -27,6 +28,7 @@ async function main() {
     username: 'manager',
     email: 'manager@qa-timeoff.local',
     position: 'QA Manager',
+    hourlyRate: 1500,
     role: Role.MANAGER,
     teamId: qaTeam.id,
     managerId: admin.id,
@@ -38,6 +40,7 @@ async function main() {
     username: 'lead',
     email: 'lead@qa-timeoff.local',
     position: 'QA Lead',
+    hourlyRate: 1200,
     role: Role.LEAD,
     teamId: qaTeam.id,
     managerId: manager.id,
@@ -49,6 +52,7 @@ async function main() {
     username: 'employee_1',
     email: 'employee1@qa-timeoff.local',
     position: 'QA Engineer',
+    hourlyRate: 800,
     role: Role.EMPLOYEE,
     teamId: qaTeam.id,
     managerId: lead.id,
@@ -60,6 +64,7 @@ async function main() {
     username: 'employee_2',
     email: 'employee2@qa-timeoff.local',
     position: 'SAP EWM QA Engineer',
+    hourlyRate: 850,
     role: Role.EMPLOYEE,
     teamId: sapEwmTeam.id,
     managerId: manager.id,
@@ -71,6 +76,7 @@ async function main() {
     username: 'employee_3',
     email: 'employee3@qa-timeoff.local',
     position: 'Automation QA Engineer',
+    hourlyRate: 900,
     role: Role.EMPLOYEE,
     teamId: automationTeam.id,
     managerId: lead.id,
@@ -250,6 +256,7 @@ function upsertUser({
   username,
   email,
   position,
+  hourlyRate,
   role,
   teamId,
   managerId,
@@ -259,6 +266,7 @@ function upsertUser({
   username: string;
   email: string;
   position: string;
+  hourlyRate: number;
   role: Role;
   teamId: string;
   managerId?: string;
@@ -270,6 +278,7 @@ function upsertUser({
       username,
       email,
       position,
+      hourlyRate,
       role,
       teamId,
       managerId,
@@ -281,6 +290,7 @@ function upsertUser({
       username,
       email,
       position,
+      hourlyRate,
       role,
       teamId,
       managerId,

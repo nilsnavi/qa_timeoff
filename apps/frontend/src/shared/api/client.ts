@@ -1,4 +1,4 @@
-import type { BalanceOperation, CalendarEvent, Dashboard, NotificationItem, RequestStatus, Role, Team, TimeOffRequest, User, VacationRequest, VacationType } from '../types';
+import type { AiForecast, AuditLogResponse, BalanceOperation, CalendarEvent, Dashboard, KpiRecalculationResult, KpiResponse, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -130,4 +130,132 @@ export const api = {
   notifications: () => request<NotificationItem[]>('/notifications'),
   markNotificationRead: (id: string) => request<NotificationItem>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsRead: () => request<NotificationItem[]>('/notifications/read-all', { method: 'PATCH' }),
+
+  // HR & Workforce Management
+  updatePosition: (userId: string, position: string) =>
+    request<User>(`/admin/users/${userId}/position`, { method: 'PATCH', body: JSON.stringify({ position }) }),
+  positionHistory: (userId: string) => request<PositionHistory[]>(`/admin/users/${userId}/position-history`),
+  addOvertime: (payload: { userId: string; hours: number; date: string; reason: string }) =>
+    request<Overtime>('/admin/overtime', { method: 'POST', body: JSON.stringify(payload) }),
+  userOvertime: (userId: string) => request<Overtime[]>(`/admin/overtime/user/${userId}`),
+  overtimeCalendar: (params?: { userId?: string; teamId?: string; year?: number; month?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.userId) search.set('userId', params.userId);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.year) search.set('year', String(params.year));
+    if (params?.month) search.set('month', String(params.month));
+    const qs = search.toString();
+    return request<OvertimeCalendarEntry[]>(`/admin/overtime/calendar${qs ? `?${qs}` : ''}`);
+  },
+  overtimeReport: (params?: { startDate?: string; endDate?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    const qs = search.toString();
+    return request<OvertimeReport>(`/admin/reports/overtime${qs ? `?${qs}` : ''}`);
+  },
+  payrollReport: (params?: { startDate?: string; endDate?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    const qs = search.toString();
+    return request<PayrollReport>(`/admin/reports/payroll${qs ? `?${qs}` : ''}`);
+  },
+  // ── Hourly Rate ──────────────────────────────────────────────────
+
+  updateHourlyRate: (userId: string, hourlyRate: number, currency?: string) =>
+    request<User>(`/admin/users/${userId}/hourly-rate`, {
+      method: 'PATCH',
+      body: JSON.stringify({ hourlyRate, currency }),
+    }),
+
+  // ── Overtime Cancel ──────────────────────────────────────────────
+
+  cancelOvertime: (overtimeId: string) =>
+    request<Overtime>(`/admin/overtime/${overtimeId}/cancel`, { method: 'PATCH' }),
+
+  // ── KPI ──────────────────────────────────────────────────────────
+
+  kpiList: (params?: { userId?: string; month?: number; year?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.userId) search.set('userId', params.userId);
+    if (params?.month) search.set('month', String(params.month));
+    if (params?.year) search.set('year', String(params.year));
+    const qs = search.toString();
+    return request<KpiResponse>(`/admin/kpi${qs ? `?${qs}` : ''}`);
+  },
+  kpiByUser: (userId: string) => request(`/admin/kpi/user/${userId}`),
+  recalculateKpi: () => request<KpiRecalculationResult>('/admin/kpi/recalculate', { method: 'POST' }),
+
+  // ── Analytics ────────────────────────────────────────────────────
+
+  workloadReport: (params?: { startDate?: string; endDate?: string; teamId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    const qs = search.toString();
+    return request<WorkloadReport>(`/admin/analytics/workload${qs ? `?${qs}` : ''}`);
+  },
+
+  // ── AI Forecast ──────────────────────────────────────────────────
+
+  aiForecast: (params?: { teamId?: string; monthsLookback?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.monthsLookback) search.set('monthsLookback', String(params.monthsLookback));
+    const qs = search.toString();
+    return request<AiForecast>(`/admin/ai/overtime-forecast${qs ? `?${qs}` : ''}`);
+  },
+
+  // ── Export ───────────────────────────────────────────────────────
+
+  exportOvertimeCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.userId) search.set('userId', params.userId);
+    return `${API_URL}/admin/export/overtime.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
+  },
+  exportPayrollCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.userId) search.set('userId', params.userId);
+    return `${API_URL}/admin/export/payroll.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
+  },
+  exportKpiCsv: (params?: { month?: number; year?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.month) search.set('month', String(params.month));
+    if (params?.year) search.set('year', String(params.year));
+    return `${API_URL}/admin/export/kpi.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
+  },
+  export1cOvertimeCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.userId) search.set('userId', params.userId);
+    return `${API_URL}/admin/export/1c/overtime.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
+  },
+  export1cPayrollCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.userId) search.set('userId', params.userId);
+    return `${API_URL}/admin/export/1c/payroll.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
+  },
+
+  // ── Audit Log ────────────────────────────────────────────────────
+
+  auditLog: (params?: { entityType?: string; entityId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.entityType) search.set('entityType', params.entityType);
+    if (params?.entityId) search.set('entityId', params.entityId);
+    const qs = search.toString();
+    return request<AuditLogResponse>(`/admin/audit-log${qs ? `?${qs}` : ''}`);
+  },
 };
