@@ -80,8 +80,8 @@ export class BalanceService {
       await tx.notification.create({
         data: {
           userId: dto.userId,
-          title: 'Balance updated',
-          message: `${dto.hours} hours were added to your balance`,
+          title: 'Баланс обновлён',
+          message: `Начислено ${dto.hours} ч`,
           type: NotificationType.BALANCE_CHANGED,
         },
       });
@@ -126,8 +126,8 @@ export class BalanceService {
       await tx.notification.create({
         data: {
           userId: dto.userId,
-          title: 'Balance updated',
-          message: `${dto.hours} hours were written off from your balance`,
+          title: 'Баланс обновлён',
+          message: `Списано ${dto.hours} ч с баланса`,
           type: NotificationType.BALANCE_CHANGED,
         },
       });

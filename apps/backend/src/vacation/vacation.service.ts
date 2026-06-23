@@ -60,8 +60,8 @@ export class VacationService {
         await tx.notification.createMany({
           data: reviewers.map((reviewer) => ({
             userId: reviewer.id,
-            title: 'New vacation request',
-            message: `${currentUser.fullName} requested ${daysCount} vacation day(s)`,
+            title: 'Новая заявка на отпуск',
+            message: `${currentUser.fullName} запросил ${daysCount} дн.`,
             type: NotificationType.REQUEST_CREATED,
           })),
         });
@@ -107,8 +107,8 @@ export class VacationService {
       await tx.notification.create({
         data: {
           userId: updated.userId,
-          title: 'Vacation approved',
-          message: `Vacation from ${this.formatDate(updated.startDate)} to ${this.formatDate(updated.endDate)} was approved`,
+          title: 'Отпуск согласован',
+          message: `Отпуск с ${this.formatDate(updated.startDate)} по ${this.formatDate(updated.endDate)} согласован`,
           type: NotificationType.REQUEST_APPROVED,
         },
       });
@@ -127,7 +127,6 @@ export class VacationService {
           status: RequestStatus.REJECTED,
           approverId: currentUser.id,
           approverComment,
-          approvedAt: new Date(),
         },
         include: vacationInclude,
       });
@@ -135,8 +134,8 @@ export class VacationService {
       await tx.notification.create({
         data: {
           userId: updated.userId,
-          title: 'Vacation rejected',
-          message: approverComment || 'Your vacation request was rejected',
+          title: 'Отпуск отклонён',
+          message: approverComment || 'Заявка на отпуск была отклонена',
           type: NotificationType.REQUEST_REJECTED,
         },
       });
@@ -171,8 +170,8 @@ export class VacationService {
       await tx.notification.create({
         data: {
           userId: request.userId,
-          title: 'Vacation cancelled',
-          message: 'Vacation request was cancelled',
+          title: 'Отпуск отменён',
+          message: 'Заявка на отпуск была отменена',
           type: NotificationType.REQUEST_REJECTED,
         },
       });

@@ -17,15 +17,15 @@ export class AuthService {
   ) { }
 
   async telegramLogin(initData: string) {
-    this.logger.log('Telegram auth request received');
-    this.logger.log(`initData length: ${initData?.length ?? 0}`);
+    this.logger.log(`Telegram auth request received (initData length: ${initData?.length ?? 0})`);
 
-    const telegramUser = this.telegramAuth.validateInitData(initData);
-    if (!telegramUser) {
-      this.logger.warn('Invalid Telegram initData');
-      throw new UnauthorizedException('Invalid Telegram InitData');
+    const result = this.telegramAuth.validateInitData(initData);
+    if (!result.valid) {
+      this.logger.warn(`Telegram auth rejected: ${result.reason}`);
+      throw new UnauthorizedException(result.reason);
     }
 
+    const telegramUser = result.user;
     const user = await this.upsertTelegramUser(telegramUser);
     const token = await this.jwt.signAsync({ sub: user.id, role: user.role });
 

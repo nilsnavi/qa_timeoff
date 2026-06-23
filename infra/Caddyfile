@@ -1,0 +1,40 @@
+{
+    # Global options
+    admin off
+}
+
+# Main domain — replace with your actual domain in production
+{$DOMAIN}:{$APP_PORT:-443} {
+    tls {$EMAIL:off}
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Health check
+    @health {
+        path /health
+    }
+    handle @health {
+        reverse_proxy backend:3000
+    }
+
+    # API proxy
+    @api {
+        path /api/*
+    }
+    handle @api {
+        uri strip_prefix /api
+        reverse_proxy backend:3000
+    }
+
+    # Frontend SPA
+    handle {
+        reverse_proxy frontend:80
+    }
+}

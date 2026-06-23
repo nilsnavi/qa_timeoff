@@ -3,7 +3,7 @@ import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
-let accessToken: string | null = localStorage.getItem('qa-timeoff-token');
+let accessToken: string | null = null;
 
 export const setAccessToken = (token?: string) => {
   if (!token) {
@@ -12,6 +12,11 @@ export const setAccessToken = (token?: string) => {
 
   accessToken = token;
   localStorage.setItem('qa-timeoff-token', token);
+};
+
+export const clearAccessToken = () => {
+  accessToken = null;
+  localStorage.removeItem('qa-timeoff-token');
 };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

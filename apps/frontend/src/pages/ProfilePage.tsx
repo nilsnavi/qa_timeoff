@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Bell, BellRing, LogOut, Mail, ShieldCheck, UserRound, UsersRound } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Badge, Button, Card, ErrorState, SkeletonCard } from '../components/ui';
+import { Button, Card, ErrorState, SkeletonCard } from '../components/ui';
 import { api } from '../shared/api';
+import { useAuth } from '../shared/auth/AuthContext';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { User } from '../shared/types';
 import { confirmTelegram, getRoleLabel, showAppToast } from '../shared/utils';
@@ -21,6 +22,7 @@ const defaultNotificationSettings: NotificationSettings = {
 
 export function ProfilePage() {
   const { dashboard } = useDashboard();
+  const { clearAuth } = useAuth();
   const hasToken = !!localStorage.getItem('qa-timeoff-token');
   const profileQuery = useQuery({
     queryKey: ['auth', 'me'],
@@ -49,9 +51,8 @@ export function ProfilePage() {
       return;
     }
 
-    localStorage.removeItem('qa-timeoff-token');
+    clearAuth();
     showAppToast('Вы вышли из профиля');
-    window.location.assign('/');
   };
 
   if (profileQuery.isLoading && !profileQuery.data) {

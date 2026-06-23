@@ -55,8 +55,8 @@ export class TimeOffService {
         await tx.notification.createMany({
           data: reviewers.map((reviewer) => ({
             userId: reviewer.id,
-            title: 'New time off request',
-            message: `${currentUser.fullName} requested ${dto.hours} hours off`,
+            title: 'Новая заявка на отгул',
+            message: `${currentUser.fullName} запросил ${dto.hours} ч`,
             type: NotificationType.REQUEST_CREATED,
           })),
         });
@@ -130,8 +130,8 @@ export class TimeOffService {
       await tx.notification.create({
         data: {
           userId: request.userId,
-          title: 'Time off approved',
-          message: `${request.hours} hours were approved and written off`,
+          title: 'Отгул согласован',
+          message: `${request.hours} ч списаны с баланса`,
           type: NotificationType.REQUEST_APPROVED,
         },
       });
@@ -150,7 +150,6 @@ export class TimeOffService {
           status: RequestStatus.REJECTED,
           approverId: currentUser.id,
           approverComment,
-          approvedAt: new Date(),
         },
         include: timeOffInclude,
       });
@@ -158,8 +157,8 @@ export class TimeOffService {
       await tx.notification.create({
         data: {
           userId: updated.userId,
-          title: 'Time off rejected',
-          message: approverComment || 'Your time off request was rejected',
+          title: 'Отгул отклонён',
+          message: approverComment || 'Заявка на отгул была отклонена',
           type: NotificationType.REQUEST_REJECTED,
         },
       });
@@ -194,8 +193,8 @@ export class TimeOffService {
       await tx.notification.create({
         data: {
           userId: request.userId,
-          title: 'Time off cancelled',
-          message: 'Time off request was cancelled',
+          title: 'Отгул отменён',
+          message: 'Заявка на отгул была отменена',
           type: NotificationType.REQUEST_REJECTED,
         },
       });

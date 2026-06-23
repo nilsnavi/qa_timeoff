@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface TelegramUser {
@@ -9,21 +9,40 @@ export interface TelegramUser {
   username?: string;
 }
 
+export type InitDataValidationResult =
+  | { valid: true; user: TelegramUser }
+  | { valid: false; reason: string };
+
 @Injectable()
 export class TelegramAuthService {
+  private readonly logger = new Logger(TelegramAuthService.name);
+
   constructor(private readonly config: ConfigService) {}
 
-  validateInitData(initData: string): TelegramUser | null {
+  validateInitData(initData: string): InitDataValidationResult {
     const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
-    if (!botToken || !initData) {
-      return null;
+    if (!botToken) {
+      this.logger.warn('[TelegramAuth] TELEGRAM_BOT_TOKEN is not configured');
+      return { valid: false, reason: 'TELEGRAM_BOT_TOKEN is not configured' };
     }
+
+    if (!initData) {
+      this.logger.warn('[TelegramAuth] initData is empty');
+      return { valid: false, reason: 'initData is empty' };
+    }
+
+    // Log safe diagnostic info (no full initData, no secrets)
+    this.logger.log(`[TelegramAuth] Validating initData: length=${initData.length}`);
 
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
     if (!hash) {
-      return null;
+      this.logger.warn('[TelegramAuth] hash parameter is missing from initData');
+      return { valid: false, reason: 'hash parameter is missing' };
     }
+
+    const authDateParam = params.get('auth_date');
+    this.logger.log(`[TelegramAuth] auth_date=${authDateParam ?? 'missing'}, has_hash=true, has_user=${!!params.get('user')}`);
 
     params.delete('hash');
     const dataCheckString = [...params.entries()]
@@ -37,24 +56,30 @@ export class TelegramAuthService {
     const calculatedHashBuffer = Buffer.from(calculatedHash, 'hex');
     const hashBuffer = Buffer.from(hash, 'hex');
     if (calculatedHashBuffer.length !== hashBuffer.length || !timingSafeEqual(calculatedHashBuffer, hashBuffer)) {
-      return null;
+      this.logger.warn('[TelegramAuth] hash mismatch — initData may be tampered or TELEGRAM_BOT_TOKEN is wrong');
+      return { valid: false, reason: 'hash mismatch' };
     }
 
-    const authDate = Number(params.get('auth_date') ?? 0);
+    const authDate = Number(authDateParam ?? 0);
     const maxAgeSeconds = 60 * 60 * 24;
     if (Date.now() / 1000 - authDate > maxAgeSeconds) {
-      return null;
+      this.logger.warn(`[TelegramAuth] auth_date expired: auth_date=${authDateParam}, max_age=${maxAgeSeconds}s`);
+      return { valid: false, reason: 'auth_date expired' };
     }
 
     const rawUser = params.get('user');
     if (!rawUser) {
-      return null;
+      this.logger.warn('[TelegramAuth] user parameter is missing from initData');
+      return { valid: false, reason: 'user parameter is missing' };
     }
 
     try {
-      return JSON.parse(rawUser) as TelegramUser;
+      const user = JSON.parse(rawUser) as TelegramUser;
+      this.logger.log(`[TelegramAuth] Validation successful: user_id=${user.id}, username=${user.username ?? 'none'}`);
+      return { valid: true, user };
     } catch {
-      return null;
+      this.logger.warn(`[TelegramAuth] Failed to parse user JSON: length=${rawUser.length}`);
+      return { valid: false, reason: 'user parse failed' };
     }
   }
 }

@@ -8,11 +8,39 @@ type TelegramPopupButton = {
   text?: string;
 };
 
+/**
+ * In dev mode, initData can be provided via:
+ *   1. URL query param `?__dev_init=...`
+ *   2. localStorage key `qa-timeoff-dev-init`
+ *   3. A prompt in the UI (handled by AppLayout)
+ *
+ * The mock Telegram.WebApp is also set up to prevent crashes
+ * from setupTelegramApp() and other Telegram API calls.
+ */
 export function getTelegramInitData(): string {
-  return window.Telegram?.WebApp?.initData ?? '';
+  // 1. Try real Telegram WebApp first
+  const real = window.Telegram?.WebApp?.initData;
+  if (real) return real;
+
+  // 2. Dev mode fallback: URL param
+  if (import.meta.env.DEV) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlInit = urlParams.get('__dev_init');
+    if (urlInit) {
+      localStorage.setItem('qa-timeoff-dev-init', urlInit);
+      return urlInit;
+    }
+
+    // 3. Dev mode fallback: localStorage
+    const stored = localStorage.getItem('qa-timeoff-dev-init');
+    if (stored) return stored;
+  }
+
+  return '';
 }
 
 export function setupTelegramApp() {
+  ensureMockTelegram();
   const tg = window.Telegram?.WebApp;
   tg?.ready();
   tg?.expand();
@@ -196,6 +224,64 @@ function hexToRgba(hex: string, alpha: number) {
   const b = Number.parseInt(normalized.slice(4, 6), 16);
 
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function ensureMockTelegram() {
+  if (window.Telegram?.WebApp) return; // already exists (real or mocked)
+
+  if (!import.meta.env.DEV) return; // only mock in development
+
+  const mockWebApp: NonNullable<Window['Telegram']>['WebApp'] = {
+    initData: '',
+    initDataUnsafe: {},
+    version: 'dev',
+    platform: 'dev',
+    colorScheme: 'light',
+    isExpanded: true,
+    themeParams: {
+      bg_color: '#eef6ff',
+      text_color: '#020617',
+      hint_color: '#94a3b8',
+      secondary_bg_color: '#ffffff',
+      button_color: '#3b82f6',
+    },
+    viewportHeight: window.innerHeight,
+    viewportStableHeight: window.innerHeight,
+    safeAreaInset: { top: 0, right: 0, bottom: 0, left: 0 },
+    contentSafeAreaInset: { top: 0, right: 0, bottom: 0, left: 0 },
+    ready: () => {},
+    expand: () => {},
+    enableClosingConfirmation: () => {},
+    setHeaderColor: () => {},
+    setBackgroundColor: () => {},
+    onEvent: () => {},
+    offEvent: () => {},
+    showPopup: (_params, callback) => callback?.(''),
+    HapticFeedback: {
+      impactOccurred: () => {},
+      notificationOccurred: () => {},
+      selectionChanged: () => {},
+    },
+    MainButton: {
+      setText: () => {},
+      show: () => {},
+      hide: () => {},
+      enable: () => {},
+      disable: () => {},
+      showProgress: () => {},
+      hideProgress: () => {},
+      onClick: () => {},
+      offClick: () => {},
+    },
+    BackButton: {
+      show: () => {},
+      hide: () => {},
+      onClick: () => {},
+      offClick: () => {},
+    },
+  };
+
+  window.Telegram = { WebApp: mockWebApp };
 }
 
 declare global {

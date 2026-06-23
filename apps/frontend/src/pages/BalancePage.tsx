@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDownCircle, ArrowUpCircle, CircleSlash, History, RotateCw, SlidersHorizontal } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CircleSlash, RotateCw, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge, Card, EmptyState, ErrorState, Select, Skeleton, SkeletonCard } from '../components/ui';
 import { api } from '../shared/api';

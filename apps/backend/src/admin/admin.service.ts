@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BalanceOperationType } from '@prisma/client';
+import { BalanceOperationType, User } from '@prisma/client';
 import { NotificationType } from '../notifications/notification-types';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  accrue(userId: string, hours: number, comment: string) {
+  accrue(currentUser: User, userId: string, hours: number, comment: string) {
     return this.prisma.$transaction(async (tx) => {
       const balance = await tx.timeBalance.upsert({
         where: { userId },
@@ -18,13 +18,13 @@ export class AdminService {
         },
       });
       await tx.balanceOperation.create({
-        data: { userId, operationType: BalanceOperationType.ADD, hours, reason: comment, createdById: userId },
+        data: { userId, operationType: BalanceOperationType.ADD, hours, reason: comment, createdById: currentUser.id },
       });
       await tx.notification.create({
         data: {
           userId,
-          title: 'Hours accrued',
-          message: `${hours} hours added to your balance`,
+          title: 'Часы начислены',
+          message: `На баланс добавлено ${hours} ч`,
           type: NotificationType.BALANCE_CHANGED,
         },
       });
@@ -32,7 +32,7 @@ export class AdminService {
     });
   }
 
-  writeOff(userId: string, hours: number, comment: string) {
+  writeOff(currentUser: User, userId: string, hours: number, comment: string) {
     return this.prisma.$transaction(async (tx) => {
       const balance = await tx.timeBalance.upsert({
         where: { userId },
@@ -43,13 +43,13 @@ export class AdminService {
         },
       });
       await tx.balanceOperation.create({
-        data: { userId, operationType: BalanceOperationType.WRITE_OFF, hours: -hours, reason: comment, createdById: userId },
+        data: { userId, operationType: BalanceOperationType.WRITE_OFF, hours: -hours, reason: comment, createdById: currentUser.id },
       });
       await tx.notification.create({
         data: {
           userId,
-          title: 'Hours written off',
-          message: `${hours} hours were written off`,
+          title: 'Часы списаны',
+          message: `С баланса списано ${hours} ч`,
           type: NotificationType.BALANCE_CHANGED,
         },
       });

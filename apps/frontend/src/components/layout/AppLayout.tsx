@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Bell, CalendarDays, ClipboardList, Home, Plus, Shield, UserRound, WalletCards } from 'lucide-react';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Bell, Bug, CalendarDays, ClipboardList, Home, Plus, Shield, UserRound, WalletCards } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { BottomNavigation, Header, Toast } from '../ui';
-import { api, setAccessToken } from '../../shared/api';
+import { api } from '../../shared/api';
+import { useAuth } from '../../shared/auth/AuthContext';
 import { cleanupTelegramApp, getTelegramInitData, hapticSelection, setupTelegramApp, useTelegramBackButton } from '../../shared/utils/telegram';
 import { TelegramDebug } from '../TelegramDebug';
 
@@ -15,21 +16,27 @@ const navItems = [
   { to: '/profile', label: 'Профиль', icon: UserRound },
 ];
 
+const DEV_SKIP_KEY = 'qa-timeoff-dev-skip';
+
 export function AppLayout({ children }: { children: ReactNode }) {
-  const [authError, setAuthError] = useState<string | null>(null);
+  const { isAuthenticated, isAuthLoading, authError, login } = useAuth();
   const [initDataMissing, setInitDataMissing] = useState(false);
   const [toast, setToast] = useState<{ title: string; message?: string; tone?: 'success' | 'error' | 'info' } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const handleBack = useCallback(() => navigate(-1), [navigate]);
+  const isDev = import.meta.env.DEV;
+  const loginTriggeredRef = useRef(false);
 
   useTelegramBackButton(location.pathname !== '/', handleBack);
 
+  // ── Telegram init ────────────────────────────────────────────────────
   useEffect(() => {
     setupTelegramApp();
     return cleanupTelegramApp;
   }, []);
 
+  // ── Toast listener ───────────────────────────────────────────────────
   useEffect(() => {
     const listener = (event: Event) => {
       const nextToast = (event as CustomEvent<typeof toast>).detail;
@@ -41,83 +48,74 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('qa-timeoff-toast', listener);
   }, []);
 
-  const authMutation = useMutation({
-    mutationFn: async (initData: string) => {
-      const authResult = await api.auth(initData);
-      const token = authResult.accessToken ?? authResult.token;
-      if (!token) {
-        throw new Error('Токен авторизации не получен');
-      }
-      setAccessToken(token);
-      // Verify user profile via /auth/me
-      const profile = await api.me();
-      if (!profile.id || !profile.telegramId) {
-        throw new Error('Некорректные данные профиля');
-      }
-      return { authResult, profile };
-    },
-    onSuccess: () => {
-      // Token already set, dashboard query will be enabled
-    },
-    onError: (error: Error) => {
-      setAuthError(error.message || 'Ошибка авторизации');
-    },
-  });
-
+  // ── Auth trigger ─────────────────────────────────────────────────────
+  // Once the AuthProvider has finished its initial validation (isAuthLoading
+  // is false) and we are still not authenticated, try to obtain an initData
+  // from Telegram and kick off the login flow.
   useEffect(() => {
-    const initData = getTelegramInitData();
-    if (!initData) {
-      setInitDataMissing(true);
-      return;
-    }
-    authMutation.mutate(initData);
-  }, []);
+    // Prevent double-fire in StrictMode
+    if (loginTriggeredRef.current) return;
+    if (isAuthLoading) return;
+    if (isAuthenticated) return;
 
+    // Dev skip bypass
+    if (isDev && localStorage.getItem(DEV_SKIP_KEY) === 'true') return;
+
+    const initData = getTelegramInitData();
+    if (initData) {
+      loginTriggeredRef.current = true;
+      login(initData).catch(() => {
+        /* error is captured via authError in context */
+      });
+    } else if (isDev) {
+      // In dev mode with no initData — check if a token already exists
+      // (AuthProvider already handled this, so if we're here, there's no token)
+      // Show the initData UI which includes dev options
+      setInitDataMissing(true);
+    } else {
+      setInitDataMissing(true);
+    }
+  }, [isAuthLoading, isAuthenticated, login, isDev]);
+
+  // ── Dashboard (loaded only when authenticated) ──────────────────────
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],
     queryFn: api.dashboard,
-    enabled: !!localStorage.getItem('qa-timeoff-token'),
+    enabled: isAuthenticated,
+    refetchInterval: 30_000,
   });
 
-  // --- Error screen: no initData from Telegram ---
-  if (initDataMissing) {
+  // ── Dev init input state ─────────────────────────────────────────────
+  const [devInitInput, setDevInitInput] = useState('');
+
+  const handleDevInitSubmit = () => {
+    if (!devInitInput.trim()) return;
+    localStorage.setItem('qa-timeoff-dev-init', devInitInput.trim());
+    window.location.reload();
+  };
+
+  const handleDevSkip = () => {
+    localStorage.setItem(DEV_SKIP_KEY, 'true');
+    localStorage.setItem('qa-timeoff-onboarding-complete', 'true');
+    window.location.reload();
+  };
+
+  // ── Render: loading ──────────────────────────────────────────────────
+  if (isAuthLoading) {
     return (
-      <main className="mx-auto flex min-h-[var(--tg-viewport-height)] w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
-        <div className="w-full space-y-4 rounded-2xl bg-rose-50 p-6 shadow-soft ring-1 ring-rose-200 dark:bg-rose-950/40 dark:ring-rose-800">
-          <h1 className="text-center text-lg font-bold text-rose-700 dark:text-rose-300">
-            Ошибка запуска приложения
-          </h1>
-          <p className="text-center text-sm text-rose-600 dark:text-rose-400">
-            Приложение должно быть открыто через Telegram Mini App
-          </p>
-          <div className="space-y-2 rounded-xl bg-white/70 p-3 text-xs dark:bg-slate-900/50">
-            <div className="flex justify-between">
-              <span className="text-slate-500">initData</span>
-              <span className="font-mono text-rose-600">отсутствует</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">initData.length</span>
-              <span className="font-mono text-slate-700 dark:text-slate-300">0</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">userAgent</span>
-              <span className="font-mono max-w-[60%] truncate text-slate-700 dark:text-slate-300">{navigator.userAgent}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">URL</span>
-              <span className="font-mono max-w-[60%] truncate text-slate-700 dark:text-slate-300">{window.location.href}</span>
-            </div>
-          </div>
-          <TelegramDebug />
+      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-200 border-t-sky-500" />
+          <p className="text-sm text-slate-500">Авторизация...</p>
         </div>
       </main>
     );
   }
 
-  // --- Error screen: auth failed ---
+  // ── Render: error (stale token or login failure) ─────────────────────
   if (authError) {
     return (
-      <main className="mx-auto flex min-h-[var(--tg-viewport-height)] w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
+      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
         <div className="w-full space-y-4 rounded-2xl bg-rose-50 p-6 shadow-soft ring-1 ring-rose-200 dark:bg-rose-950/40 dark:ring-rose-800">
           <h1 className="text-center text-lg font-bold text-rose-700 dark:text-rose-300">
             Ошибка авторизации
@@ -154,10 +152,82 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // --- Loading screen ---
+  // ── Render: initData missing (not in Telegram) ───────────────────────
+  if (initDataMissing && !isAuthenticated) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
+        <div className="w-full space-y-4 rounded-2xl bg-rose-50 p-6 shadow-soft ring-1 ring-rose-200 dark:bg-rose-950/40 dark:ring-rose-800">
+          <h1 className="text-center text-lg font-bold text-rose-700 dark:text-rose-300">
+            Ошибка запуска приложения
+          </h1>
+          <p className="text-center text-sm text-rose-600 dark:text-rose-400">
+            Приложение должно быть открыто через Telegram Mini App
+          </p>
+          <div className="space-y-2 rounded-xl bg-white/70 p-3 text-xs dark:bg-slate-900/50">
+            <div className="flex justify-between">
+              <span className="text-slate-500">initData</span>
+              <span className="font-mono text-rose-600">отсутствует</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">initData.length</span>
+              <span className="font-mono text-slate-700 dark:text-slate-300">0</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">userAgent</span>
+              <span className="font-mono max-w-[60%] truncate text-slate-700 dark:text-slate-300">{navigator.userAgent}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">URL</span>
+              <span className="font-mono max-w-[60%] truncate text-slate-700 dark:text-slate-300">{window.location.href}</span>
+            </div>
+          </div>
+          <TelegramDebug />
+
+          {isDev && (
+            <div className="space-y-3 rounded-xl bg-sky-50 p-4 dark:bg-sky-950/40">
+              <p className="text-center text-sm font-medium text-sky-700 dark:text-sky-300">
+                🔧 Dev-режим: вставьте initData или пропустите
+              </p>
+              <textarea
+                value={devInitInput}
+                onChange={(e) => setDevInitInput(e.target.value)}
+                placeholder="Вставьте initData из Telegram Web App..."
+                rows={3}
+                className="w-full rounded-lg border border-sky-200 bg-white p-2 text-xs font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-sky-800 dark:bg-slate-900 dark:text-slate-200"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDevInitSubmit}
+                  className="flex-1 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white shadow-soft active:scale-95"
+                >
+                  Применить
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDevSkip}
+                  className="flex-1 rounded-xl bg-white/80 px-4 py-2.5 text-sm font-medium text-slate-600 shadow-soft ring-1 ring-slate-200 active:scale-95 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
+                >
+                  Пропустить (dev)
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  // ── Render: dev skip placeholder ─────────────────────────────────────
+  const isDevSkip = isDev && localStorage.getItem(DEV_SKIP_KEY) === 'true';
+  if (isDevSkip) {
+    return <DevPlaceholder />;
+  }
+
+  // ── Render: loading dashboard ────────────────────────────────────────
   if (!dashboardQuery.data) {
     return (
-      <main className="mx-auto flex min-h-[var(--tg-viewport-height)] w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
+      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-200 border-t-sky-500" />
           <p className="text-sm text-slate-500">Загрузка...</p>
@@ -232,6 +302,41 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </NavLink>
       )}
       {toast && <Toast title={toast.title} message={toast.message} tone={toast.tone} />}
+    </main>
+  );
+}
+
+// --- Dev mode placeholder page (shown when skipping Telegram auth) ---
+export function DevPlaceholder() {
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col items-center justify-center px-4 py-8 safe-area">
+      <div className="w-full space-y-6 rounded-2xl bg-sky-50 p-8 shadow-soft ring-1 ring-sky-200 dark:bg-sky-950/40 dark:ring-sky-800">
+        <div className="mx-auto grid h-20 w-20 place-items-center rounded-[28px] bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-lg shadow-blue-500/25">
+          <Bug size={36} />
+        </div>
+        <div className="text-center">
+          <h1 className="text-xl font-black text-slate-900 dark:text-white">🔧 Dev-режим</h1>
+          <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+            Приложение открыто вне Telegram Mini App.<br />
+            Для полноценной работы запустите бэкенд и откройте через Telegram.
+          </p>
+        </div>
+        <div className="rounded-xl bg-white/70 p-4 text-xs dark:bg-slate-900/50">
+          <TelegramDebug />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            localStorage.removeItem(DEV_SKIP_KEY);
+            localStorage.removeItem('qa-timeoff-dev-init');
+            localStorage.removeItem('qa-timeoff-onboarding-complete');
+            window.location.reload();
+          }}
+          className="w-full rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white shadow-soft active:scale-95"
+        >
+          Сбросить dev-режим
+        </button>
+      </div>
     </main>
   );
 }
