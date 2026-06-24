@@ -32,7 +32,7 @@ export function TelegramDebug() {
     };
 
     return (
-        <div className="rounded-2xl bg-white/80 p-4 shadow-soft ring-1 ring-white/70 bg-[#111A2E]/ ring-white/[0.06]">
+        <div className="rounded-2xl bg-white/80 p-4 shadow-soft ring-1 ring-white/[0.10] bg-[#111A2E]/ ring-white/[0.06]">
             <h3 className="mb-3 text-sm font-semibold text-[#B8C0D0]">Telegram Debug Info</h3>
             <dl className="space-y-1.5 text-xs">
                 <div className="flex justify-between">

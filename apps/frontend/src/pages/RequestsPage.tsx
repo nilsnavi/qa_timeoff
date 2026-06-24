@@ -290,7 +290,7 @@ function RequestCard({
       )}
 
       {request.status === 'REJECTED' && request.approverComment && (
-        <div className="mt-3 flex items-start gap-2 rounded-[18px] bg-rose-50 p-3 text-sm font-bold text-rose-700 dark:bg-rose-950 dark:text-rose-200">
+        <div className="mt-3 flex items-start gap-2 rounded-[18px] bg-rose-950/30 p-3 text-sm font-bold text-rose-200 bg-rose-950 text-rose-200">
           <MessageSquareText className="mt-0.5 shrink-0" size={17} />
           <span>{request.approverComment}</span>
         </div>

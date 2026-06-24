@@ -53,7 +53,7 @@ export function OnboardingPage() {
   return (
     <main className="mx-auto flex min-h-[var(--tg-viewport-height)] w-full max-w-xl flex-col px-5 py-5 safe-area">
       <div className="flex items-center justify-between">
-        <div className="h-2 w-28 overflow-hidden rounded-full bg-[#111A2E]/70 shadow-sm dark:bg-slate-800">
+        <div className="h-2 w-28 overflow-hidden rounded-full bg-[#111A2E]/70 shadow-sm bg-slate-800">
           <div className="h-full rounded-full app-gradient transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
         <button type="button" className="min-h-10 px-3 text-sm font-black text-[#B8C0D0]" onClick={finish}>
@@ -78,7 +78,7 @@ export function OnboardingPage() {
             {slides.map((item) => (
               <span
                 key={item.title}
-                className={`h-2 rounded-full transition-all ${item.title === slide.title ? 'w-8 bg-blue-600' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
+                className={`h-2 rounded-full transition-all ${item.title === slide.title ? 'w-8 bg-blue-600' : 'w-2 bg-slate-300 bg-slate-700'}`}
               />
             ))}
           </div>

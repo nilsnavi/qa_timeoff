@@ -95,7 +95,7 @@ export function ProfilePage() {
                   {getRoleLabel(user.role)}
                 </span>
                 <span className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-bold ${
-                  user.isActive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                  user.isActive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-950/300/15 text-rose-400'
                 }`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${user.isActive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                   {user.isActive ? 'Активен' : 'Заблокирован'}
@@ -179,7 +179,7 @@ export function ProfilePage() {
 function KpiCard({ icon: Icon, label, value, color }: { icon: typeof Wallet; label: string; value: string; color: string }) {
   const colorMap: Record<string, string> = {
     emerald: 'bg-emerald-500/15 text-emerald-400',
-    blue: 'bg-blue-500/15 text-blue-400',
+    blue: 'bg-blue-900/400/15 text-blue-400',
     violet: 'bg-violet-500/15 text-violet-400',
     amber: 'bg-amber-500/15 text-amber-400',
   };

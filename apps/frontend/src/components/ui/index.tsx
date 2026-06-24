@@ -34,7 +34,7 @@ export function Button({
         variant === 'primary' && 'bg-gradient-to-r from-[#4C7DFF] to-[#7C5CFF] text-white shadow-lg shadow-blue-500/20',
         variant === 'secondary' && 'bg-white/[0.06] text-[#B8C0D0] ring-1 ring-white/10 hover:bg-white/[0.10]',
         variant === 'ghost' && 'bg-transparent text-[#B8C0D0] hover:text-white',
-        variant === 'danger' && 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/20 hover:bg-rose-500/30',
+        variant === 'danger' && 'bg-rose-950/300/20 text-rose-400 ring-1 ring-rose-500/20 hover:bg-rose-950/300/30',
         className,
       )}
       onClick={(event) => {
@@ -308,10 +308,10 @@ export function Badge({
       className={clsx(
         'inline-flex min-h-6 items-center rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase leading-normal',
         tone === 'neutral' && 'bg-white/[0.06] text-[#7A8599]',
-        tone === 'info' && 'bg-blue-500/15 text-blue-400',
+        tone === 'info' && 'bg-blue-900/400/15 text-blue-400',
         tone === 'success' && 'bg-emerald-500/15 text-emerald-400',
         tone === 'warning' && 'bg-amber-500/15 text-amber-400',
-        tone === 'danger' && 'bg-rose-500/15 text-rose-400',
+        tone === 'danger' && 'bg-rose-950/300/15 text-rose-400',
         tone === 'gradient' && 'bg-gradient-to-r from-[#4C7DFF] to-[#7C5CFF] text-white',
         className,
       )}
@@ -391,7 +391,7 @@ export function BottomNavigation({
               <span className="relative">
                 <item.icon size={18} />
                 {!!item.badge && (
-                  <span className="absolute -right-2.5 -top-1.5 grid min-h-[14px] min-w-[14px] place-items-center rounded-full bg-rose-500 px-[3px] text-[9px] font-black leading-none text-white ring-2 ring-[#0B1220]">
+                  <span className="absolute -right-2.5 -top-1.5 grid min-h-[14px] min-w-[14px] place-items-center rounded-full bg-rose-950/300 px-[3px] text-[9px] font-black leading-none text-white ring-2 ring-[#0B1220]">
                     {item.badge > 9 ? '9+' : item.badge}
                   </span>
                 )}

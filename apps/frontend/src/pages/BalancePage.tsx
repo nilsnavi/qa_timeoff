@@ -378,8 +378,8 @@ function LedgerRow({ entry }: { entry: LedgerEntry }) {
   const typeLabel: Record<string, string> = { overtime: 'Переработка', leave: 'Отгул/Отпуск', adjustment: 'Корректировка' };
   const typeColor: Record<string, string> = {
     overtime: 'bg-emerald-500/10 text-emerald-400',
-    leave: 'bg-rose-500/10 text-rose-400',
-    adjustment: 'bg-blue-500/10 text-blue-400',
+    leave: 'bg-rose-950/300/10 text-rose-400',
+    adjustment: 'bg-blue-900/400/10 text-blue-400',
   };
 
   return (

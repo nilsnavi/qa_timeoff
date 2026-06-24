@@ -120,7 +120,7 @@ export function LeaveRequestPage() {
         <Card>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="grid h-9 w-9 place-items-center rounded-[10px] bg-blue-500/15 text-blue-400">
+              <div className="grid h-9 w-9 place-items-center rounded-[10px] bg-blue-900/400/15 text-blue-400">
                 <Users size={16} />
               </div>
               <div>
@@ -317,7 +317,7 @@ function RequestCard({
       )}
 
       {request.status === 'REJECTED' && request.approverComment && (
-        <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-rose-500/10 p-3">
+        <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-rose-950/300/10 p-3">
           <MessageSquareText className="mt-0.5 shrink-0 text-rose-400" size={14} />
           <span className="text-xs font-medium text-rose-300">{request.approverComment}</span>
         </div>

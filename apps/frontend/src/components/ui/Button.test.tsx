@@ -25,7 +25,7 @@ describe('Button', () => {
   it('применяет variant классы', () => {
     const { container } = render(<Button variant="danger">Опасность</Button>);
     const button = container.querySelector('button');
-    expect(button?.className).toContain('bg-rose-500');
+    expect(button?.className).toContain('bg-rose-950/300');
   });
 
   it('применяет size классы', () => {

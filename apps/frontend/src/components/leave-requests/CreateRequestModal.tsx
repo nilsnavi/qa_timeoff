@@ -140,7 +140,7 @@ export function CreateRequestModal({ open, onClose }: { open: boolean; onClose: 
           />
 
           {error && (
-            <div className="rounded-[10px] bg-rose-500/10 p-3 text-xs font-medium text-rose-400">
+            <div className="rounded-[10px] bg-rose-950/300/10 p-3 text-xs font-medium text-rose-400">
               {error}
             </div>
           )}

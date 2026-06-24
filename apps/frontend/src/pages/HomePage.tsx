@@ -201,7 +201,7 @@ export function HomePage() {
               const hasE = eventDates.has(ds);
               const isWk = isWeekend(calYear, calMonth, day);
               let dot = '';
-              if (hasE) dot = 'bg-blue-500';
+              if (hasE) dot = 'bg-blue-900/400';
               else if (isWk) dot = 'bg-red-500/60';
               return (
                 <button key={day} type="button"
@@ -217,7 +217,7 @@ export function HomePage() {
           </div>
           <div className="mt-2 flex items-center gap-3 border-t border-white/[0.04] pt-2">
             <LegendDot color="bg-emerald-500" label="Доступен" />
-            <LegendDot color="bg-blue-500" label="Заявка" />
+            <LegendDot color="bg-blue-900/400" label="Заявка" />
             <LegendDot color="bg-red-500/60" label="Выходной" />
             <LegendDot color="bg-yellow-500" label="Праздник" />
           </div>
@@ -272,7 +272,7 @@ export function HomePage() {
           <div className="grid grid-cols-2 gap-2">
             <StatBadge label="Ожидают" value={pendingCount} color="bg-amber-500" />
             <StatBadge label="Одобрены" value={approvedCount} color="bg-emerald-500" />
-            <StatBadge label="Отклонены" value={rejectedCount} color="bg-rose-500" />
+            <StatBadge label="Отклонены" value={rejectedCount} color="bg-rose-950/300" />
             <StatBadge label="Всего" value={totalCount} color="bg-[#4C7DFF]" />
           </div>
         </div>
@@ -367,7 +367,7 @@ function QuickActionBtn({ icon: Icon, label, color, onClick }: { icon: React.Ele
 function EventStatusBadge({ status }: { status: string }) {
   const isApproved = status === 'APPROVED';
   const isPending = status === 'PENDING';
-  const color = isApproved ? 'bg-emerald-500/15 text-emerald-400' : isPending ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400';
+  const color = isApproved ? 'bg-emerald-500/15 text-emerald-400' : isPending ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-950/300/15 text-rose-400';
   return <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${color}`}>{getStatusLabel(status)}</span>;
 }
 

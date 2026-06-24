@@ -169,7 +169,7 @@ export function CalendarPage() {
               </Button>
               <div className="text-center">
                 <h2 className="text-lg font-black text-white">{rangeTitle}</h2>
-                <button type="button" className="text-xs font-black text-blue-600 dark:text-blue-300" onClick={() => setCursorDate(new Date())}>
+                <button type="button" className="text-xs font-black text-blue-300" onClick={() => setCursorDate(new Date())}>
                   Сегодня
                 </button>
               </div>
@@ -202,7 +202,7 @@ export function CalendarPage() {
 
 function ViewSwitcher({ view, onChange }: { view: CalendarView; onChange: (view: CalendarView) => void }) {
   return (
-    <div className="flex rounded-[20px] bg-[#111A2E]/70 p-1 ring-1 ring-white/70 bg-[#111A2E]/70 ring-white/[0.06]">
+    <div className="flex rounded-[20px] bg-[#111A2E]/70 p-1 ring-1 ring-white/[0.10] bg-[#111A2E]/70 ring-white/[0.06]">
       {viewOptions.map((option) => (
         <button
           key={option.value}
@@ -310,8 +310,8 @@ function DayCell({
 
   return (
     <div
-      className={`min-h-24 rounded-[18px] p-1.5 ring-1 ring-white/70 ring-white/[0.06] ${
-        muted ? 'bg-white/35 dark:bg-slate-900/35' : 'bg-[#111A2E]/70 bg-[#111A2E]/70'
+      className={`min-h-24 rounded-[18px] p-1.5 ring-1 ring-white/[0.10] ring-white/[0.06] ${
+        muted ? 'bg-white/35 bg-slate-900/35' : 'bg-[#111A2E]/70 bg-[#111A2E]/70'
       } ${isSameDay(day, new Date()) ? 'ring-2 ring-blue-400/70' : ''}`}
     >
       <div className={`mb-1 text-xs font-black ${muted ? 'text-[#7A8599]' : 'text-[#B8C0D0]'}`}>{format(day, 'd')}</div>

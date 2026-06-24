@@ -127,7 +127,7 @@ export function ManagerRequestsPage() {
               className={`min-h-10 shrink-0 rounded-[18px] px-4 text-sm font-black transition ${
                 filter === item.value
                   ? 'app-gradient text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/70 bg-[#111A2E]/ text-[#7A8599] ring-white/[0.06]'
+                  : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/[0.10] bg-[#111A2E]/ text-[#7A8599] ring-white/[0.06]'
               }`}
             >
               {item.label}

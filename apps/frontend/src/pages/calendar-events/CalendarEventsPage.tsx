@@ -404,7 +404,7 @@ function CreateEventModal({
 
           <Textarea label="Комментарий (необязательно)" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={500} hint={`${comment.length}/500`} />
 
-          {error && <div className="rounded-[10px] bg-rose-500/10 p-3 text-xs font-medium text-rose-400">{error}</div>}
+          {error && <div className="rounded-[10px] bg-rose-950/300/10 p-3 text-xs font-medium text-rose-400">{error}</div>}
         </div>
 
         <div className="mt-4">

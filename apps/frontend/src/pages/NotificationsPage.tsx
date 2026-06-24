@@ -87,7 +87,7 @@ export function NotificationsPage() {
                 className={`min-h-10 rounded-[18px] px-4 text-sm font-black transition ${
                   filter === item.value
                     ? 'app-gradient text-white shadow-lg shadow-blue-500/20'
-                    : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/70 bg-[#111A2E]/70 text-[#7A8599] ring-white/[0.06]'
+                    : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/[0.10] bg-[#111A2E]/70 text-[#7A8599] ring-white/[0.06]'
                 }`}
               >
                 {item.label}
@@ -150,7 +150,7 @@ function NotificationCard({
       >
         <span className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-[18px] text-white ${getNotificationColor(notification.type)}`}>
           <Icon size={20} />
-          {!notification.isRead && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950" />}
+          {!notification.isRead && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-rose-950/300 ring-2 ring-white ring-slate-950" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-start justify-between gap-2">
@@ -194,7 +194,7 @@ function getNotificationColor(type: string) {
     return 'bg-emerald-500';
   }
   if (normalized.includes('REJECTED')) {
-    return 'bg-rose-500';
+    return 'bg-rose-950/300';
   }
   if (normalized.includes('BALANCE')) {
     return 'bg-blue-600';

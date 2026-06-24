@@ -958,7 +958,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
 
             {/* Empty cells before first day */}
             {Array.from({ length: firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1 }).map((_, i) => (
-              <div key={`empty-${i}`} className="min-h-[60px] rounded-lg bg-white/30 p-1 dark:bg-slate-900/30" />
+              <div key={`empty-${i}`} className="min-h-[60px] rounded-lg bg-white/[0.03] p-1 bg-slate-900/30" />
             ))}
 
             {/* Day cells */}
@@ -973,7 +973,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
                 <div
                   key={day}
                   className={`min-h-[60px] rounded-lg border-2 p-1 ${
-                    isWeekend ? 'bg-slate-100 dark:bg-slate-800/50' : 'bg-white/50 dark:bg-slate-900/50'
+                    isWeekend ? 'bg-slate-800/50' : 'bg-white/[0.05] bg-slate-900/50'
                   } ${entry ? '' : 'border-transparent'}`}
                   style={entry ? { borderColor: entry.color } : undefined}
                 >
@@ -1178,7 +1178,7 @@ function PayrollReportView({ isAdmin }: { isAdmin: boolean }) {
           </div>
 
           {/* Multiplier info */}
-          <div className="rounded-[18px] bg-[#111A2E]/65 p-3 text-xs font-bold text-[#7A8599] bg-[#111A2E]/60 dark:text-[#7A8599]">
+          <div className="rounded-[18px] bg-[#111A2E]/65 p-3 text-xs font-bold text-[#7A8599] bg-[#111A2E]/60 text-[#7A8599]">
             <p>Коэффициенты: будни ×1.0 · выходные ×1.5 · праздники ×2.0</p>
           </div>
 
@@ -1661,7 +1661,7 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
                 const height = Math.max(4, (day.hours / maxHours(data.workloadByDay)) * 100);
                 return (
                   <div key={day.date} className="flex flex-col items-center" title={`${day.date}: ${day.hours} ч`}>
-                    <div className="w-6 rounded-t bg-blue-500" style={{ height: `${height}px` }} />
+                    <div className="w-6 rounded-t bg-blue-900/400" style={{ height: `${height}px` }} />
                     <span className="mt-1 text-[8px] font-bold text-[#7A8599]">{day.date.slice(8)}</span>
                   </div>
                 );
@@ -1699,7 +1699,7 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
                       <p className="font-bold text-white">{team.teamName}</p>
                       <span className="font-black text-[#7A8599]">{team.totalHours} ч</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-700">
                       <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
@@ -1815,7 +1815,7 @@ function AiForecastView({ isAdmin }: { isAdmin: boolean }) {
               <p className="mb-2 text-sm font-bold text-[#7A8599]">Рекомендации</p>
               <div className="grid gap-2">
                 {forecast.recommendations.map((rec, idx) => (
-                  <div key={idx} className="rounded-[18px] bg-blue-50 p-3 text-sm font-bold text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                  <div key={idx} className="rounded-[18px] bg-blue-900/40 p-3 text-sm font-bold text-blue-200 bg-blue-900/40 text-blue-200">
                     💡 {rec}
                   </div>
                 ))}

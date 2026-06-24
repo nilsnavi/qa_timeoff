@@ -101,8 +101,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   if (isAccessDenied) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col items-center justify-center px-4 py-8 safe-area">
-        <div className="w-full space-y-5 rounded-xl bg-rose-500/10 p-6 ring-1 ring-rose-500/20">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-[14px] bg-rose-500/15 text-rose-400">
+        <div className="w-full space-y-5 rounded-xl bg-rose-950/300/10 p-6 ring-1 ring-rose-500/20">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-[14px] bg-rose-950/300/15 text-rose-400">
             <Lock size={28} />
           </div>
           <div className="text-center">
@@ -129,7 +129,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   if (authError) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col items-center justify-center px-4 py-8 safe-area">
-        <div className="w-full space-y-4 rounded-xl bg-rose-500/10 p-5 ring-1 ring-rose-500/20">
+        <div className="w-full space-y-4 rounded-xl bg-rose-950/300/10 p-5 ring-1 ring-rose-500/20">
           <h1 className="text-center text-[15px] font-bold text-rose-400">Ошибка авторизации</h1>
           <p className="text-center text-[13px] text-rose-400/80">{authError}</p>
           <div className="space-y-1.5 rounded-[10px] bg-white/[0.03] p-2.5 text-[11px]">
@@ -158,7 +158,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   if (initDataMissing && !isAuthenticated) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col items-center justify-center px-4 py-8 safe-area">
-        <div className="w-full space-y-4 rounded-xl bg-rose-500/10 p-5 ring-1 ring-rose-500/20">
+        <div className="w-full space-y-4 rounded-xl bg-rose-950/300/10 p-5 ring-1 ring-rose-500/20">
           <h1 className="text-center text-[15px] font-bold text-rose-400">Ошибка запуска приложения</h1>
           <p className="text-center text-[13px] text-rose-400/80">Приложение должно быть открыто через Telegram Mini App</p>
           <div className="space-y-1.5 rounded-[10px] bg-white/[0.03] p-2.5 text-[11px]">
@@ -173,7 +173,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
           <TelegramDebug />
           {isDev && (
-            <div className="space-y-2.5 rounded-[10px] bg-blue-500/10 p-3.5">
+            <div className="space-y-2.5 rounded-[10px] bg-blue-900/400/10 p-3.5">
               <p className="text-center text-[13px] font-medium text-blue-400">Dev-режим: вставьте initData или пропустите</p>
               <textarea
                 value={devInitInput}
@@ -243,7 +243,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           >
             <Bell size={17} />
             {!!unread && (
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 shadow-lg shadow-rose-500/40" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-950/300 shadow-lg shadow-rose-500/40" />
             )}
           </button>
           <button
@@ -302,7 +302,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 export function DevPlaceholder() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col items-center justify-center px-4 py-8 safe-area">
-      <div className="w-full space-y-5 rounded-xl bg-blue-500/10 p-6 ring-1 ring-blue-500/20">
+      <div className="w-full space-y-5 rounded-xl bg-blue-900/400/10 p-6 ring-1 ring-blue-500/20">
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-[14px] bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] text-white shadow-lg">
           <Bug size={28} />
         </div>
