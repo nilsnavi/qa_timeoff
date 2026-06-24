@@ -373,7 +373,7 @@ export function BottomNavigation({
   }>;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] px-3 pb-[calc(0.5rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))]">
+    <nav className="bottom-nav fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] px-3 pb-[calc(0.5rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))]">
       <div className="rounded-2xl border border-white/[0.05] bg-[rgba(11,18,32,0.9)] px-1.5 py-1.5 shadow-[0_-2px_20px_rgba(0,0,0,0.4)] backdrop-blur-[16px]">
         <div className="grid grid-cols-5 gap-0">
           {items.map((item) => (

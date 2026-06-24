@@ -1,34 +1,25 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { api, setAccessToken, clearAccessToken } from '../api';
+import { api, setAccessToken, clearAccessToken, setOnUnauthorized } from '../api';
 import type { User } from '../types';
 
+const TOKEN_KEY = 'qa-timeoff-token';
+const REFRESH_KEY = 'qa-timeoff-refresh';
+
 export interface AuthState {
-  /** JWT token, if available */
   token: string | null;
-  /** Decoded user profile from /auth/me */
   user: User | null;
-  /** true when token exists AND /auth/me resolved successfully */
   isAuthenticated: boolean;
-  /** true while the initial token validation or login is in progress */
   isAuthLoading: boolean;
-  /** Human-readable auth error message, or null */
   authError: string | null;
 }
 
 export interface AuthContextValue extends AuthState {
-  /** Authenticate via Telegram initData */
-  login: (initData: string) => Promise<void>;
-  /** Clear auth state without redirect */
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  /** Clear auth state and redirect to root */
   clearAuth: () => void;
 }
 
 const CTX = createContext<AuthContextValue | null>(null);
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
@@ -36,41 +27,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Track if initial validation has been attempted (prevents double-run in StrictMode)
   const validatedRef = useRef(false);
 
-  // ── Initial token validation ──────────────────────────────────────────
+  const performLogout = useCallback(() => {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    if (refreshToken) {
+      api.logout(refreshToken).catch(() => {});
+    }
+    clearAccessToken();
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    setToken(null);
+    setUser(null);
+    setAuthError(null);
+  }, []);
+
+  const handleUnauthorized = useCallback(() => {
+    performLogout();
+    window.location.assign('/login');
+  }, [performLogout]);
+
+  setOnUnauthorized(handleUnauthorized);
+
+  const tryRefreshToken = useCallback(async (): Promise<string | null> => {
+    const storedRefresh = localStorage.getItem(REFRESH_KEY);
+    if (!storedRefresh) return null;
+
+    try {
+      const result = await api.refreshToken(storedRefresh);
+      setAccessToken(result.accessToken);
+      localStorage.setItem(TOKEN_KEY, result.accessToken);
+      localStorage.setItem(REFRESH_KEY, result.refreshToken);
+      setToken(result.accessToken);
+      return result.accessToken;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     if (validatedRef.current) return;
     validatedRef.current = true;
 
-    const stored = localStorage.getItem('qa-timeoff-token');
+    const stored = localStorage.getItem(TOKEN_KEY);
     if (!stored) {
       setIsAuthLoading(false);
       return;
     }
 
-    // Restore the token into memory so request() can use it
     setAccessToken(stored);
     setToken(stored);
 
     api
       .me()
       .then((profile) => {
-        if (!profile.id || !profile.telegramId) {
-          throw new Error('Некорректные данные профиля');
-        }
+        if (!profile.id) throw new Error('Некорректные данные профиля');
         setUser(profile);
       })
-      .catch((err) => {
-        // 401 or any network failure → stale / invalid token
+      .catch(async (err) => {
         const status = (err as { statusCode?: number }).statusCode;
-        clearAccessToken();
-        localStorage.removeItem('qa-timeoff-token');
-        setToken(null);
 
         if (status === 401) {
-          setAuthError('Сессия истекла. Откройте приложение заново через Telegram.');
+          const refreshed = await tryRefreshToken();
+          if (refreshed) {
+            try {
+              const profile = await api.me();
+              if (!profile.id) throw new Error('Некорректные данные профиля');
+              setUser(profile);
+              return;
+            } catch {
+              // refresh succeeded but /me failed — continue to logout
+            }
+          }
+        }
+
+        clearAccessToken();
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+        setToken(null);
+
+        if (status === 401 || status === 403) {
+          setAuthError('Сессия истекла. Выполните вход заново.');
         } else {
           setAuthError('Не удалось проверить авторизацию. Проверьте подключение.');
         }
@@ -78,54 +115,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => {
         setIsAuthLoading(false);
       });
-  }, []);
+  }, [tryRefreshToken]);
 
-  // ── Login via Telegram initData ───────────────────────────────────────
-  const login = useCallback(async (initData: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     setIsAuthLoading(true);
     setAuthError(null);
 
     try {
-      const authResult = await api.auth(initData);
-      const newToken = authResult.accessToken ?? authResult.token;
-      if (!newToken) {
-        throw new Error('Токен авторизации не получен');
-      }
+      const authResult = await api.login(email, password);
+      const newToken = authResult.accessToken;
+      if (!newToken) throw new Error('Токен авторизации не получен');
 
       setAccessToken(newToken);
-      localStorage.setItem('qa-timeoff-token', newToken);
+      localStorage.setItem(TOKEN_KEY, newToken);
+      localStorage.setItem(REFRESH_KEY, authResult.refreshToken);
       setToken(newToken);
-
-      // Immediately fetch the profile so the rest of the app can use it
-      const profile = await api.me();
-      if (!profile.id || !profile.telegramId) {
-        throw new Error('Некорректные данные профиля');
-      }
-      setUser(profile);
+      setUser(authResult.user);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ошибка авторизации';
       setAuthError(message);
       clearAccessToken();
-      localStorage.removeItem('qa-timeoff-token');
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_KEY);
       setToken(null);
+      throw err;
     } finally {
       setIsAuthLoading(false);
     }
   }, []);
 
-  // ── Logout ────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
-    clearAccessToken();
-    localStorage.removeItem('qa-timeoff-token');
-    setToken(null);
-    setUser(null);
-    setAuthError(null);
-  }, []);
+    performLogout();
+  }, [performLogout]);
 
   const clearAuth = useCallback(() => {
-    logout();
-    window.location.assign('/');
-  }, [logout]);
+    performLogout();
+    window.location.assign('/login');
+  }, [performLogout]);
 
   const isAuthenticated = !!token && !!user;
 
@@ -147,14 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
-
 export function useAuth(): AuthContextValue {
   const ctx = useContext(CTX);
-  if (!ctx) {
-    throw new Error('useAuth must be used within <AuthProvider>');
-  }
+  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
   return ctx;
 }

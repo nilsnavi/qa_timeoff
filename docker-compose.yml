@@ -46,7 +46,10 @@ services:
       API_PORT: 3000
       DATABASE_URL: "postgresql://${POSTGRES_USER:-qa_timeoff}:${POSTGRES_PASSWORD:-qa_timeoff}@postgres:5432/${POSTGRES_DB:-qa_timeoff}?schema=public"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env}
+      AUTH_MODE: ${AUTH_MODE:-web}
+      ENABLE_TELEGRAM_AUTH: ${ENABLE_TELEGRAM_AUTH:-false}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
       ADMIN_TELEGRAM_ID: ${ADMIN_TELEGRAM_ID:-}
       FRONTEND_URL: ${FRONTEND_URL:-https://qatimeoff.ru}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://qatimeoff.ru}

@@ -27,7 +27,13 @@ const RequestsPage = lazy(() => import('../pages/RequestsPage').then((module) =>
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPage />}>{node}</Suspense>;
 
+const LoginPage = lazy(() => import('../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+
 export const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: withSuspense(<LoginPage />),
+  },
   {
     path: '/',
     element: <App />,

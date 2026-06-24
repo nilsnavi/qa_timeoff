@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -18,6 +19,9 @@ describe('AuthService', () => {
     timeBalance: {
       create: jest.fn(),
     },
+    refreshToken: {
+      create: jest.fn().mockResolvedValue({ token: 'mock-refresh-token' }),
+    },
   };
 
   const mockJwt = {
@@ -28,6 +32,10 @@ describe('AuthService', () => {
     validateInitData: jest.fn(),
   };
 
+  const mockConfig = {
+    get: jest.fn().mockReturnValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -35,6 +43,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwt },
         { provide: TelegramAuthService, useValue: mockTelegramAuth },
+        { provide: ConfigService, useValue: mockConfig },
       ],
     }).compile();
 
@@ -82,8 +91,8 @@ describe('AuthService', () => {
         teamId: 'team-1',
       });
       expect(result).toEqual({
-        token: 'mock-jwt-token',
         accessToken: 'mock-jwt-token',
+        refreshToken: 'mock-refresh-token',
         user: expect.objectContaining({
           id: 'user-1',
           fullName: 'Test User',

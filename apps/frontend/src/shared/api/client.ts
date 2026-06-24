@@ -4,12 +4,10 @@ import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 let accessToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
 
 export const setAccessToken = (token?: string) => {
-  if (!token) {
-    return;
-  }
-
+  if (!token) return;
   accessToken = token;
   localStorage.setItem('qa-timeoff-token', token);
 };
@@ -19,9 +17,15 @@ export const clearAccessToken = () => {
   localStorage.removeItem('qa-timeoff-token');
 };
 
+export const getAccessToken = () => accessToken;
+
+export const setOnUnauthorized = (handler: (() => void) | null) => {
+  onUnauthorized = handler;
+};
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    throw new NetworkError('No internet connection');
+    throw new NetworkError('Нет подключения к интернету');
   }
 
   const timeoutMs = 15000;
@@ -42,7 +46,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const text = await response.text();
 
     if (!response.ok) {
-      throw mapApiError(response.status, text);
+      const error = mapApiError(response.status, text);
+
+      if (response.status === 401 && onUnauthorized) {
+        onUnauthorized();
+      }
+
+      throw error;
     }
 
     if (!text) {
@@ -56,20 +66,30 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
 
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new TimeoutError('Request timeout exceeded');
+      throw new TimeoutError('Превышено время ожидания запроса');
     }
 
-    throw new NetworkError(error instanceof Error ? error.message : 'Unknown network error');
+    throw new NetworkError(error instanceof Error ? error.message : 'Неизвестная ошибка сети');
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
 export const api = {
-  auth: (initData: string) =>
-    request<{ token?: string; accessToken?: string }>('/auth/telegram', {
+  login: (email: string, password: string) =>
+    request<{ accessToken: string; refreshToken: string; user: User }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ initData }),
+      body: JSON.stringify({ email, password }),
+    }),
+  refreshToken: (refreshToken: string) =>
+    request<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    }),
+  logout: (refreshToken?: string) =>
+    request<void>('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
     }),
   dashboard: () => request<Dashboard>('/dashboard'),
   me: () => request<User>('/auth/me'),
@@ -90,7 +110,7 @@ export const api = {
     request('/balance/write-off', { method: 'POST', body: JSON.stringify(payload) }),
   users: () => request<User[]>('/users'),
   createUser: (payload: {
-    telegramId: string;
+    telegramId?: string;
     fullName: string;
     username?: string;
     email?: string;
@@ -99,6 +119,7 @@ export const api = {
     teamId?: string;
     managerId?: string;
     isActive?: boolean;
+    passwordHash?: string;
   }) => request<User>('/users', { method: 'POST', body: JSON.stringify(payload) }),
   updateUser: (
     id: string,
@@ -112,6 +133,7 @@ export const api = {
       teamId: string;
       managerId: string;
       isActive: boolean;
+      passwordHash: string;
     }>,
   ) => request<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   userOperations: (userId: string) => request<BalanceOperation[]>(`/balance/operations/${userId}`),
@@ -194,16 +216,11 @@ export const api = {
     const qs = search.toString();
     return request<PayrollReport>(`/admin/reports/payroll${qs ? `?${qs}` : ''}`);
   },
-  // ── Hourly Rate ──────────────────────────────────────────────────
-
   updateHourlyRate: (userId: string, hourlyRate: number, currency?: string) =>
     request<User>(`/admin/users/${userId}/hourly-rate`, {
       method: 'PATCH',
       body: JSON.stringify({ hourlyRate, currency }),
     }),
-
-  // ── Overtime Cancel ──────────────────────────────────────────────
-
   cancelOvertime: (overtimeId: string) =>
     request<Overtime>(`/admin/overtime/${overtimeId}/cancel`, { method: 'PATCH' }),
 

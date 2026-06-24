@@ -57,8 +57,8 @@ export function ProfilePage() {
     setNotifications((current) => ({ ...current, [key]: !current[key] }));
   };
 
-  const logout = async () => {
-    if (!(await confirmTelegram('Выйти из профиля?', 'Текущая сессия будет сброшена на этом устройстве.'))) {
+  const handleLogout = async () => {
+    if (!window.confirm('Выйти из профиля? Текущая сессия будет сброшена на этом устройстве.')) {
       return;
     }
     clearAuth();
@@ -166,7 +166,7 @@ export function ProfilePage() {
       </Card>
 
       {/* 5. Destructive Actions */}
-      <Button variant="danger" size="lg" onClick={logout}>
+      <Button variant="danger" size="lg" onClick={handleLogout}>
         <LogOut size={18} />
         Выйти
       </Button>

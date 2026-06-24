@@ -31,7 +31,7 @@ export class AdminTelegramNotifier {
       select: { telegramId: true },
     });
 
-    return admins.map((a) => a.telegramId);
+    return admins.map((a) => a.telegramId).filter((id): id is string => id !== null);
   }
 
   async notifyOvertimeAdded(employeeName: string, hours: number, reason: string): Promise<void> {

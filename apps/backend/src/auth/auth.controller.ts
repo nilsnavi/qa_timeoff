@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Logger, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { User } from '@prisma/client';
-import { IsString } from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -9,6 +10,25 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 class TelegramAuthDto {
   @IsString()
   initData!: string;
+}
+
+class LoginDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(1)
+  password!: string;
+}
+
+class RefreshTokenDto {
+  @IsString()
+  refreshToken!: string;
+}
+
+class LogoutDto {
+  @IsString()
+  refreshToken!: string;
 }
 
 @ApiTags('auth')
@@ -23,6 +43,22 @@ export class AuthController {
     this.logger.log(`Telegram auth request received`);
     this.logger.log(`initData length: ${dto.initData?.length ?? 0}`);
     return this.authService.telegramLogin(dto.initData);
+  }
+
+  @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto.email, dto.password);
+  }
+
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto.refreshToken);
+  }
+
+  @Post('logout')
+  logout(@Body() dto: LogoutDto) {
+    return this.authService.logout(dto.refreshToken);
   }
 
   @Get('me')
