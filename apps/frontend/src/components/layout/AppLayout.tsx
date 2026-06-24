@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Bell, Bug, CalendarDays, ClipboardList, Home, Plus, Shield, UserRound, WalletCards } from 'lucide-react';
+import { Bell, Bug, CalendarDays, ClipboardList, Home, Lock, Plus, Shield, UserRound, WalletCards } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { BottomNavigation, Toast } from '../ui';
@@ -91,6 +91,36 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-[#4C7DFF]" />
           <p className="text-[14px] text-white/50">Авторизация...</p>
+        </div>
+      </main>
+    );
+  }
+
+  const isAccessDenied = authError?.includes('не найден') || authError?.includes('заблокирован') || authError?.includes('not found') || authError?.includes('inactive');
+
+  if (isAccessDenied) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col items-center justify-center px-4 py-8 safe-area">
+        <div className="w-full space-y-5 rounded-xl bg-rose-500/10 p-6 ring-1 ring-rose-500/20">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-[14px] bg-rose-500/15 text-rose-400">
+            <Lock size={28} />
+          </div>
+          <div className="text-center">
+            <h1 className="text-[16px] font-bold text-rose-400">Доступ запрещён</h1>
+            <p className="mt-2 text-[14px] font-medium text-rose-300/80">
+              {authError}
+            </p>
+            <p className="mt-4 text-[13px] font-medium text-white/30">
+              Обратитесь к администратору для получения доступа.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="w-full rounded-[10px] bg-white/[0.06] px-4 py-3 text-[14px] font-semibold text-white/60 ring-1 ring-white/10 active:scale-95"
+          >
+            Попробовать снова
+          </button>
         </div>
       </main>
     );

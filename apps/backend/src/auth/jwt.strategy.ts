@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -17,10 +17,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
-    return this.prisma.user.findUniqueOrThrow({
+  async validate(payload: { sub: string; role: string; teamId: string | null }) {
+    const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: { timeBalance: true, team: true },
     });
+
+    if (!user) {
+      throw new UnauthorizedException('Пользователь не найден');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Доступ заблокирован');
+    }
+
+    return user;
   }
 }

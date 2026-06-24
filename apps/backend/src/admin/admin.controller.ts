@@ -5,11 +5,13 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { AdminService } from './admin.service';
 import { BalanceOperationDto } from './dto/balance-operation.dto';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
 import { UpdateHourlyRateDto } from './dto/update-hourly-rate.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -138,6 +140,30 @@ export class AdminController {
     @Query('endDate') endDate?: string,
   ) {
     return this.adminService.getPayrollReport(startDate, endDate);
+  }
+
+  // ── User Management ──────────────────────────────────────────────
+
+  @Roles(Role.ADMIN)
+  @Post('users')
+  createUser(@Body() dto: AdminCreateUserDto, @CurrentUser() admin: User) {
+    return this.adminService.createUser(admin, dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @Patch('users/:id/role')
+  updateUserRole(
+    @Param('id') userId: string,
+    @Body() dto: UpdateUserRoleDto,
+    @CurrentUser() admin: User,
+  ) {
+    return this.adminService.updateUserRole(admin, userId, dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @Patch('users/:id/disable')
+  disableUser(@Param('id') userId: string, @CurrentUser() admin: User) {
+    return this.adminService.disableUser(admin, userId);
   }
 
   // ── Audit Log ───────────────────────────────────────────────────────

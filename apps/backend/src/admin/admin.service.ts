@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { BalanceOperationType, OvertimeStatus, Prisma, User } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BalanceOperationType, OvertimeStatus, Prisma, Role, User } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { NotificationType } from '../notifications/notification-types';
 import { AdminTelegramNotifier } from '../notifications/admin-telegram-notifier.service';
 import { TelegramNotificationService } from '../notifications/telegram-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateHourlyRateDto } from './dto/update-hourly-rate.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 
@@ -673,6 +675,111 @@ export class AdminService {
     }
 
     return result;
+  }
+
+  // ── User Management ──────────────────────────────────────────────
+
+  async createUser(admin: User, dto: AdminCreateUserDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { telegramId: dto.telegramId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Пользователь с таким telegramId уже существует');
+    }
+
+    const user = await this.prisma.user.create({
+      data: {
+        telegramId: dto.telegramId,
+        fullName: dto.fullName,
+        username: dto.username,
+        role: dto.role ?? Role.EMPLOYEE,
+        teamId: dto.teamId,
+        isActive: dto.isActive ?? true,
+        timeBalance: { create: {} },
+      },
+      include: {
+        team: { select: { id: true, name: true } },
+        timeBalance: true,
+      },
+    });
+
+    await this.auditService.log({
+      actorId: admin.id,
+      action: 'CREATE_USER',
+      entityType: 'User',
+      entityId: user.id,
+      payload: { telegramId: dto.telegramId, fullName: dto.fullName, role: user.role },
+    });
+
+    return user;
+  }
+
+  async updateUserRole(admin: User, userId: string, dto: UpdateUserRoleDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, role: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    const oldRole = user.role;
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: dto.role },
+      include: {
+        team: { select: { id: true, name: true } },
+        timeBalance: true,
+      },
+    });
+
+    await this.auditService.log({
+      actorId: admin.id,
+      action: 'UPDATE_USER_ROLE',
+      entityType: 'User',
+      entityId: userId,
+      payload: { oldRole, newRole: dto.role },
+    });
+
+    return updated;
+  }
+
+  async disableUser(admin: User, userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, isActive: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    if (!user.isActive) {
+      throw new BadRequestException('Пользователь уже деактивирован');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+      include: {
+        team: { select: { id: true, name: true } },
+        timeBalance: true,
+      },
+    });
+
+    await this.auditService.log({
+      actorId: admin.id,
+      action: 'DISABLE_USER',
+      entityType: 'User',
+      entityId: userId,
+      payload: { fullName: user.fullName },
+    });
+
+    return updated;
   }
 
   // ── Audit Log ─────────────────────────────────────────────────────

@@ -1,7 +1,5 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramAuthService, TelegramUser } from './telegram-auth.service';
 
@@ -13,7 +11,6 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly telegramAuth: TelegramAuthService,
-    private readonly config: ConfigService,
   ) { }
 
   async telegramLogin(initData: string) {
@@ -26,8 +23,12 @@ export class AuthService {
     }
 
     const telegramUser = result.user;
-    const user = await this.upsertTelegramUser(telegramUser);
-    const token = await this.jwt.signAsync({ sub: user.id, role: user.role });
+    const user = await this.resolveTelegramUser(telegramUser);
+    const token = await this.jwt.signAsync({
+      sub: user.id,
+      role: user.role,
+      teamId: user.teamId,
+    });
 
     this.logger.log(`User authenticated: ${user.fullName} (id=${user.id}, role=${user.role})`);
 
@@ -49,35 +50,40 @@ export class AuthService {
     });
   }
 
-  private async upsertTelegramUser(telegramUser: TelegramUser) {
-    const fullName =
-      [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') ||
-      telegramUser.username ||
-      `Telegram ${telegramUser.id}`;
-
-    const adminTelegramId = this.config.get<string>('ADMIN_TELEGRAM_ID');
-    const isFirstUser = !(await this.prisma.user.findFirst());
-    const shouldBeAdmin =
-      (adminTelegramId && String(telegramUser.id) === adminTelegramId) ||
-      (isFirstUser && !adminTelegramId);
-
-    const user = await this.prisma.user.upsert({
-      where: { telegramId: String(telegramUser.id) },
-      create: {
-        telegramId: String(telegramUser.id),
-        username: telegramUser.username,
-        fullName,
-        role: shouldBeAdmin ? Role.ADMIN : Role.EMPLOYEE,
-        timeBalance: {
-          create: {},
-        },
-      },
-      update: {
-        username: telegramUser.username,
-        fullName,
-      },
+  private async resolveTelegramUser(telegramUser: TelegramUser) {
+    const telegramId = String(telegramUser.id);
+    const user = await this.prisma.user.findUnique({
+      where: { telegramId },
       include: { timeBalance: true, team: true, manager: true },
     });
+
+    if (!user) {
+      this.logger.warn(`User not found for telegramId=${telegramId}`);
+      throw new UnauthorizedException('Пользователь не найден. Обратитесь к администратору.');
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(`User is inactive for telegramId=${telegramId}`);
+      throw new UnauthorizedException('Доступ заблокирован. Обратитесь к администратору.');
+    }
+
+    const fullName =
+      [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') ||
+      telegramUser.username;
+
+    const shouldUpdate =
+      (fullName && fullName !== user.fullName) ||
+      (telegramUser.username && telegramUser.username !== user.username);
+
+    if (shouldUpdate) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          ...(fullName && { fullName }),
+          ...(telegramUser.username && { username: telegramUser.username }),
+        },
+      });
+    }
 
     if (!user.timeBalance) {
       await this.prisma.timeBalance.create({ data: { userId: user.id } });

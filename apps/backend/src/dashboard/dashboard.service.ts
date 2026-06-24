@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RequestStatus } from '@prisma/client';
+import { RequestStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -12,21 +12,42 @@ export class DashboardService {
       include: { timeBalance: true, team: true, manager: true },
     });
 
+    const isManager = user.role === Role.MANAGER || user.role === Role.ADMIN;
+    const isLead = user.role === Role.LEAD;
+
+    const requestsWhere = isManager
+      ? { OR: [{ status: RequestStatus.PENDING }] }
+      : isLead && user.teamId
+        ? { OR: [{ userId }, { status: RequestStatus.PENDING, user: { teamId: user.teamId } }] }
+        : { userId };
+
+    const vacationsWhere = isManager
+      ? { OR: [{ status: RequestStatus.PENDING }] }
+      : isLead && user.teamId
+        ? { OR: [{ userId }, { status: RequestStatus.PENDING, user: { teamId: user.teamId } }] }
+        : { userId };
+
+    const calendarWhere = isManager
+      ? { status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED] } }
+      : isLead && user.teamId
+        ? { status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED] }, user: { teamId: user.teamId } }
+        : { userId, status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED] } };
+
     const [requests, vacations, teamCalendar, operations, notifications] = await Promise.all([
       this.prisma.timeOffRequest.findMany({
-        where: { OR: [{ userId }, { status: RequestStatus.PENDING }] },
+        where: requestsWhere,
         include: { user: true, approver: true },
         orderBy: { createdAt: 'desc' },
         take: 30,
       }),
       this.prisma.vacationRequest.findMany({
-        where: { OR: [{ userId }, { status: RequestStatus.PENDING }] },
+        where: vacationsWhere,
         include: { user: true, approver: true },
         orderBy: { createdAt: 'desc' },
         take: 30,
       }),
       this.prisma.timeOffRequest.findMany({
-        where: { status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED] } },
+        where: calendarWhere,
         include: { user: true, approver: true },
         orderBy: { date: 'asc' },
         take: 60,

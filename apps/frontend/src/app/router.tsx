@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { App } from './App';
 import { FallbackPage } from '../pages/FallbackPage';
-import { isOnboardingComplete, OnboardingPage } from '../pages/OnboardingPage';
 
 const HomePage = lazy(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
 const AdminPage = lazy(() => import('../pages/AdminPage').then((module) => ({ default: module.AdminPage })));
@@ -29,7 +28,6 @@ const RequestsPage = lazy(() => import('../pages/RequestsPage').then((module) =>
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPage />}>{node}</Suspense>;
 
 export const router = createBrowserRouter([
-  { path: '/onboarding', element: <OnboardingPage />, errorElement: <FallbackPage /> },
   {
     path: '/',
     element: <App />,
@@ -37,7 +35,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: isOnboardingComplete() ? withSuspense(<HomePage />) : <Navigate to="/onboarding" replace />,
+        element: withSuspense(<HomePage />),
       },
       { path: 'balance', element: withSuspense(<BalancePage />) },
       { path: 'timeoff/new', element: withSuspense(<CreateTimeOffPage />) },
