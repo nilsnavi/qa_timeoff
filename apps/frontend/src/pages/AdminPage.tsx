@@ -227,25 +227,28 @@ export function AdminPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-4 pb-24">
-      <Card>
-        <div className="flex items-start justify-between gap-3">
+      <Card className="pb-3">
+        <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-sm font-bold text-[#7A8599]">Администрирование</p>
-            <h2 className="text-xl font-black text-white">HR + Workforce Management</h2>
+            <p className="text-[11px] font-bold text-[#7A8599]">Администрирование</p>
+            <h2 className="text-[16px] font-bold text-white">HR + Workforce Management</h2>
           </div>
         </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {tabs.map((tab) => (
-            <Button
+            <button
               key={tab.key}
-              size="sm"
-              variant={activeTab === tab.key ? 'primary' : 'secondary'}
+              type="button"
               onClick={() => setActiveTab(tab.key)}
-              className="shrink-0"
+              className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2.5 text-[11px] font-bold transition ${
+                activeTab === tab.key
+                  ? 'app-gradient text-white shadow-sm'
+                  : 'bg-white/[0.06] text-[#B8C0D0] hover:bg-white/[0.10]'
+              }`}
             >
               {tab.icon}
               {tab.label}
-            </Button>
+            </button>
           ))}
         </div>
       </Card>
@@ -558,29 +561,33 @@ function UserCard({
   const balance = user.timeBalance?.balanceHours ?? 0;
 
   return (
-    <Card>
-      <div className="mb-4 flex items-start gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] app-gradient text-base font-black text-white">{getInitials(user.fullName)}</div>
+    <Card className="p-3">
+      <div className="mb-3 flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] app-gradient text-sm font-black text-white">{getInitials(user.fullName)}</div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-lg font-black text-white">{user.fullName}</p>
-              <p className="truncate text-sm font-bold text-[#7A8599]">{user.position ?? user.email ?? 'Должность не указана'}</p>
+              <p className="truncate text-[14px] font-bold text-white">{user.fullName}</p>
+              <p className="truncate text-[11px] font-medium text-[#AAB4C0]">{user.position ?? user.email ?? 'Должность не указана'}</p>
               {user.hourlyRate ? (
-                <p className="text-xs font-bold text-[#7A8599]">{user.hourlyRate} ₽/ч</p>
+                <p className="text-[10px] font-medium text-[#7B8496]">{user.hourlyRate} ₽/ч</p>
               ) : null}
             </div>
             <Badge tone={user.isActive ? 'success' : 'neutral'}>{user.isActive ? 'Активен' : 'Отключен'}</Badge>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Badge tone="gradient">{getRoleLabel(user.role)}</Badge>
-            <Badge tone="info">{teamName ?? 'Без команды'}</Badge>
-            <Badge tone={balance >= 0 ? 'success' : 'danger'}>{balance} ч</Badge>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <span className={`inline-flex h-[18px] items-center rounded px-1.5 text-[9px] font-bold ${
+              user.role === 'ADMIN' ? 'app-gradient text-white' : 'bg-white/[0.06] text-[#AAB4C0]'
+            }`}>{getRoleLabel(user.role)}</span>
+            <span className="inline-flex h-[18px] items-center rounded bg-white/[0.04] px-1.5 text-[9px] font-bold text-[#7B8496]">{teamName ?? 'Без команды'}</span>
+            <span className={`inline-flex h-[18px] items-center rounded px-1.5 text-[9px] font-bold ${
+              balance >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`}>{balance} ч</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2">
         <Select label="Роль" value={user.role} disabled={disabled} onChange={(event) => onRoleChange(event.target.value as Role)}>
           {roles.map((role) => (
             <option key={role} value={role}>
@@ -598,44 +605,30 @@ function UserCard({
         </Select>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Button size="sm" variant="secondary" disabled={disabled} onClick={onEdit}>
-          <Pencil size={16} />
-          Изменить
-        </Button>
-        <Button size="sm" disabled={disabled} onClick={onAddHours}>
-          <Plus size={16} />
-          Начислить
-        </Button>
-        <Button size="sm" variant="secondary" disabled={disabled} onClick={onWriteOffHours}>
-          <Clock3 size={16} />
-          Списать
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onOpenHistory}>
-          <History size={16} />
-          История
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onChangePosition}>
-          <Pencil size={16} />
-          Должность
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onPositionHistory}>
-          <History size={16} />
-          Ист.должн.
-        </Button>
-        <Button size="sm" disabled={disabled} onClick={onAddOvertime}>
-          <Plus size={16} />
-          Переработка
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onViewOvertime}>
-          <Clock3 size={16} />
-          Переработки
-        </Button>
-        <Button size="sm" variant="secondary" onClick={onChangeHourlyRate}>
-          <Wallet size={16} />
-          Ставка
-        </Button>
+      <div className="mt-3 grid grid-cols-2 gap-1.5">
+        <button type="button" disabled={disabled} onClick={onEdit}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><Pencil size={14} /> Изменить</button>
+        <button type="button" disabled={disabled} onClick={onChangePosition}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><Pencil size={14} /> Должность</button>
+        <button type="button" disabled={disabled} onClick={onWriteOffHours}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><Clock3 size={14} /> Списать</button>
+        <button type="button" onClick={onOpenHistory}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><History size={14} /> История</button>
       </div>
+
+      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+        <button type="button" disabled={disabled} onClick={onAddHours}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><Plus size={14} /> Начислить</button>
+        <button type="button" onClick={onViewOvertime}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><Clock3 size={14} /> Перер-ки</button>
+        <button type="button" onClick={onChangeHourlyRate}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-[10px] bg-white/[0.06] text-[12px] font-semibold text-[#B8C0D0] transition active:scale-[0.97] disabled:opacity-50"><Wallet size={14} /> Ставка</button>
+      </div>
+
+      <button type="button" disabled={disabled} onClick={onAddOvertime}
+        className="mt-1.5 inline-flex h-[40px] w-full items-center justify-center gap-1.5 rounded-[12px] app-gradient text-[13px] font-bold text-white transition active:scale-[0.97] disabled:opacity-50">
+        <Plus size={16} /> Переработка
+      </button>
     </Card>
   );
 }
