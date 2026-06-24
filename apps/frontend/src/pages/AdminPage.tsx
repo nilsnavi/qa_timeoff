@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, FileSpreadsheet, Plus, Search, ShieldAlert, Trash2, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Badge, Button, ErrorState, Field, Loader, Modal, Select } from '../components/ui';
+import { Badge, Button, ErrorState, Field, Loader, Modal } from '../components/ui';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import type { Role, Team, User } from '../shared/types';
@@ -12,10 +12,6 @@ import { clsx } from 'clsx';
 type AdminTab = 'users' | 'teams' | 'audit';
 
 const roles: Role[] = ['EMPLOYEE', 'LEAD', 'MANAGER', 'ADMIN'];
-const statusClasses: Record<string, string> = {
-  true: 'bg-emerald-500/10 text-emerald-400',
-  false: 'bg-rose-950/300/10 text-rose-400',
-};
 
 export function AdminPage() {
   const { user } = useAuth();
@@ -26,7 +22,6 @@ export function AdminPage() {
   const [teamFilter, setTeamFilter] = useState('ALL');
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [createOpen, setCreateOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<User | null>(null);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
   const [page, setPage] = useState(1);
@@ -77,7 +72,7 @@ export function AdminPage() {
   };
 
   const disableMutation = useMutation({
-    mutationFn: api.disableUser,
+    mutationFn: (id: string) => api.disableUser(id),
     onSuccess: () => { queryClient.invalidateQueries(); queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] }); },
   });
 
@@ -86,26 +81,26 @@ export function AdminPage() {
   };
 
   const handleCreate = () => {
-    const dto: any = { fullName: newFullName, email: newEmail || undefined, role: newRole, teamId: newTeamId || undefined, passwordHash: undefined };
-    api.createUser(dto).then(() => { queryClient.invalidateQueries(); queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] }); setCreateOpen(false); setNewFullName(''); setNewEmail(''); }).catch(() => {});
+    api.createUser({ fullName: newFullName, email: newEmail || undefined, role: newRole, teamId: newTeamId || undefined })
+      .then(() => { queryClient.invalidateQueries(); queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] }); setCreateOpen(false); setNewFullName(''); setNewEmail(''); })
+      .catch(() => {});
   };
 
   if (!isAdmin) return <ErrorState title="Доступ запрещён" description="Только для администраторов" />;
 
-  const columns: Column<User>[] = [
+  const columns: Column<any>[] = [
     { key: 'fullName', header: 'ФИО', width: '18%', sortable: true, render: (u) => <span className="font-semibold text-white/90">{u.fullName}</span> },
     { key: 'email', header: 'Email', width: '18%', render: (u) => <span className="text-white/50">{u.email || '—'}</span> },
-    { key: 'role', header: 'Роль', width: '12%', sortable: true, render: (u) => <Badge tone={u.role === 'ADMIN' ? 'gradient' : 'default'}>{getRoleLabel(u.role)}</Badge> },
-    { key: 'team', header: 'Команда', width: '12%', render: (u) => <span className="text-white/50">{(u as any).team?.name || '—'}</span> },
+    { key: 'role', header: 'Роль', width: '12%', sortable: true, render: (u) => <Badge tone="neutral">{getRoleLabel(u.role)}</Badge> },
+    { key: 'team', header: 'Команда', width: '12%', render: (u) => <span className="text-white/50">{u.team?.name || '—'}</span> },
     { key: 'position', header: 'Должность', width: '15%', render: (u) => <span className="text-white/50">{u.position || '—'}</span> },
     { key: 'isActive', header: 'Статус', width: '10%', sortable: true, align: 'center', render: (u) => (
-      <span className={clsx('inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-bold uppercase', statusClasses[String(u.isActive)])}>
+      <span className={clsx('inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-bold uppercase', u.isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-950/300/10 text-rose-400')}>
         {u.isActive ? 'Активен' : 'Заблокирован'}
       </span>
     )},
     { key: 'actions', header: '', width: '10%', align: 'right', render: (u) => (
       <div className="flex items-center justify-end gap-1">
-        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); }} className="!min-h-0 h-7 !px-2 text-[12px]">Роль</Button>
         {u.isActive && (
           <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDisable(u); }} className="!min-h-0 h-7 w-7 !p-0 text-rose-400">
             <Trash2 size={14} />
@@ -138,10 +133,8 @@ export function AdminPage() {
         <KpiCard label="Команд" value={stats?.teamsCount ?? 0} icon={Search} color="amber" />
       </div>
 
-      {/* Tabs + Main Content */}
       <div className="flex gap-6">
         <div className="flex-1 min-w-0 space-y-4">
-          {/* Tab bar */}
           <div className="flex items-center gap-1 rounded-xl bg-white/[0.03] p-1 w-fit">
             {(['users', 'teams', 'audit'] as AdminTab[]).map(tab => (
               <button key={tab} onClick={() => { setActiveTab(tab); setPage(1); }}
@@ -152,7 +145,6 @@ export function AdminPage() {
             ))}
           </div>
 
-          {/* Search + Filters */}
           {activeTab === 'users' && (
             <div className="flex items-center gap-3">
               <div className="relative flex-1 max-w-md">
@@ -170,9 +162,8 @@ export function AdminPage() {
             </div>
           )}
 
-          {/* Content */}
           {activeTab === 'users' && (
-            <DataTable columns={columns} data={paginated} keyField="id" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}
+            <DataTable columns={columns} data={paginated as any} keyField="id" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}
               page={page} total={sorted.length} pageSize={pageSize} onPageChange={setPage} emptyMessage="Нет пользователей" />
           )}
           {activeTab === 'teams' && (
@@ -190,9 +181,9 @@ export function AdminPage() {
           )}
           {activeTab === 'audit' && (
             <div className="space-y-2">
-              {auditItems.map((item: any) => (
+              {auditItems.slice(0, 30).map((item: any) => (
                 <div key={item.id} className="enterprise-card p-3 flex items-center gap-3">
-                  <span className="text-[12px] font-bold text-white/30 uppercase w-28">{item.action}</span>
+                  <span className="text-[12px] font-bold text-white/30 uppercase w-40">{item.action}</span>
                   <span className="text-[13px] text-white/60">{item.actor?.fullName || 'Система'}</span>
                   <span className="text-[12px] text-white/20 ml-auto">{new Date(item.createdAt).toLocaleString('ru-RU')}</span>
                 </div>
@@ -201,7 +192,6 @@ export function AdminPage() {
           )}
         </div>
 
-        {/* Right sidebar */}
         <div className="hidden w-56 shrink-0 space-y-4 lg:block">
           <div className="enterprise-card p-4 space-y-3">
             <p className="text-[13px] font-bold text-white/40 uppercase">Действия</p>
@@ -222,15 +212,25 @@ export function AdminPage() {
         </div>
       </div>
 
-      {/* Create User Modal */}
       {createOpen && (
         <Modal open title="Новый пользователь" onClose={() => setCreateOpen(false)}
           footer={<div className="flex gap-2"><Button variant="secondary" onClick={() => setCreateOpen(false)}>Отмена</Button><Button onClick={handleCreate}>Создать</Button></div>}>
           <div className="space-y-4">
             <Field label="ФИО" value={newFullName} onChange={e => setNewFullName(e.target.value)} placeholder="Иван Иванов" />
             <Field label="Email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="user@company.ru" />
-            <Select label="Роль" value={newRole} onChange={e => setNewRole(e.target.value as Role)} options={roles.map(r => ({ value: r, label: getRoleLabel(r) }))} />
-            <Select label="Команда" value={newTeamId} onChange={e => setNewTeamId(e.target.value)} options={[{ value: '', label: '—' }, ...teams.map(t => ({ value: t.id, label: t.name }))]} />
+            <div className="field-shell">
+              <span className="field-label">Роль</span>
+              <select value={newRole} onChange={e => setNewRole(e.target.value as Role)} className="field-input">
+                {roles.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
+              </select>
+            </div>
+            <div className="field-shell">
+              <span className="field-label">Команда</span>
+              <select value={newTeamId} onChange={e => setNewTeamId(e.target.value)} className="field-input">
+                <option value="">—</option>
+                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
           </div>
         </Modal>
       )}

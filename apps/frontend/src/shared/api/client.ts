@@ -337,4 +337,5 @@ export const api = {
     const qs = search.toString();
     return request<User[]>('/admin/users' + (qs ? `?${qs}` : ''));
   },
+  disableUser: (id: string) => request<User>(`/admin/users/${id}/disable`, { method: 'PATCH' }),
 };
