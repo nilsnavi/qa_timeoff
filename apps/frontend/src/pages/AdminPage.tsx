@@ -587,15 +587,15 @@ function UserCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Select label="Роль" value={user.role} disabled={disabled} onChange={(event) => onRoleChange(event.target.value as Role)}>
+      <div className="grid grid-cols-2 gap-1.5">
+        <Select label="Роль" value={user.role} disabled={disabled} onChange={(event) => onRoleChange(event.target.value as Role)} className="!min-h-[36px] !py-1.5 text-[12px]">
           {roles.map((role) => (
             <option key={role} value={role}>
               {getRoleLabel(role)}
             </option>
           ))}
         </Select>
-        <Select label="Команда" value={user.teamId ?? ''} disabled={disabled} onChange={(event) => onTeamChange(event.target.value)}>
+        <Select label="Команда" value={user.teamId ?? ''} disabled={disabled} onChange={(event) => onTeamChange(event.target.value)} className="!min-h-[36px] !py-1.5 text-[12px]">
           <option value="">Без команды</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
