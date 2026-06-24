@@ -174,8 +174,8 @@ export function HomePage() {
           />
         </div>
 
-        {/* ── Quick Actions Icons ────────────────────────────── */}
-        <div className="quick-actions-grid">
+        {/* ── Quick Actions Horizontal Row ──────────────────── */}
+        <div className="quick-actions-row">
           <QuickActionBtn icon={Clock3} label="Отгул" color="from-blue-500 to-blue-600" onClick={() => navigate('/timeoff/new')} />
           <QuickActionBtn icon={Plane} label="Отпуск" color="from-violet-500 to-purple-600" onClick={() => navigate('/vacation/new')} />
           <QuickActionBtn icon={CalendarDays} label="Календарь" color="from-emerald-500 to-teal-600" onClick={() => navigate('/calendar')} />
@@ -347,19 +347,18 @@ function KpiTile({ label, value, progress, color }: { label: string; value: stri
   );
 }
 
-/* Quick Action Button (64×64) */
+/* Quick Action Button (80×80 card, icon top + label bottom) */
 function QuickActionBtn({ icon: Icon, label, color, onClick }: { icon: React.ElementType; label: string; color: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="enterprise-card flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 hover-lift group relative"
-      style={{ width: 64, height: 64 }}
+      className="quick-action-btn enterprise-card flex flex-col items-center justify-center gap-2 transition-all active:scale-95 hover-lift group"
     >
-      <div className={`grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br ${color} shadow-sm transition-transform group-hover:scale-110`}>
-        <Icon size={14} className="text-white" />
+      <div className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br ${color} shadow-sm transition-transform group-hover:scale-110`}>
+        <Icon size={16} className="text-white" />
       </div>
-      <span className="text-[8px] font-semibold text-white/40 group-hover:text-white/70 transition-colors whitespace-nowrap">{label}</span>
+      <span className="text-[10px] font-semibold text-white/50 group-hover:text-white/80 transition-colors">{label}</span>
     </button>
   );
 }

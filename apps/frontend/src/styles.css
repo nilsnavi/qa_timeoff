@@ -320,6 +320,26 @@ input, select, textarea, .field-shell {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
+/* ── Quick actions horizontal scroll ─────────────────────────── */
+
+.quick-actions-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 1px;
+  scrollbar-width: none;
+}
+
+.quick-actions-row::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* ── Desktop layout overrides (minimal) ──────────────────────── */
 
 @media (min-width: 1024px) {
