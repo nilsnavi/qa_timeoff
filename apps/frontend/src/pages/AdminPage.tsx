@@ -1297,21 +1297,21 @@ function UserFormModal({
         </div>
       }
     >
-      <div className="grid gap-3">
-        <Field label="Telegram ID" value={form.telegramId} onChange={(event) => setForm({ ...form, telegramId: event.target.value })} />
-        <Field label="ФИО" value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} />
-        <Field label="Username" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} />
-        <Field label="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-        <Field label="Должность" value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} />
-        <Field label="Ставка (₽/ч)" type="number" min={0} value={form.hourlyRate} onChange={(event) => setForm({ ...form, hourlyRate: Number(event.target.value) })} />
-        <Select label="Роль" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as Role })}>
+      <div className="grid gap-2">
+        <Field label="Telegram ID" value={form.telegramId} onChange={(event) => setForm({ ...form, telegramId: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]" />
+        <Field label="ФИО" value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]" />
+        <Field label="Username" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]" />
+        <Field label="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]" />
+        <Field label="Должность" value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]" />
+        <Field label="Ставка (₽/ч)" type="number" min={0} value={form.hourlyRate} onChange={(event) => setForm({ ...form, hourlyRate: Number(event.target.value) })} className="!min-h-[36px] !py-1.5 text-[12px]" />
+        <Select label="Роль" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as Role })} className="!min-h-[36px] !py-1.5 text-[12px]">
           {roles.map((role) => (
             <option key={role} value={role}>
               {getRoleLabel(role)}
             </option>
           ))}
         </Select>
-        <Select label="Команда" value={form.teamId} onChange={(event) => setForm({ ...form, teamId: event.target.value })}>
+        <Select label="Команда" value={form.teamId} onChange={(event) => setForm({ ...form, teamId: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]">
           <option value="">Без команды</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
@@ -1319,7 +1319,7 @@ function UserFormModal({
             </option>
           ))}
         </Select>
-        <Select label="Руководитель" value={form.managerId} onChange={(event) => setForm({ ...form, managerId: event.target.value })}>
+        <Select label="Руководитель" value={form.managerId} onChange={(event) => setForm({ ...form, managerId: event.target.value })} className="!min-h-[36px] !py-1.5 text-[12px]">
           <option value="">Не указан</option>
           {users
             .filter((user) => user.id !== target?.id)
@@ -1329,7 +1329,7 @@ function UserFormModal({
               </option>
             ))}
         </Select>
-        <label className="flex items-center justify-between gap-3 rounded-[20px] bg-[#111A2E]/65 p-3 text-sm font-bold text-[#7A8599] bg-[#111A2E]/60 text-[#7A8599]">
+        <label className="flex items-center justify-between gap-2 rounded-[10px] bg-white/[0.04] px-3 py-2 text-[12px] font-semibold text-[#B8C0D0]">
           Активен
           <input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} />
         </label>
