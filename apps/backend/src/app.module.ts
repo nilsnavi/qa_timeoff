@@ -10,12 +10,15 @@ import { AuthModule } from './auth/auth.module';
 import { BalanceModule } from './balance/balance.module';
 import { AppCacheModule } from './cache/cache.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { validateEnv } from './config/env.validation';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { EventsModule } from './events/events.module';
 import { ExportModule } from './export/export.module';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
 import { HealthModule } from './health/health.module';
 import { KpiModule } from './kpi/kpi.module';
+import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -40,6 +43,8 @@ import { VacationModule } from './vacation/vacation.module';
     PrismaModule,
     AuthModule,
     DashboardModule,
+    EventsModule,
+    LeaveRequestsModule,
     RequestsModule,
     AdminModule,
     UsersModule,
@@ -48,6 +53,7 @@ import { VacationModule } from './vacation/vacation.module';
     TimeOffModule,
     VacationModule,
     CalendarModule,
+    CalendarEventsModule,
     NotificationsModule,
     HealthModule,
     MetricsModule,

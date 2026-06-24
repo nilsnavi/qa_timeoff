@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogResponse, BalanceOperation, CalendarEvent, Dashboard, KpiRecalculationResult, KpiResponse, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -135,6 +135,27 @@ export const api = {
     status === 'APPROVED' ? api.approveTimeOff(id) : api.rejectTimeOff(id),
   calendar: () => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>('/calendar'),
   calendarTeam: (teamId: string) => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>(`/calendar/team/${teamId}`),
+
+  // ── Calendar Events (dedicated enterprise calendar) ────────────────────
+
+  calendarEvents: (params?: { month?: string; team_id?: string; user_id?: string; type?: string; page?: number; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.month) search.set('month', params.month);
+    if (params?.team_id) search.set('team_id', params.team_id);
+    if (params?.user_id) search.set('user_id', params.user_id);
+    if (params?.type) search.set('type', params.type);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return request<PaginatedCalendarEvents>(`/calendar/events${qs ? `?${qs}` : ''}`);
+  },
+  createCalendarEvent: (payload: { type: CalendarEventEntry['type']; startDate: string; endDate: string; userId?: string; comment?: string }) =>
+    request<CalendarEventEntry>('/calendar/events', { method: 'POST', body: JSON.stringify(payload) }),
+  updateCalendarEvent: (id: string, payload: { type?: CalendarEventEntry['type']; startDate?: string; endDate?: string; comment?: string }) =>
+    request<CalendarEventEntry>(`/calendar/events/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteCalendarEvent: (id: string) => request<{ id: string }>(`/calendar/events/${id}`, { method: 'DELETE' }),
+  approveCalendarEvent: (id: string) => request<CalendarEventEntry>(`/calendar/events/${id}/approve`, { method: 'POST' }),
+
   teams: () => request<Team[]>('/teams'),
   notifications: () => request<NotificationItem[]>('/notifications'),
   markNotificationRead: (id: string) => request<NotificationItem>(`/notifications/${id}/read`, { method: 'PATCH' }),
@@ -257,6 +278,25 @@ export const api = {
     if (params?.userId) search.set('userId', params.userId);
     return `${API_URL}/admin/export/1c/payroll.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
   },
+
+  // ── Leave Requests ────────────────────────────────────────────────────
+
+  leaveRequests: (params?: { status?: string; team_id?: string; user_id?: string; page?: number; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.status) search.set('status', params.status);
+    if (params?.team_id) search.set('team_id', params.team_id);
+    if (params?.user_id) search.set('user_id', params.user_id);
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return request<PaginatedLeaveRequests>(`/leave-requests${qs ? `?${qs}` : ''}`);
+  },
+  leaveRequestsSummary: () => request<LeaveRequestSummary>('/leave-requests/summary'),
+  createLeaveRequest: (payload: { type: 'TIME_OFF' | 'VACATION'; dateFrom: string; dateTo?: string; hours: number; reason: string; comment?: string }) =>
+    request<LeaveRequest>('/leave-requests', { method: 'POST', body: JSON.stringify(payload) }),
+  approveLeaveRequest: (id: string) => request<LeaveRequest>(`/leave-requests/${id}/approve`, { method: 'POST' }),
+  rejectLeaveRequest: (id: string, approverComment?: string) =>
+    request<LeaveRequest>(`/leave-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ approverComment }) }),
 
   // ── Audit Log ────────────────────────────────────────────────────
 

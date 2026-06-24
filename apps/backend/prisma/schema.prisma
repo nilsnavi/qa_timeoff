@@ -62,6 +62,9 @@ model User {
   timeBalance       TimeBalance?
   balanceOperations BalanceOperation[] @relation("BalanceOperationUser")
   createdOperations BalanceOperation[] @relation("BalanceOperationCreator")
+  calendarEvents    CalendarEvent[]    @relation("CalendarEventUser")
+  leaveRequests     LeaveRequest[]     @relation("LeaveRequestUser")
+  leaveApprovals    LeaveRequest[]     @relation("LeaveRequestApprover")
   timeOffRequests   TimeOffRequest[]   @relation("TimeOffRequestUser")
   timeOffApprovals  TimeOffRequest[]   @relation("TimeOffRequestApprover")
   vacationRequests  VacationRequest[]  @relation("VacationRequestUser")
@@ -208,6 +211,72 @@ model KpiPeriod {
   updatedAt           DateTime @updatedAt
 
   @@unique([userId, month, year])
+}
+
+enum LeaveRequestType {
+  TIME_OFF
+  VACATION
+}
+
+model LeaveRequest {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation("LeaveRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  teamId          String?
+  type            LeaveRequestType
+  dateFrom        DateTime
+  dateTo          DateTime?
+  hours           Int
+  reason          String
+  comment         String?
+  status          RequestStatus    @default(PENDING)
+  approverId      String?
+  approver        User?            @relation("LeaveRequestApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  approverComment String?
+  approvedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([teamId])
+  @@index([status])
+  @@index([userId, createdAt])
+  @@index([teamId, createdAt])
+}
+
+enum CalendarEventType {
+  VACATION
+  TIME_OFF
+  SICK_LEAVE
+  HOLIDAY
+}
+
+enum CalendarEventStatus {
+  CREATED
+  PENDING
+  APPROVED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model CalendarEvent {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation("CalendarEventUser", fields: [userId], references: [id], onDelete: Cascade)
+  teamId    String?
+  type      CalendarEventType
+  startDate DateTime
+  endDate   DateTime
+  status    CalendarEventStatus  @default(PENDING)
+  comment   String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([teamId])
+  @@index([startDate, endDate])
+  @@index([type, startDate])
 }
 
 model AuditLog {

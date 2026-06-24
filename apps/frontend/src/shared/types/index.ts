@@ -1,5 +1,8 @@
 export type Role = 'EMPLOYEE' | 'LEAD' | 'MANAGER' | 'ADMIN';
 export type RequestStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type LeaveRequestType = 'TIME_OFF' | 'VACATION';
+export type CalendarEventType = 'VACATION' | 'TIME_OFF' | 'SICK_LEAVE' | 'HOLIDAY';
+export type CalendarEventStatus = 'CREATED' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 export type VacationType = 'ANNUAL' | 'UNPAID' | 'SICK_LEAVE' | 'OTHER';
 
 export interface User {
@@ -100,6 +103,59 @@ export interface BalanceOperation {
   reason: string;
   createdBy?: User;
   createdAt: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  teamId?: string;
+  type: LeaveRequestType;
+  dateFrom: string;
+  dateTo?: string;
+  hours: number;
+  reason: string;
+  comment?: string;
+  status: RequestStatus;
+  approverId?: string;
+  approver?: User;
+  approverComment?: string;
+  approvedAt?: string;
+  user: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeaveRequestSummary {
+  total: number;
+  pendingCount: number;
+}
+
+export interface PaginatedLeaveRequests {
+  items: LeaveRequest[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CalendarEventEntry {
+  id: string;
+  userId: string;
+  teamId?: string;
+  type: CalendarEventType;
+  startDate: string;
+  endDate: string;
+  status: CalendarEventStatus;
+  comment?: string;
+  user: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedCalendarEvents {
+  items: CalendarEventEntry[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface TimeOffRequest {

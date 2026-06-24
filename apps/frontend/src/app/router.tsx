@@ -7,7 +7,9 @@ import { isOnboardingComplete, OnboardingPage } from '../pages/OnboardingPage';
 const HomePage = lazy(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
 const AdminPage = lazy(() => import('../pages/AdminPage').then((module) => ({ default: module.AdminPage })));
 const BalancePage = lazy(() => import('../pages/BalancePage').then((module) => ({ default: module.BalancePage })));
-const CalendarPage = lazy(() => import('../pages/CalendarPage').then((module) => ({ default: module.CalendarPage })));
+const CalendarPage = lazy(() => import('../pages/calendar-events/CalendarEventsPage').then((module) => ({ default: module.CalendarEventsPage })));
+const OriginalCalendarPage = lazy(() => import('../pages/CalendarPage').then((module) => ({ default: module.CalendarPage })));
+const LeaveRequestPage = lazy(() => import('../pages/leave-requests/LeaveRequestPage').then((module) => ({ default: module.LeaveRequestPage })));
 const CreateTimeOffPage = lazy(() =>
   import('../pages/CreateTimeOffPage').then((module) => ({ default: module.CreateTimeOffPage })),
 );
@@ -41,6 +43,8 @@ export const router = createBrowserRouter([
       { path: 'timeoff/new', element: withSuspense(<CreateTimeOffPage />) },
       { path: 'vacation/new', element: withSuspense(<CreateVacationPage />) },
       { path: 'calendar', element: withSuspense(<CalendarPage />) },
+      { path: 'calendar/old', element: withSuspense(<OriginalCalendarPage />) },
+      { path: 'leave-requests', element: withSuspense(<LeaveRequestPage />) },
       { path: 'requests/manager', element: withSuspense(<ManagerRequestsPage />) },
       { path: 'requests/my', element: withSuspense(<MyRequestsPage />) },
       { path: 'requests', element: withSuspense(<RequestsPage />) },
