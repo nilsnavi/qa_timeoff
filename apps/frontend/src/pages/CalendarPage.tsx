@@ -130,8 +130,8 @@ export function CalendarPage() {
         <div className="grid gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">Календарь отсутствий</h2>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Событий: {filteredEvents.length}</p>
+              <h2 className="text-xl font-black text-white">Календарь отсутствий</h2>
+              <p className="text-sm font-bold text-[#7A8599]">Событий: {filteredEvents.length}</p>
             </div>
             <ViewSwitcher view={view} onChange={setView} />
           </div>
@@ -168,7 +168,7 @@ export function CalendarPage() {
                 <ChevronLeft size={18} />
               </Button>
               <div className="text-center">
-                <h2 className="text-lg font-black text-slate-950 dark:text-white">{rangeTitle}</h2>
+                <h2 className="text-lg font-black text-white">{rangeTitle}</h2>
                 <button type="button" className="text-xs font-black text-blue-600 dark:text-blue-300" onClick={() => setCursorDate(new Date())}>
                   Сегодня
                 </button>
@@ -202,7 +202,7 @@ export function CalendarPage() {
 
 function ViewSwitcher({ view, onChange }: { view: CalendarView; onChange: (view: CalendarView) => void }) {
   return (
-    <div className="flex rounded-[20px] bg-white/70 p-1 ring-1 ring-white/70 dark:bg-slate-900/70 dark:ring-slate-700">
+    <div className="flex rounded-[20px] bg-[#111A2E]/70 p-1 ring-1 ring-white/70 bg-[#111A2E]/70 ring-white/[0.06]">
       {viewOptions.map((option) => (
         <button
           key={option.value}
@@ -211,7 +211,7 @@ function ViewSwitcher({ view, onChange }: { view: CalendarView; onChange: (view:
           aria-label={option.label}
           onClick={() => onChange(option.value)}
           className={`grid h-10 w-10 place-items-center rounded-2xl transition ${
-            view === option.value ? 'app-gradient text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 dark:text-slate-300'
+            view === option.value ? 'app-gradient text-white shadow-lg shadow-blue-500/20' : 'text-[#B8C0D0]'
           }`}
         >
           <option.icon size={18} />
@@ -225,7 +225,7 @@ function Legend() {
   return (
     <div className="flex flex-wrap gap-2">
       {(['VACATION', 'TIME_OFF', 'SICK_LEAVE', 'HOLIDAY'] as AbsenceFilter[]).map((type) => (
-        <span key={type} className="inline-flex items-center gap-2 rounded-full bg-white/65 px-3 py-2 text-xs font-black text-slate-600 dark:bg-slate-900/65 dark:text-slate-300">
+        <span key={type} className="inline-flex items-center gap-2 rounded-full bg-[#111A2E]/65 px-3 py-2 text-xs font-black text-[#7A8599] bg-[#111A2E]/65 text-[#7A8599]">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: markerColors[type] }} />
           {absenceLabels[type]}
         </span>
@@ -249,7 +249,7 @@ function CalendarGrid({
 }) {
   return (
     <>
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-black uppercase text-slate-400">
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-black uppercase text-[#7A8599]">
         {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
           <span key={day}>{day}</span>
         ))}
@@ -310,24 +310,24 @@ function DayCell({
 
   return (
     <div
-      className={`min-h-24 rounded-[18px] p-1.5 ring-1 ring-white/70 dark:ring-slate-700 ${
-        muted ? 'bg-white/35 dark:bg-slate-900/35' : 'bg-white/70 dark:bg-slate-900/70'
+      className={`min-h-24 rounded-[18px] p-1.5 ring-1 ring-white/70 ring-white/[0.06] ${
+        muted ? 'bg-white/35 dark:bg-slate-900/35' : 'bg-[#111A2E]/70 bg-[#111A2E]/70'
       } ${isSameDay(day, new Date()) ? 'ring-2 ring-blue-400/70' : ''}`}
     >
-      <div className={`mb-1 text-xs font-black ${muted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{format(day, 'd')}</div>
+      <div className={`mb-1 text-xs font-black ${muted ? 'text-[#7A8599]' : 'text-[#B8C0D0]'}`}>{format(day, 'd')}</div>
       <div className="grid gap-1">
         {shownEvents.map((event) => (
           <button
             key={`${event.absenceType}-${event.id}`}
             type="button"
             onClick={() => onSelect(event)}
-            className="flex min-h-7 items-center gap-1.5 rounded-xl bg-white/75 px-2 text-left text-[11px] font-black text-slate-700 shadow-sm transition active:scale-[0.98] dark:bg-slate-800/80 dark:text-slate-100"
+            className="flex min-h-7 items-center gap-1.5 rounded-xl bg-[#111A2E]/75 px-2 text-left text-[11px] font-black text-[#B8C0D0] shadow-sm transition active:scale-[0.98] bg-[#111A2E]/80 text-white"
           >
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: getEventColor(event) }} />
             <span className="truncate">{event.employee.fullName}</span>
           </button>
         ))}
-        {events.length > shownEvents.length && <span className="px-2 text-[11px] font-black text-slate-400">+{events.length - shownEvents.length}</span>}
+        {events.length > shownEvents.length && <span className="px-2 text-[11px] font-black text-[#7A8599]">+{events.length - shownEvents.length}</span>}
       </div>
     </div>
   );
@@ -344,9 +344,9 @@ function UpcomingList({
 }) {
   return (
     <Card>
-      <h3 className="mb-3 text-base font-black text-slate-950 dark:text-white">Ближайшие отсутствия</h3>
+      <h3 className="mb-3 text-base font-black text-white">Ближайшие отсутствия</h3>
       {events.length === 0 ? (
-        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Ближайших событий нет</p>
+        <p className="text-sm font-bold text-[#7A8599]">Ближайших событий нет</p>
       ) : (
         <CompactEventList events={events} teamNames={teamNames} onSelect={onSelect} />
       )}
@@ -390,16 +390,16 @@ function CompactEventList({
           key={`${event.absenceType}-${event.id}`}
           type="button"
           onClick={() => onSelect(event)}
-          className="flex items-center justify-between gap-3 rounded-[20px] bg-white/70 p-3 text-left transition active:scale-[0.99] dark:bg-slate-900/70"
+          className="flex items-center justify-between gap-3 rounded-[20px] bg-[#111A2E]/70 p-3 text-left transition active:scale-[0.99] bg-[#111A2E]/70"
         >
           <div className="flex min-w-0 items-center gap-3">
             <Marker event={event} />
             <div className="min-w-0">
-              <p className="truncate font-black text-slate-900 dark:text-white">{event.employee.fullName}</p>
-              <p className="truncate text-sm font-bold text-slate-500 dark:text-slate-400">
+              <p className="truncate font-black text-white">{event.employee.fullName}</p>
+              <p className="truncate text-sm font-bold text-[#7A8599]">
                 {getAbsenceLabel(event)} · {formatRange(event)}
               </p>
-              {event.employee.teamId && <p className="truncate text-xs font-bold text-slate-400">{teamNames.get(event.employee.teamId) ?? 'Команда'}</p>}
+              {event.employee.teamId && <p className="truncate text-xs font-bold text-[#7A8599]">{teamNames.get(event.employee.teamId) ?? 'Команда'}</p>}
             </div>
           </div>
           <StatusBadge status={event.status} />
@@ -417,11 +417,11 @@ function EventModal({ event, teamName, onClose }: { event: CalendarEvent | null;
           <div className="flex items-start gap-3">
             <Marker event={event} />
             <div className="min-w-0">
-              <p className="text-lg font-black text-slate-950 dark:text-white">{event.employee.fullName}</p>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{event.employee.position ?? teamName ?? 'Участник команды'}</p>
+              <p className="text-lg font-black text-white">{event.employee.fullName}</p>
+              <p className="text-sm font-bold text-[#7A8599]">{event.employee.position ?? teamName ?? 'Участник команды'}</p>
             </div>
           </div>
-          <div className="grid gap-2 rounded-[20px] bg-white/70 p-4 text-sm font-bold text-slate-600 dark:bg-slate-900/70 dark:text-slate-300">
+          <div className="grid gap-2 rounded-[20px] bg-[#111A2E]/70 p-4 text-sm font-bold text-[#7A8599] bg-[#111A2E]/70 text-[#7A8599]">
             <InfoRow label="Даты" value={formatRange(event)} />
             {teamName && <InfoRow label="Команда" value={teamName} />}
             {event.hours !== undefined && <InfoRow label="Часы" value={`${event.hours} ч`} />}
@@ -442,8 +442,8 @@ function EventModal({ event, teamName, onClose }: { event: CalendarEvent | null;
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-right text-slate-800 dark:text-slate-100">{value}</span>
+      <span className="text-[#7A8599]">{label}</span>
+      <span className="text-right text-[#B8C0D0]">{value}</span>
     </div>
   );
 }

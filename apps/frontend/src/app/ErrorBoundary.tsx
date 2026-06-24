@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="mx-auto flex min-h-[50vh] max-w-xl flex-col items-center justify-center gap-4 px-4 text-center">
           <h1 className="text-xl font-semibold">Произошла ошибка интерфейса</h1>
-          <p className="text-sm text-slate-600">{this.state.errorMessage ?? 'Неизвестная ошибка. Обновите страницу.'}</p>
+          <p className="text-sm text-[#7A8599]">{this.state.errorMessage ?? 'Неизвестная ошибка. Обновите страницу.'}</p>
           <button
             type="button"
             onClick={this.handleReload}

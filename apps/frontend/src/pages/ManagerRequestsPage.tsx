@@ -112,8 +112,8 @@ export function ManagerRequestsPage() {
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Руководитель</p>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">Заявки команды</h2>
+            <p className="text-sm font-bold text-[#7A8599]">Руководитель</p>
+            <h2 className="text-xl font-black text-white">Заявки команды</h2>
           </div>
           <Badge tone="warning">{requests.length}</Badge>
         </div>
@@ -127,7 +127,7 @@ export function ManagerRequestsPage() {
               className={`min-h-10 shrink-0 rounded-[18px] px-4 text-sm font-black transition ${
                 filter === item.value
                   ? 'app-gradient text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-white/70 text-slate-600 ring-1 ring-white/70 dark:bg-slate-900/70 dark:text-slate-300 dark:ring-slate-700'
+                  : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/70 bg-[#111A2E]/ text-[#7A8599] ring-white/[0.06]'
               }`}
             >
               {item.label}
@@ -205,30 +205,30 @@ function RequestCard({
     <Card>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] bg-white/75 text-slate-700 shadow-soft dark:bg-slate-900/70 dark:text-slate-200">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] bg-[#111A2E]/75 text-[#B8C0D0] shadow-soft bg-[#111A2E]/ text-[#B8C0D0]">
             <UserRound size={22} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-lg font-black text-slate-950 dark:text-white">{request.employeeName}</p>
-            <p className="truncate text-sm font-bold text-slate-500 dark:text-slate-400">{request.employeePosition}</p>
+            <p className="truncate text-lg font-black text-white">{request.employeeName}</p>
+            <p className="truncate text-sm font-bold text-[#7A8599]">{request.employeePosition}</p>
           </div>
         </div>
         <Badge tone={request.kind === 'timeoff' ? 'info' : 'success'}>{request.kind === 'timeoff' ? 'Отгул' : 'Отпуск'}</Badge>
       </div>
 
-      <div className="mb-3 grid grid-cols-[auto_1fr] items-center gap-3 rounded-[20px] bg-white/65 p-3 dark:bg-slate-900/60">
+      <div className="mb-3 grid grid-cols-[auto_1fr] items-center gap-3 rounded-[20px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/">
         <div className={`grid h-11 w-11 place-items-center rounded-[18px] text-white ${request.kind === 'timeoff' ? 'bg-blue-600' : 'bg-emerald-500'}`}>
           <Icon size={20} />
         </div>
         <div className="min-w-0">
-          <p className="truncate font-black text-slate-950 dark:text-white">{request.typeLabel}</p>
-          <p className="truncate text-sm font-bold text-slate-500 dark:text-slate-400">
+          <p className="truncate font-black text-white">{request.typeLabel}</p>
+          <p className="truncate text-sm font-bold text-[#7A8599]">
             {request.dateLabel} · {request.amountLabel}
           </p>
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-[20px] bg-white/65 p-3 text-sm font-bold text-slate-600 dark:bg-slate-900/60 dark:text-slate-300">
+      <div className="grid gap-2 rounded-[20px] bg-[#111A2E]/65 p-3 text-sm font-bold text-[#7A8599] bg-[#111A2E]/ text-[#7A8599]">
         <InfoRow label="Баланс" value={request.balanceLabel} />
         <InfoRow label="Причина" value={request.reason} />
         <InfoRow label="Создана" value={formatDateTime(request.createdAt)} />
@@ -281,9 +281,9 @@ function RejectModal({
     >
       <div className="grid gap-3">
         {target && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{target.employeeName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/">
+            <p className="font-black text-white">{target.employeeName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">
               {target.typeLabel} · {target.dateLabel}
             </p>
           </div>
@@ -304,8 +304,8 @@ function RejectModal({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-right text-slate-800 dark:text-slate-100">{value}</span>
+      <span className="text-[#7A8599]">{label}</span>
+      <span className="text-right text-[#B8C0D0]">{value}</span>
     </div>
   );
 }

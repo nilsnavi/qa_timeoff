@@ -71,8 +71,8 @@ export function NotificationsPage() {
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Уведомления</p>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">События</h2>
+            <p className="text-sm font-bold text-[#7A8599]">Уведомления</p>
+            <h2 className="text-xl font-black text-white">События</h2>
           </div>
           <Badge tone={unreadCount > 0 ? 'warning' : 'success'}>{unreadCount} новых</Badge>
         </div>
@@ -87,7 +87,7 @@ export function NotificationsPage() {
                 className={`min-h-10 rounded-[18px] px-4 text-sm font-black transition ${
                   filter === item.value
                     ? 'app-gradient text-white shadow-lg shadow-blue-500/20'
-                    : 'bg-white/70 text-slate-600 ring-1 ring-white/70 dark:bg-slate-900/70 dark:text-slate-300 dark:ring-slate-700'
+                    : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/70 bg-[#111A2E]/70 text-[#7A8599] ring-white/[0.06]'
                 }`}
               >
                 {item.label}
@@ -154,11 +154,11 @@ function NotificationCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-start justify-between gap-2">
-            <span className="font-black text-slate-950 dark:text-white">{notification.title}</span>
+            <span className="font-black text-white">{notification.title}</span>
             {!notification.isRead && <CircleDot className="mt-0.5 shrink-0 text-blue-500" size={16} />}
           </span>
-          <span className="mt-1 block text-sm font-semibold text-slate-500 dark:text-slate-400">{notification.message}</span>
-          <span className="mt-2 block text-xs font-black text-slate-400">{formatDateTime(notification.createdAt)}</span>
+          <span className="mt-1 block text-sm font-semibold text-[#7A8599]">{notification.message}</span>
+          <span className="mt-2 block text-xs font-black text-[#7A8599]">{formatDateTime(notification.createdAt)}</span>
         </span>
       </button>
     </Card>

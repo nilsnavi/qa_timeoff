@@ -32,32 +32,32 @@ export function TelegramDebug() {
     };
 
     return (
-        <div className="rounded-2xl bg-white/80 p-4 shadow-soft ring-1 ring-white/70 dark:bg-slate-900/70 dark:ring-slate-700">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Telegram Debug Info</h3>
+        <div className="rounded-2xl bg-white/80 p-4 shadow-soft ring-1 ring-white/70 bg-[#111A2E]/ ring-white/[0.06]">
+            <h3 className="mb-3 text-sm font-semibold text-[#B8C0D0]">Telegram Debug Info</h3>
             <dl className="space-y-1.5 text-xs">
                 <div className="flex justify-between">
-                    <dt className="text-slate-500">initData.length</dt>
-                    <dd className="font-mono text-slate-800 dark:text-slate-200">{debugData.initDataLength}</dd>
+                    <dt className="text-[#7A8599]">initData.length</dt>
+                    <dd className="font-mono text-[#B8C0D0] text-[#B8C0D0]">{debugData.initDataLength}</dd>
                 </div>
                 <div className="flex justify-between">
-                    <dt className="text-slate-500">version</dt>
-                    <dd className="font-mono text-slate-800 dark:text-slate-200">{debugData.version}</dd>
+                    <dt className="text-[#7A8599]">version</dt>
+                    <dd className="font-mono text-[#B8C0D0] text-[#B8C0D0]">{debugData.version}</dd>
                 </div>
                 <div className="flex justify-between">
-                    <dt className="text-slate-500">platform</dt>
-                    <dd className="font-mono text-slate-800 dark:text-slate-200">{debugData.platform}</dd>
+                    <dt className="text-[#7A8599]">platform</dt>
+                    <dd className="font-mono text-[#B8C0D0] text-[#B8C0D0]">{debugData.platform}</dd>
                 </div>
                 <div className="flex justify-between">
-                    <dt className="text-slate-500">colorScheme</dt>
-                    <dd className="font-mono text-slate-800 dark:text-slate-200">{debugData.colorScheme}</dd>
+                    <dt className="text-[#7A8599]">colorScheme</dt>
+                    <dd className="font-mono text-[#B8C0D0] text-[#B8C0D0]">{debugData.colorScheme}</dd>
                 </div>
                 <div className="flex justify-between">
-                    <dt className="text-slate-500">isExpanded</dt>
-                    <dd className="font-mono text-slate-800 dark:text-slate-200">{String(debugData.isExpanded)}</dd>
+                    <dt className="text-[#7A8599]">isExpanded</dt>
+                    <dd className="font-mono text-[#B8C0D0] text-[#B8C0D0]">{String(debugData.isExpanded)}</dd>
                 </div>
                 <div>
-                    <dt className="text-slate-500">initDataUnsafe.user</dt>
-                    <dd className="mt-1 break-all font-mono text-slate-800 dark:text-slate-200">
+                    <dt className="text-[#7A8599]">initDataUnsafe.user</dt>
+                    <dd className="mt-1 break-all font-mono text-[#B8C0D0] text-[#B8C0D0]">
                         {JSON.stringify(debugData.initDataUnsafe?.user ?? null)}
                     </dd>
                 </div>

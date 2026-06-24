@@ -230,8 +230,8 @@ export function AdminPage() {
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Администрирование</p>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">HR + Workforce Management</h2>
+            <p className="text-sm font-bold text-[#7A8599]">Администрирование</p>
+            <h2 className="text-xl font-black text-white">HR + Workforce Management</h2>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -563,10 +563,10 @@ function UserCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-lg font-black text-slate-950 dark:text-white">{user.fullName}</p>
-              <p className="truncate text-sm font-bold text-slate-500 dark:text-slate-400">{user.position ?? user.email ?? 'Должность не указана'}</p>
+              <p className="truncate text-lg font-black text-white">{user.fullName}</p>
+              <p className="truncate text-sm font-bold text-[#7A8599]">{user.position ?? user.email ?? 'Должность не указана'}</p>
               {user.hourlyRate ? (
-                <p className="text-xs font-bold text-slate-400">{user.hourlyRate} ₽/ч</p>
+                <p className="text-xs font-bold text-[#7A8599]">{user.hourlyRate} ₽/ч</p>
               ) : null}
             </div>
             <Badge tone={user.isActive ? 'success' : 'neutral'}>{user.isActive ? 'Активен' : 'Отключен'}</Badge>
@@ -678,9 +678,9 @@ function PositionModal({
     >
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Текущая: {user.position ?? 'не указана'}</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">Текущая: {user.position ?? 'не указана'}</p>
           </div>
         )}
         <Select label="Новая должность" value={position} onChange={(event) => setPosition(event.target.value)}>
@@ -719,21 +719,21 @@ function PositionHistoryModal({
     <Modal open={!!user} title="История должностей" onClose={onClose}>
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Текущая: {user.position ?? 'не указана'}</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">Текущая: {user.position ?? 'не указана'}</p>
           </div>
         )}
         {loading && <Loader label="Загружаем историю" />}
         {!loading && history.length === 0 && (
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">История изменений пуста</p>
+          <p className="text-sm font-bold text-[#7A8599]">История изменений пуста</p>
         )}
         {!loading &&
           history.map((entry) => (
-            <div key={entry.id} className="flex items-start justify-between gap-3 rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+            <div key={entry.id} className="flex items-start justify-between gap-3 rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
               <div className="min-w-0">
-                <p className="font-black text-slate-900 dark:text-white">{entry.position}</p>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                <p className="font-black text-white">{entry.position}</p>
+                <p className="text-sm font-bold text-[#7A8599]">
                   {formatDateTime(entry.changedAt)} · {entry.changer.fullName}
                 </p>
               </div>
@@ -787,9 +787,9 @@ function OvertimeModal({
     >
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{user.position ?? 'Должность не указана'}</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">{user.position ?? 'Должность не указана'}</p>
           </div>
         )}
         <Field label="Часы" type="number" min={1} value={hours} onChange={(event) => setHours(Number(event.target.value))} />
@@ -817,20 +817,20 @@ function UserOvertimeModal({
     <Modal open={!!user} title="Переработки сотрудника" onClose={onClose}>
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
           </div>
         )}
         {loading && <Loader label="Загружаем переработки" />}
         {!loading && overtimes.length === 0 && (
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Переработок пока нет</p>
+          <p className="text-sm font-bold text-[#7A8599]">Переработок пока нет</p>
         )}
         {!loading &&
           overtimes.map((ot) => (
-            <div key={ot.id} className="flex items-start justify-between gap-3 rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+            <div key={ot.id} className="flex items-start justify-between gap-3 rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
               <div className="min-w-0">
-                <p className="font-black text-slate-900 dark:text-white">{ot.reason}</p>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                <p className="font-black text-white">{ot.reason}</p>
+                <p className="text-sm font-bold text-[#7A8599]">
                   {formatDateTime(ot.date)} · {ot.createdBy?.fullName ?? 'Система'}
                 </p>
               </div>
@@ -905,7 +905,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
         <Button size="sm" variant="secondary" onClick={prevMonth}>
           ←
         </Button>
-        <p className="text-lg font-black text-slate-950 dark:text-white">{monthName}</p>
+        <p className="text-lg font-black text-white">{monthName}</p>
         <Button size="sm" variant="secondary" onClick={nextMonth}>
           →
         </Button>
@@ -951,7 +951,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
           {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
             {dayLabels.map((label) => (
-              <div key={label} className="p-2 text-center text-xs font-bold text-slate-500">
+              <div key={label} className="p-2 text-center text-xs font-bold text-[#7A8599]">
                 {label}
               </div>
             ))}
@@ -977,7 +977,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
                   } ${entry ? '' : 'border-transparent'}`}
                   style={entry ? { borderColor: entry.color } : undefined}
                 >
-                  <p className={`text-xs font-bold ${isWeekend ? 'text-red-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  <p className={`text-xs font-bold ${isWeekend ? 'text-red-400' : 'text-[#7A8599]'}`}>
                     {day}
                   </p>
                   {entry && (
@@ -988,7 +988,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
                       >
                         {entry.totalHours}ч
                       </div>
-                      <p className="mt-0.5 truncate text-[9px] text-slate-500">{entry.userName}</p>
+                      <p className="mt-0.5 truncate text-[9px] text-[#7A8599]">{entry.userName}</p>
                     </div>
                   )}
                 </div>
@@ -999,13 +999,13 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
           {/* Detailed list */}
           {calendarData.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Детали:</p>
+              <p className="mb-2 text-sm font-bold text-[#7A8599]">Детали:</p>
               <div className="grid gap-2">
                 {calendarData.map((entry, idx) => (
-                  <div key={idx} className="flex items-start justify-between gap-3 rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                  <div key={idx} className="flex items-start justify-between gap-3 rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                     <div className="min-w-0">
-                      <p className="font-black text-slate-900 dark:text-white">{entry.userName}</p>
-                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      <p className="font-black text-white">{entry.userName}</p>
+                      <p className="text-sm font-bold text-[#7A8599]">
                         {entry.date} · {entry.team?.name ?? 'Без команды'}
                       </p>
                     </div>
@@ -1024,7 +1024,7 @@ function OvertimeCalendarView({ isAdmin }: { isAdmin: boolean }) {
           )}
 
           {!calendarQuery.isLoading && calendarData.length === 0 && (
-            <p className="mt-4 text-center text-sm font-bold text-slate-500">Нет переработок за этот период</p>
+            <p className="mt-4 text-center text-sm font-bold text-[#7A8599]">Нет переработок за этот период</p>
           )}
         </div>
       )}
@@ -1053,7 +1053,7 @@ function OvertimeReportView({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-lg font-black text-slate-950 dark:text-white">Отчёт по переработкам</p>
+        <p className="text-lg font-black text-white">Отчёт по переработкам</p>
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1078,15 +1078,15 @@ function OvertimeReportView({ isAdmin }: { isAdmin: boolean }) {
           {/* Top employees */}
           {report.topEmployees.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Топ сотрудников:</p>
+              <p className="mb-2 text-sm font-bold text-[#7A8599]">Топ сотрудников:</p>
               <div className="grid gap-2">
                 {report.topEmployees.map((emp, idx) => (
-                  <div key={emp.userId} className="flex items-center justify-between gap-3 rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                  <div key={emp.userId} className="flex items-center justify-between gap-3 rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-slate-400">#{idx + 1}</span>
+                      <span className="text-sm font-black text-[#7A8599]">#{idx + 1}</span>
                       <div>
-                        <p className="font-black text-slate-900 dark:text-white">{emp.fullName}</p>
-                        <p className="text-xs font-bold text-slate-500">{emp.teamName}</p>
+                        <p className="font-black text-white">{emp.fullName}</p>
+                        <p className="text-xs font-bold text-[#7A8599]">{emp.teamName}</p>
                       </div>
                     </div>
                     <span className="text-lg font-black text-amber-500">{emp.totalHours} ч</span>
@@ -1099,19 +1099,19 @@ function OvertimeReportView({ isAdmin }: { isAdmin: boolean }) {
           {/* Department breakdown */}
           {report.departments.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">По отделам:</p>
+              <p className="mb-2 text-sm font-bold text-[#7A8599]">По отделам:</p>
               <div className="grid gap-3">
                 {report.departments.map((dept) => (
-                  <div key={dept.department} className="rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                  <div key={dept.department} className="rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="font-black text-slate-900 dark:text-white">{dept.department}</p>
+                      <p className="font-black text-white">{dept.department}</p>
                       <Badge tone="info">{dept.departmentTotal} ч</Badge>
                     </div>
                     <div className="grid gap-1">
                       {dept.users.map((u) => (
                         <div key={u.userId} className="flex items-center justify-between text-sm">
-                          <span className="font-bold text-slate-600 dark:text-slate-300">{u.fullName}</span>
-                          <span className="font-black text-slate-500">{u.totalHours} ч</span>
+                          <span className="font-bold text-[#7A8599]">{u.fullName}</span>
+                          <span className="font-black text-[#7A8599]">{u.totalHours} ч</span>
                         </div>
                       ))}
                     </div>
@@ -1122,7 +1122,7 @@ function OvertimeReportView({ isAdmin }: { isAdmin: boolean }) {
           )}
 
           {!reportQuery.isLoading && report.departments.length === 0 && (
-            <p className="text-center text-sm font-bold text-slate-500">Нет данных за выбранный период</p>
+            <p className="text-center text-sm font-bold text-[#7A8599]">Нет данных за выбранный период</p>
           )}
         </div>
       )}
@@ -1155,7 +1155,7 @@ function PayrollReportView({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-lg font-black text-slate-950 dark:text-white">Расчёт стоимости переработок</p>
+        <p className="text-lg font-black text-white">Расчёт стоимости переработок</p>
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1178,7 +1178,7 @@ function PayrollReportView({ isAdmin }: { isAdmin: boolean }) {
           </div>
 
           {/* Multiplier info */}
-          <div className="rounded-[18px] bg-white/65 p-3 text-xs font-bold text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+          <div className="rounded-[18px] bg-[#111A2E]/65 p-3 text-xs font-bold text-[#7A8599] bg-[#111A2E]/60 dark:text-[#7A8599]">
             <p>Коэффициенты: будни ×1.0 · выходные ×1.5 · праздники ×2.0</p>
           </div>
 
@@ -1186,11 +1186,11 @@ function PayrollReportView({ isAdmin }: { isAdmin: boolean }) {
           {report.employees.length > 0 ? (
             <div className="grid gap-3">
               {report.employees.map((emp) => (
-                <div key={emp.userId} className="rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                <div key={emp.userId} className="rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                   <div className="mb-2 flex items-center justify-between">
                     <div>
-                      <p className="font-black text-slate-900 dark:text-white">{emp.fullName}</p>
-                      <p className="text-xs font-bold text-slate-500">
+                      <p className="font-black text-white">{emp.fullName}</p>
+                      <p className="text-xs font-bold text-[#7A8599]">
                         {emp.teamName} · {emp.hourlyRate} ₽/ч · {emp.totalHours} ч всего
                       </p>
                     </div>
@@ -1199,10 +1199,10 @@ function PayrollReportView({ isAdmin }: { isAdmin: boolean }) {
                   <div className="grid gap-1">
                     {emp.details.map((det, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-500">
+                        <span className="font-bold text-[#7A8599]">
                           {det.date} · {det.hours}ч × {emp.hourlyRate}₽ × {det.multiplier}
                         </span>
-                        <span className="font-black text-slate-600 dark:text-slate-300">{formatCurrency(det.cost)}</span>
+                        <span className="font-black text-[#7A8599]">{formatCurrency(det.cost)}</span>
                       </div>
                     ))}
                   </div>
@@ -1210,7 +1210,7 @@ function PayrollReportView({ isAdmin }: { isAdmin: boolean }) {
               ))}
             </div>
           ) : (
-            <p className="text-center text-sm font-bold text-slate-500">Нет данных за выбранный период</p>
+            <p className="text-center text-sm font-bold text-[#7A8599]">Нет данных за выбранный период</p>
           )}
         </div>
       )}
@@ -1335,7 +1335,7 @@ function UserFormModal({
               </option>
             ))}
         </Select>
-        <label className="flex items-center justify-between gap-3 rounded-[20px] bg-white/65 p-3 text-sm font-bold text-slate-600 dark:bg-slate-900/60 dark:text-slate-300">
+        <label className="flex items-center justify-between gap-3 rounded-[20px] bg-[#111A2E]/65 p-3 text-sm font-bold text-[#7A8599] bg-[#111A2E]/60 text-[#7A8599]">
           Активен
           <input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} />
         </label>
@@ -1386,9 +1386,9 @@ function BalanceModal({
     >
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Баланс: {user.timeBalance?.balanceHours ?? 0} ч</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">Баланс: {user.timeBalance?.balanceHours ?? 0} ч</p>
           </div>
         )}
         <Field label="Часы" type="number" min={1} value={hours} onChange={(event) => setHours(Number(event.target.value))} />
@@ -1427,13 +1427,13 @@ function ConfirmBalanceModal({
     >
       {draft && (
         <div className="grid gap-3">
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{draft.user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{draft.user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">
               {draft.action === 'add' ? 'Начисление' : 'Списание'}: {draft.hours} ч
             </p>
           </div>
-          <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Причина: {draft.reason}</p>
+          <p className="text-sm font-bold text-[#7A8599]">Причина: {draft.reason}</p>
         </div>
       )}
     </Modal>
@@ -1459,23 +1459,23 @@ function OperationsModal({
     <Modal open={!!user} title="История операций" onClose={onClose}>
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Баланс: {user.timeBalance?.balanceHours ?? 0} ч</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">Баланс: {user.timeBalance?.balanceHours ?? 0} ч</p>
           </div>
         )}
         {loading && <Loader label="Загружаем историю" />}
         {error && !loading && <ErrorState title="История не загрузилась" description="Не удалось получить операции пользователя." onRetry={onRetry} />}
-        {!loading && !error && operations.length === 0 && <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Операций пока нет</p>}
+        {!loading && !error && operations.length === 0 && <p className="text-sm font-bold text-[#7A8599]">Операций пока нет</p>}
         {!loading &&
           operations.map((operation) => (
-            <div key={operation.id} className="flex items-start justify-between gap-3 rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+            <div key={operation.id} className="flex items-start justify-between gap-3 rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
               <div className="min-w-0">
-                <p className="font-black text-slate-900 dark:text-white">{operation.reason}</p>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                <p className="font-black text-white">{operation.reason}</p>
+                <p className="text-sm font-bold text-[#7A8599]">
                   {getOperationTypeLabel(operation.operationType)} · {formatDateTime(operation.createdAt)}
                 </p>
-                {operation.createdBy && <p className="text-xs font-bold text-slate-400">Автор: {operation.createdBy.fullName}</p>}
+                {operation.createdBy && <p className="text-xs font-bold text-[#7A8599]">Автор: {operation.createdBy.fullName}</p>}
               </div>
               <span className={`shrink-0 text-lg font-black ${operation.hours >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                 {operation.hours > 0 ? '+' : ''}
@@ -1527,7 +1527,7 @@ function KpiView({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-lg font-black text-slate-950 dark:text-white">KPI сотрудников</p>
+        <p className="text-lg font-black text-white">KPI сотрудников</p>
         <Button size="sm" disabled={recalculateMutation.isPending} onClick={() => recalculateMutation.mutate()}>
           <TrendingUp size={16} />
           Пересчитать
@@ -1576,11 +1576,11 @@ function KpiView({ isAdmin }: { isAdmin: boolean }) {
 
           {/* Employee KPI cards */}
           {kpiData.items.map((kpi) => (
-            <div key={kpi.id} className="rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+            <div key={kpi.id} className="rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-black text-slate-900 dark:text-white">{kpi.user?.fullName ?? 'Unknown'}</p>
-                  <p className="text-xs font-bold text-slate-500">
+                  <p className="font-black text-white">{kpi.user?.fullName ?? 'Unknown'}</p>
+                  <p className="text-xs font-bold text-[#7A8599]">
                     {kpi.user?.position ?? 'Без должности'} · {kpi.user?.team?.name ?? 'Без команды'}
                   </p>
                 </div>
@@ -1590,20 +1590,20 @@ function KpiView({ isAdmin }: { isAdmin: boolean }) {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                 <div>
-                  <p className="font-bold text-slate-400">Надёжность</p>
+                  <p className="font-bold text-[#7A8599]">Надёжность</p>
                   <p className={`font-black ${getScoreColor(kpi.reliabilityScore)}`}>{kpi.reliabilityScore}</p>
                 </div>
                 <div>
-                  <p className="font-bold text-slate-400">Нагрузка</p>
+                  <p className="font-bold text-[#7A8599]">Нагрузка</p>
                   <p className={`font-black ${getScoreColor(kpi.workloadScore)}`}>{kpi.workloadScore}</p>
                 </div>
                 <div>
-                  <p className="font-bold text-slate-400">Переработки</p>
+                  <p className="font-bold text-[#7A8599]">Переработки</p>
                   <p className="font-black text-amber-500">{kpi.overtimeHours} ч</p>
                 </div>
                 <div>
-                  <p className="font-bold text-slate-400">Заявки</p>
-                  <p className="font-black text-slate-600 dark:text-slate-300">
+                  <p className="font-bold text-[#7A8599]">Заявки</p>
+                  <p className="font-black text-[#7A8599]">
                     ✓{kpi.approvedRequests} ✗{kpi.rejectedRequests}
                   </p>
                 </div>
@@ -1639,7 +1639,7 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-lg font-black text-slate-950 dark:text-white">Графики нагрузки</p>
+        <p className="text-lg font-black text-white">Графики нагрузки</p>
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1654,15 +1654,15 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
         <div className="mt-4 grid gap-4">
           {/* Workload by day - simple bar chart */}
           <div>
-            <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Нагрузка по дням</p>
+            <p className="mb-2 text-sm font-bold text-[#7A8599]">Нагрузка по дням</p>
             <div className="flex items-end gap-1 overflow-x-auto pb-2">
-              {data.workloadByDay.length === 0 && <p className="text-sm text-slate-500">Нет данных</p>}
+              {data.workloadByDay.length === 0 && <p className="text-sm text-[#7A8599]">Нет данных</p>}
               {data.workloadByDay.slice(-30).map((day) => {
                 const height = Math.max(4, (day.hours / maxHours(data.workloadByDay)) * 100);
                 return (
                   <div key={day.date} className="flex flex-col items-center" title={`${day.date}: ${day.hours} ч`}>
                     <div className="w-6 rounded-t bg-blue-500" style={{ height: `${height}px` }} />
-                    <span className="mt-1 text-[8px] font-bold text-slate-400">{day.date.slice(8)}</span>
+                    <span className="mt-1 text-[8px] font-bold text-[#7A8599]">{day.date.slice(8)}</span>
                   </div>
                 );
               })}
@@ -1671,14 +1671,14 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
 
           {/* Top overloaded users */}
           <div>
-            <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Топ перегруженных сотрудников</p>
+            <p className="mb-2 text-sm font-bold text-[#7A8599]">Топ перегруженных сотрудников</p>
             <div className="grid gap-2">
-              {data.topOverloaded.length === 0 && <p className="text-sm text-slate-500">Нет данных</p>}
+              {data.topOverloaded.length === 0 && <p className="text-sm text-[#7A8599]">Нет данных</p>}
               {data.topOverloaded.map((user, idx) => (
-                <div key={user.userId} className="flex items-center justify-between rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                <div key={user.userId} className="flex items-center justify-between rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-black text-slate-400">#{idx + 1}</span>
-                    <p className="font-black text-slate-900 dark:text-white">{user.fullName}</p>
+                    <span className="text-sm font-black text-[#7A8599]">#{idx + 1}</span>
+                    <p className="font-black text-white">{user.fullName}</p>
                   </div>
                   <span className="text-lg font-black text-amber-500">{user.totalHours} ч</span>
                 </div>
@@ -1688,16 +1688,16 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
 
           {/* Workload by team */}
           <div>
-            <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Нагрузка по командам</p>
+            <p className="mb-2 text-sm font-bold text-[#7A8599]">Нагрузка по командам</p>
             <div className="grid gap-2">
-              {data.workloadByTeam.length === 0 && <p className="text-sm text-slate-500">Нет данных</p>}
+              {data.workloadByTeam.length === 0 && <p className="text-sm text-[#7A8599]">Нет данных</p>}
               {data.workloadByTeam.map((team) => {
                 const pct = team.totalHours > 0 ? Math.round((team.totalHours / data.workloadByTeam[0].totalHours) * 100) : 0;
                 return (
-                  <div key={team.teamName} className="rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                  <div key={team.teamName} className="rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                     <div className="mb-1 flex items-center justify-between">
-                      <p className="font-bold text-slate-900 dark:text-white">{team.teamName}</p>
-                      <span className="font-black text-slate-500">{team.totalHours} ч</span>
+                      <p className="font-bold text-white">{team.teamName}</p>
+                      <span className="font-black text-[#7A8599]">{team.totalHours} ч</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                       <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
@@ -1711,14 +1711,14 @@ function AnalyticsView({ isAdmin }: { isAdmin: boolean }) {
           {/* Overtime trend */}
           {data.overtimeTrend.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Тренд переработок</p>
+              <p className="mb-2 text-sm font-bold text-[#7A8599]">Тренд переработок</p>
               <div className="flex items-end gap-2 overflow-x-auto pb-2">
                 {data.overtimeTrend.map((trend) => {
                   const height = Math.max(4, (trend.hours / maxHours(data.overtimeTrend)) * 100);
                   return (
                     <div key={trend.month} className="flex flex-col items-center">
                       <div className="w-10 rounded-t bg-orange-500" style={{ height: `${height}px` }} />
-                      <span className="mt-1 text-[9px] font-bold text-slate-400">{trend.month.slice(5)}</span>
+                      <span className="mt-1 text-[9px] font-bold text-[#7A8599]">{trend.month.slice(5)}</span>
                     </div>
                   );
                 })}
@@ -1763,7 +1763,7 @@ function AiForecastView({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-lg font-black text-slate-950 dark:text-white">AI прогноз переработок</p>
+        <p className="text-lg font-black text-white">AI прогноз переработок</p>
         <Button size="sm" disabled={forecastQuery.isFetching} onClick={() => forecastQuery.refetch()}>
           <Brain size={16} />
           Обновить прогноз
@@ -1789,16 +1789,16 @@ function AiForecastView({ isAdmin }: { isAdmin: boolean }) {
           {/* Overloaded users */}
           {forecast.overloadedUsers.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Прогноз по сотрудникам</p>
+              <p className="mb-2 text-sm font-bold text-[#7A8599]">Прогноз по сотрудникам</p>
               <div className="grid gap-2">
                 {forecast.overloadedUsers.map((user) => (
-                  <div key={user.userId} className="flex items-center justify-between rounded-[18px] bg-white/65 p-3 dark:bg-slate-900/60">
+                  <div key={user.userId} className="flex items-center justify-between rounded-[18px] bg-[#111A2E]/65 p-3 bg-[#111A2E]/60">
                     <div className="min-w-0 flex-1">
-                      <p className="font-black text-slate-900 dark:text-white">{user.fullName}</p>
-                      <p className="text-xs font-bold text-slate-500">{user.teamName}</p>
+                      <p className="font-black text-white">{user.fullName}</p>
+                      <p className="text-xs font-bold text-[#7A8599]">{user.teamName}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-500">{user.currentOvertime} → {user.predictedOvertime} ч</span>
+                      <span className="text-sm text-[#7A8599]">{user.currentOvertime} → {user.predictedOvertime} ч</span>
                       <span className={`font-black ${getRiskColor(user.riskLevel)}`}>
                         {user.riskLevel === 'HIGH' ? '🔴' : user.riskLevel === 'MEDIUM' ? '🟡' : '🟢'}
                       </span>
@@ -1812,7 +1812,7 @@ function AiForecastView({ isAdmin }: { isAdmin: boolean }) {
           {/* Recommendations */}
           {forecast.recommendations.length > 0 && (
             <div>
-              <p className="mb-2 text-sm font-bold text-slate-600 dark:text-slate-300">Рекомендации</p>
+              <p className="mb-2 text-sm font-bold text-[#7A8599]">Рекомендации</p>
               <div className="grid gap-2">
                 {forecast.recommendations.map((rec, idx) => (
                   <div key={idx} className="rounded-[18px] bg-blue-50 p-3 text-sm font-bold text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
@@ -1823,7 +1823,7 @@ function AiForecastView({ isAdmin }: { isAdmin: boolean }) {
             </div>
           )}
 
-          <p className="text-xs font-bold text-slate-400">
+          <p className="text-xs font-bold text-[#7A8599]">
             Прогноз сгенерирован: {new Date(forecast.generatedAt).toLocaleString('ru-RU')}
           </p>
         </div>
@@ -1857,13 +1857,13 @@ function ExportView() {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-lg font-black text-slate-950 dark:text-white">Экспорт данных</p>
+        <p className="text-lg font-black text-white">Экспорт данных</p>
       </div>
 
       <div className="mt-4 grid gap-4">
         {/* Overtime export */}
-        <div className="rounded-[18px] bg-white/65 p-4 dark:bg-slate-900/60">
-          <p className="mb-2 font-black text-slate-900 dark:text-white">Экспорт переработок</p>
+        <div className="rounded-[18px] bg-[#111A2E]/65 p-4 bg-[#111A2E]/60">
+          <p className="mb-2 font-black text-white">Экспорт переработок</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Начало" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             <Field label="Конец" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
@@ -1881,8 +1881,8 @@ function ExportView() {
         </div>
 
         {/* KPI export */}
-        <div className="rounded-[18px] bg-white/65 p-4 dark:bg-slate-900/60">
-          <p className="mb-2 font-black text-slate-900 dark:text-white">Экспорт KPI</p>
+        <div className="rounded-[18px] bg-[#111A2E]/65 p-4 bg-[#111A2E]/60">
+          <p className="mb-2 font-black text-white">Экспорт KPI</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Select label="Месяц" value={kpiMonth} onChange={(e) => setKpiMonth(Number(e.target.value))}>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -1902,8 +1902,8 @@ function ExportView() {
         </div>
 
         {/* 1C Export */}
-        <div className="rounded-[18px] bg-white/65 p-4 dark:bg-slate-900/60">
-          <p className="mb-2 font-black text-slate-900 dark:text-white">Экспорт для 1C</p>
+        <div className="rounded-[18px] bg-[#111A2E]/65 p-4 bg-[#111A2E]/60">
+          <p className="mb-2 font-black text-white">Экспорт для 1C</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Начало" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             <Field label="Конец" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
@@ -1963,9 +1963,9 @@ function HourlyRateModal({
     >
       <div className="grid gap-3">
         {user && (
-          <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-            <p className="font-black text-slate-950 dark:text-white">{user.fullName}</p>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Текущая: {user.hourlyRate ?? 0} ₽/ч</p>
+          <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+            <p className="font-black text-white">{user.fullName}</p>
+            <p className="text-sm font-bold text-[#7A8599]">Текущая: {user.hourlyRate ?? 0} ₽/ч</p>
           </div>
         )}
         <Field label="Ставка (₽/ч)" type="number" min={0} value={rate} onChange={(event) => setRate(Number(event.target.value))} />

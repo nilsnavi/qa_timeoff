@@ -88,8 +88,8 @@ export function CreateVacationPage() {
       <Card>
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-black text-slate-950 dark:text-white">Создать отпуск</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+            <h2 className="text-lg font-black text-white">Создать отпуск</h2>
+            <p className="mt-1 text-sm font-semibold text-[#7A8599]">
               {daysCount > 0 ? `${daysCount} дн.` : 'Выберите даты'}
             </p>
           </div>

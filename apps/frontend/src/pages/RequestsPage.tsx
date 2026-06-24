@@ -128,8 +128,8 @@ export function RequestsPage() {
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{canReview ? 'Руководитель' : 'Сотрудник'}</p>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">{canReview ? 'Заявки команды' : 'Мои заявки'}</h2>
+            <p className="text-sm font-bold text-[#7A8599]">{canReview ? 'Руководитель' : 'Сотрудник'}</p>
+            <h2 className="text-xl font-black text-white">{canReview ? 'Заявки команды' : 'Мои заявки'}</h2>
           </div>
           <Badge tone={canReview ? 'warning' : 'info'}>{requests.length}</Badge>
         </div>
@@ -199,9 +199,9 @@ export function RequestsPage() {
       >
         <div className="grid gap-3">
           {rejectTarget && (
-            <div className="rounded-[20px] bg-white/70 p-3 dark:bg-slate-900/70">
-              <p className="font-black text-slate-950 dark:text-white">{rejectTarget.employeeName}</p>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+            <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
+              <p className="font-black text-white">{rejectTarget.employeeName}</p>
+              <p className="text-sm font-bold text-[#7A8599]">
                 {rejectTarget.typeLabel} · {rejectTarget.dateLabel}
               </p>
             </div>
@@ -256,14 +256,14 @@ function RequestCard({
             <Icon size={20} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-slate-500 dark:text-slate-400">{request.employeeName}</p>
-            <h2 className="text-lg font-black text-slate-950 dark:text-white">{request.typeLabel}</h2>
+            <p className="truncate text-sm font-bold text-[#7A8599]">{request.employeeName}</p>
+            <h2 className="text-lg font-black text-white">{request.typeLabel}</h2>
           </div>
         </div>
         <StatusBadge status={request.status} />
       </div>
 
-      <div className="grid gap-2 rounded-[20px] bg-white/65 p-3 text-sm font-bold text-slate-600 dark:bg-slate-900/60 dark:text-slate-300">
+      <div className="grid gap-2 rounded-[20px] bg-[#111A2E]/65 p-3 text-sm font-bold text-[#7A8599] bg-[#111A2E]/60 text-[#7A8599]">
         <InfoRow label="Дата" value={request.dateLabel} />
         <InfoRow label={request.kind === 'timeoff' ? 'Часы' : 'Дни'} value={request.amountLabel} />
         <InfoRow label="Причина" value={request.reason} />
@@ -302,8 +302,8 @@ function RequestCard({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-right text-slate-800 dark:text-slate-100">{value}</span>
+      <span className="text-[#7A8599]">{label}</span>
+      <span className="text-right text-[#B8C0D0]">{value}</span>
     </div>
   );
 }

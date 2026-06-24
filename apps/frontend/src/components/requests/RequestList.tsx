@@ -17,15 +17,15 @@ export function RequestList({
         <Card key={request.id}>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-slate-500">{request.user.fullName}</p>
-              <h2 className="text-lg font-black text-slate-950">Отгул</h2>
+              <p className="text-sm font-bold text-[#7A8599]">{request.user.fullName}</p>
+              <h2 className="text-lg font-black text-white">Отгул</h2>
             </div>
             <StatusBadge status={request.status} />
           </div>
-          <p className="text-sm font-semibold text-slate-600">
+          <p className="text-sm font-semibold text-[#7A8599]">
             {request.date} · {request.hours} ч
           </p>
-          <p className="mt-2 text-sm text-slate-500">{request.reason}</p>
+          <p className="mt-2 text-sm text-[#7A8599]">{request.reason}</p>
           {request.status === 'PENDING' && onApprove && onReject && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               <Button variant="secondary" onClick={() => onReject(request.id)}>

@@ -53,10 +53,10 @@ export function OnboardingPage() {
   return (
     <main className="mx-auto flex min-h-[var(--tg-viewport-height)] w-full max-w-xl flex-col px-5 py-5 safe-area">
       <div className="flex items-center justify-between">
-        <div className="h-2 w-28 overflow-hidden rounded-full bg-white/70 shadow-sm dark:bg-slate-800">
+        <div className="h-2 w-28 overflow-hidden rounded-full bg-[#111A2E]/70 shadow-sm dark:bg-slate-800">
           <div className="h-full rounded-full app-gradient transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
-        <button type="button" className="min-h-10 px-3 text-sm font-black text-slate-500 dark:text-slate-300" onClick={finish}>
+        <button type="button" className="min-h-10 px-3 text-sm font-black text-[#B8C0D0]" onClick={finish}>
           Пропустить
         </button>
       </div>
@@ -70,8 +70,8 @@ export function OnboardingPage() {
           </div>
 
           <div className="mt-8 min-h-36">
-            <h1 className="text-3xl font-black leading-tight text-slate-950 dark:text-white">{slide.title}</h1>
-            <p className="mx-auto mt-4 max-w-xs text-base font-semibold leading-relaxed text-slate-500 dark:text-slate-300">{slide.description}</p>
+            <h1 className="text-3xl font-black leading-tight text-white">{slide.title}</h1>
+            <p className="mx-auto mt-4 max-w-xs text-base font-semibold leading-relaxed text-[#B8C0D0]">{slide.description}</p>
           </div>
 
           <div className="mt-4 flex justify-center gap-2">

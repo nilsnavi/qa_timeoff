@@ -94,7 +94,7 @@ export function CreateTimeOffPage() {
       </Card>
 
       <Card>
-        <h2 className="mb-4 text-lg font-black text-slate-950 dark:text-white">Создать отгул</h2>
+        <h2 className="mb-4 text-lg font-black text-white">Создать отгул</h2>
         <div className="grid gap-4">
           <DatePicker label="Дата" value={date} error={errors.date} onChange={(event) => setDate(event.target.value)} />
           <Input

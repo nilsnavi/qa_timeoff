@@ -17,8 +17,8 @@ export function FallbackPage() {
         <div className="grid gap-4">
           <AlertTriangle className="mx-auto text-rose-500" size={38} />
           <div>
-            <h1 className="text-xl font-black text-slate-950 dark:text-white">Экран недоступен</h1>
-            <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">{message}</p>
+            <h1 className="text-xl font-black text-white">Экран недоступен</h1>
+            <p className="mt-2 text-sm font-bold text-[#7A8599]">{message}</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="secondary" onClick={() => window.location.reload()}>
