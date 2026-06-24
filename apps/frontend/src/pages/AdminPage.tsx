@@ -226,7 +226,7 @@ export function AdminPage() {
   ];
 
   return (
-    <>
+    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-3 px-4 pb-24">
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -234,13 +234,14 @@ export function AdminPage() {
             <h2 className="text-xl font-black text-white">HR + Workforce Management</h2>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
           {tabs.map((tab) => (
             <Button
               key={tab.key}
               size="sm"
               variant={activeTab === tab.key ? 'primary' : 'secondary'}
               onClick={() => setActiveTab(tab.key)}
+              className="shrink-0"
             >
               {tab.icon}
               {tab.label}
@@ -507,7 +508,7 @@ export function AdminPage() {
           }
         }}
       />
-    </>
+    </div>
   );
 }
 
