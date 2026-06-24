@@ -4,6 +4,8 @@ import { WorkStatusCard } from '../components/dashboard-v2/WorkStatusCard';
 import { CalendarWidget } from '../components/dashboard-v2/CalendarWidget';
 import { WorkFeed } from '../components/dashboard-v2/WorkFeed';
 import { AnalyticsSnapshot } from '../components/dashboard-v2/AnalyticsSnapshot';
+import { ProcessFunnel } from '../components/dashboard-v2/ProcessFunnel';
+import { TeamWorkload } from '../components/dashboard-v2/TeamWorkload';
 
 export function HomePage() {
   const { dashboard, data, isError, isLoading, refetch } = useDashboard();
@@ -16,27 +18,30 @@ export function HomePage() {
     return <DashboardSkeleton />;
   }
 
+  const user = dashboard.user;
+  const isManager = user.role === 'MANAGER' || user.role === 'LEAD' || user.role === 'ADMIN';
+
   return (
     <div className="space-y-6">
-      {/* Header row */}
       <div>
         <h1 className="text-[22px] font-bold text-white">Дашборд</h1>
         <p className="text-[13px] text-white/40 mt-1">
-          С возвращением, {dashboard.user.fullName}. Обзор рабочей активности.
+          С возвращением, {user.fullName}. {isManager ? 'Обзор команды и процессов.' : 'Обзор рабочей активности.'}
         </p>
       </div>
 
-      {/* Grid: left 2/3, right 1/3 */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left column - 2/3 width */}
+        {/* Left 2/3 */}
         <div className="space-y-6 lg:col-span-2">
           <WorkStatusCard dashboard={dashboard} />
           <CalendarWidget dashboard={dashboard} />
+          {isManager && <ProcessFunnel dashboard={dashboard} />}
         </div>
 
-        {/* Right column - 1/3 width */}
+        {/* Right 1/3 */}
         <div className="space-y-6">
           <AnalyticsSnapshot dashboard={dashboard} />
+          {isManager && <TeamWorkload dashboard={dashboard} />}
           <WorkFeed notifications={dashboard.notifications} />
         </div>
       </div>

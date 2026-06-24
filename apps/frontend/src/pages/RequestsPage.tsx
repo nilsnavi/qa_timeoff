@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Clock3, MessageSquareText, Plane, X } from 'lucide-react';
+import { Check, Clock3, MessageSquareText, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorState, Modal, SkeletonCard, StatusBadge, Textarea } from '../components/ui';
+import { Button, ErrorState, Loader, Modal, Textarea } from '../components/ui';
 import { api } from '../shared/api';
-import { useDashboard } from '../shared/hooks/useDashboard';
+import { useAuth } from '../shared/auth/AuthContext';
 import type { TimeOffRequest, VacationRequest } from '../shared/types';
-import { confirmTelegram, getVacationTypeLabel, showAppToast } from '../shared/utils';
+import { getStatusLabel, getVacationTypeLabel } from '../shared/utils';
+import { DataTable, type Column, type SortDirection } from '../components/dashboard-v2/DataTable';
+import { clsx } from 'clsx';
 
 type RequestKind = 'timeoff' | 'vacation';
-type RequestCardModel = {
+
+type RequestRow = {
   id: string;
   kind: RequestKind;
   employeeName: string;
   typeLabel: string;
-  dateLabel: string;
+  date: string;
   amountLabel: string;
   reason: string;
   status: TimeOffRequest['status'];
@@ -22,347 +25,202 @@ type RequestCardModel = {
   raw: TimeOffRequest | VacationRequest;
 };
 
+const statusClasses: Record<string, string> = {
+  DRAFT: 'bg-white/[0.04] text-white/40',
+  PENDING: 'bg-amber-500/10 text-amber-400',
+  APPROVED: 'bg-emerald-500/10 text-emerald-400',
+  REJECTED: 'bg-rose-950/300/10 text-rose-400',
+  CANCELLED: 'bg-white/[0.02] text-white/20',
+};
+
+function mapToRow(r: TimeOffRequest, kind: 'timeoff'): RequestRow {
+  return {
+    id: r.id, kind,
+    employeeName: ('user' in r ? (r as any).user?.fullName : '') || '',
+    typeLabel: 'Отгул',
+    date: r.date?.slice(0, 10) ?? '',
+    amountLabel: `${r.hours}ч`,
+    reason: r.reason ?? '',
+    status: r.status,
+    createdAt: r.createdAt,
+    approverComment: r.comment,
+    raw: r,
+  };
+}
+
+function mapVacationToRow(v: VacationRequest): RequestRow {
+  return {
+    id: v.id, kind: 'vacation',
+    employeeName: ('user' in v ? (v as any).user?.fullName : '') || '',
+    typeLabel: getVacationTypeLabel(v.vacationType),
+    date: `${v.startDate?.slice(0, 10) ?? ''} → ${v.endDate?.slice(0, 10) ?? ''}`,
+    amountLabel: `${v.daysCount}дн`,
+    reason: v.comment ?? '',
+    status: v.status,
+    createdAt: v.createdAt,
+    approverComment: v.comment,
+    raw: v,
+  };
+}
+
 export function RequestsPage() {
-  const { dashboard } = useDashboard();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const user = dashboard.user;
-  const canReview = user.role === 'LEAD' || user.role === 'MANAGER' || user.role === 'ADMIN';
+  const canReview = user?.role === 'LEAD' || user?.role === 'MANAGER' || user?.role === 'ADMIN';
   const hasToken = !!localStorage.getItem('qa-timeoff-token');
-  const [rejectTarget, setRejectTarget] = useState<RequestCardModel | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<RequestRow | null>(null);
   const [rejectComment, setRejectComment] = useState('');
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<SortDirection>(null);
+  const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL');
+  const pageSize = 15;
 
-  const myTimeOffQuery = useQuery({
-    queryKey: ['timeoff', 'my'],
-    queryFn: api.myTimeOff,
-    enabled: hasToken && !canReview,
-  });
-  const myVacationsQuery = useQuery({
-    queryKey: ['vacation', 'my'],
-    queryFn: api.myVacations,
-    enabled: hasToken && !canReview,
-  });
-  const pendingTimeOffQuery = useQuery({
-    queryKey: ['timeoff', 'pending'],
-    queryFn: api.pendingTimeOff,
-    enabled: hasToken && canReview,
-  });
-  const pendingVacationsQuery = useQuery({
-    queryKey: ['vacation', 'pending'],
-    queryFn: api.pendingVacations,
-    enabled: hasToken && canReview,
-  });
+  const myTimeOffQuery = useQuery({ queryKey: ['timeoff', 'my'], queryFn: api.myTimeOff, enabled: hasToken && !canReview });
+  const myVacationsQuery = useQuery({ queryKey: ['vacation', 'my'], queryFn: api.myVacations, enabled: hasToken && !canReview });
+  const pendingTimeOffQuery = useQuery({ queryKey: ['timeoff', 'pending'], queryFn: api.pendingTimeOff, enabled: hasToken && canReview });
+  const pendingVacationsQuery = useQuery({ queryKey: ['vacation', 'pending'], queryFn: api.pendingVacations, enabled: hasToken && canReview });
 
-  const invalidateRequests = () => {
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-    queryClient.invalidateQueries({ queryKey: ['timeoff'] });
-    queryClient.invalidateQueries({ queryKey: ['vacation'] });
-    queryClient.invalidateQueries({ queryKey: ['calendar'] });
-  };
+  const isLoading = myTimeOffQuery.isLoading || myVacationsQuery.isLoading || pendingTimeOffQuery.isLoading || pendingVacationsQuery.isLoading;
+  const isError = myTimeOffQuery.isError || myVacationsQuery.isError || pendingTimeOffQuery.isError || pendingVacationsQuery.isError;
 
-  const approve = useMutation({
-    mutationFn: (request: RequestCardModel) => (request.kind === 'timeoff' ? api.approveTimeOff(request.id) : api.approveVacation(request.id)),
-    onSuccess: () => {
-      showAppToast('Заявка одобрена');
-      invalidateRequests();
-    },
-    onError: () => showAppToast('Не удалось одобрить заявку', 'Попробуйте еще раз', 'error'),
-  });
-  const reject = useMutation({
-    mutationFn: ({ request, comment }: { request: RequestCardModel; comment: string }) =>
-      request.kind === 'timeoff' ? api.rejectTimeOff(request.id, comment) : api.rejectVacation(request.id, comment),
-    onSuccess: () => {
-      setRejectTarget(null);
-      setRejectComment('');
-      showAppToast('Заявка отклонена');
-      invalidateRequests();
-    },
-    onError: () => showAppToast('Не удалось отклонить заявку', 'Попробуйте еще раз', 'error'),
-  });
-  const cancel = useMutation({
-    mutationFn: (request: RequestCardModel) => (request.kind === 'timeoff' ? api.cancelTimeOff(request.id) : api.cancelVacation(request.id)),
-    onSuccess: () => {
-      showAppToast('Заявка отменена');
-      invalidateRequests();
-    },
-    onError: () => showAppToast('Не удалось отменить заявку', 'Попробуйте еще раз', 'error'),
-  });
-
-  const timeOff = canReview ? pendingTimeOffQuery.data : myTimeOffQuery.data;
-  const vacations = canReview ? pendingVacationsQuery.data : myVacationsQuery.data;
-  const requests = useMemo(
-    () =>
-      [
-        ...(timeOff ?? fallbackTimeOff(dashboard.requests, user.id, canReview)).map(mapTimeOffRequest),
-        ...(vacations ?? fallbackVacations(dashboard.vacations ?? [], user.id, canReview)).map(mapVacationRequest),
-      ].sort(compareRequests),
-    [canReview, dashboard.requests, dashboard.vacations, timeOff, user.id, vacations],
-  );
-  const isLoading = canReview
-    ? pendingTimeOffQuery.isLoading || pendingVacationsQuery.isLoading
-    : myTimeOffQuery.isLoading || myVacationsQuery.isLoading;
-  const hasError = canReview
-    ? pendingTimeOffQuery.isError || pendingVacationsQuery.isError
-    : myTimeOffQuery.isError || myVacationsQuery.isError;
-  const isMutating = approve.isPending || reject.isPending || cancel.isPending;
-
-  const retryRequests = () => {
+  const allRows = useMemo(() => {
+    const rows: RequestRow[] = [];
     if (canReview) {
-      pendingTimeOffQuery.refetch();
-      pendingVacationsQuery.refetch();
+      for (const r of pendingTimeOffQuery.data ?? []) rows.push(mapToRow(r, 'timeoff'));
+      for (const v of pendingVacationsQuery.data ?? []) rows.push(mapVacationToRow(v));
     } else {
-      myTimeOffQuery.refetch();
-      myVacationsQuery.refetch();
+      for (const r of myTimeOffQuery.data ?? []) rows.push(mapToRow(r, 'timeoff'));
+      for (const v of myVacationsQuery.data ?? []) rows.push(mapVacationToRow(v));
     }
+    return rows;
+  }, [canReview, myTimeOffQuery.data, myVacationsQuery.data, pendingTimeOffQuery.data, pendingVacationsQuery.data]);
+
+  const filtered = useMemo(() => {
+    let result = allRows;
+    if (filter !== 'ALL') result = result.filter(r => r.status === filter);
+    return result;
+  }, [allRows, filter]);
+
+  const sorted = useMemo(() => {
+    if (!sortKey || !sortDir) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aVal = (a as any)[sortKey] ?? '';
+      const bVal = (b as any)[sortKey] ?? '';
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const paginated = useMemo(() => {
+    return sorted.slice((page - 1) * pageSize, page * pageSize);
+  }, [sorted, page]);
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) setSortDir(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+    setPage(1);
   };
 
-  if (hasError && requests.length === 0) {
-    return <ErrorState title="Заявки не загрузились" description="Не удалось получить список заявок." onRetry={retryRequests} />;
-  }
+  const approveTimeOff = useMutation({ mutationFn: api.approveTimeOff, onSuccess: () => queryClient.invalidateQueries() });
+  const rejectTimeOff = useMutation({
+    mutationFn: ({ id, comment }: { id: string; comment?: string }) => api.rejectTimeOff(id, comment),
+    onSuccess: () => { queryClient.invalidateQueries(); setRejectTarget(null); setRejectComment(''); },
+  });
 
-  if (isLoading && requests.length === 0) {
-    return <RequestsSkeleton />;
-  }
+  const handleApprove = (row: RequestRow) => {
+    if (!window.confirm(`Одобрить ${row.typeLabel} для ${row.employeeName}?`)) return;
+    if (row.kind === 'vacation') api.approveVacation(row.id).then(() => queryClient.invalidateQueries()).catch(() => {});
+    else approveTimeOff.mutate(row.id);
+  };
 
-  return (
-    <>
-      <Card>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-bold text-[#7A8599]">{canReview ? 'Руководитель' : 'Сотрудник'}</p>
-            <h2 className="text-xl font-black text-white">{canReview ? 'Заявки команды' : 'Мои заявки'}</h2>
-          </div>
-          <Badge tone={canReview ? 'warning' : 'info'}>{requests.length}</Badge>
-        </div>
-      </Card>
+  const handleReject = () => {
+    if (!rejectTarget) return;
+    rejectTimeOff.mutate({ id: rejectTarget.id, comment: rejectComment || undefined });
+  };
 
-      {requests.length === 0 ? (
-        <EmptyState title={canReview ? 'Нет заявок команды' : 'Заявок пока нет'} description={canReview ? 'Новые заявки появятся здесь.' : 'Созданные отгулы и отпуска будут отображаться здесь.'} />
-      ) : (
-        <div className="grid gap-3">
-          {requests.map((request) => (
-            <RequestCard
-              key={`${request.kind}-${request.id}`}
-              request={request}
-              canReview={canReview}
-              canCancel={!canReview && request.status === 'PENDING'}
-              disabled={isMutating}
-              onApprove={async () => {
-                if (await confirmTelegram('Одобрить заявку?', `${request.employeeName}: ${request.typeLabel}`)) {
-                  approve.mutate(request);
-                }
-              }}
-              onReject={() => {
-                setRejectTarget(request);
-                setRejectComment('');
-              }}
-              onCancel={async () => {
-                if (await confirmTelegram('Отменить заявку?', `${request.typeLabel}: ${request.dateLabel}`)) {
-                  cancel.mutate(request);
-                }
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      <Modal
-        open={!!rejectTarget}
-        title="Отклонить заявку"
-        onClose={() => {
-          setRejectTarget(null);
-          setRejectComment('');
-        }}
-        footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setRejectTarget(null);
-                setRejectComment('');
-              }}
-            >
-              Отмена
-            </Button>
-            <Button
-              variant="danger"
-              disabled={!rejectComment.trim() || reject.isPending || !rejectTarget}
-              onClick={async () => {
-                if (rejectTarget && (await confirmTelegram('Отклонить заявку?', 'Комментарий будет отправлен сотруднику.'))) {
-                  reject.mutate({ request: rejectTarget, comment: rejectComment.trim() });
-                }
-              }}
-            >
-              Отклонить
-            </Button>
-          </div>
-        }
-      >
-        <div className="grid gap-3">
-          {rejectTarget && (
-            <div className="rounded-[20px] bg-[#111A2E]/70 p-3 bg-[#111A2E]/70">
-              <p className="font-black text-white">{rejectTarget.employeeName}</p>
-              <p className="text-sm font-bold text-[#7A8599]">
-                {rejectTarget.typeLabel} · {rejectTarget.dateLabel}
-              </p>
-            </div>
-          )}
-          <Textarea
-            label="Комментарий"
-            value={rejectComment}
-            maxLength={500}
-            hint={`${rejectComment.length}/500`}
-            onChange={(event) => setRejectComment(event.target.value)}
-          />
-        </div>
-      </Modal>
-    </>
-  );
-}
-
-function RequestsSkeleton() {
-  return (
-    <>
-      <SkeletonCard rows={1} />
-      <SkeletonCard rows={3} />
-      <SkeletonCard rows={3} />
-    </>
-  );
-}
-
-function RequestCard({
-  request,
-  canReview,
-  canCancel,
-  disabled,
-  onApprove,
-  onReject,
-  onCancel,
-}: {
-  request: RequestCardModel;
-  canReview: boolean;
-  canCancel: boolean;
-  disabled: boolean;
-  onApprove: () => void;
-  onReject: () => void;
-  onCancel: () => void;
-}) {
-  const Icon = request.kind === 'timeoff' ? Clock3 : Plane;
-
-  return (
-    <Card>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-[18px] text-white ${request.kind === 'timeoff' ? 'bg-sky-500' : 'bg-emerald-500'}`}>
-            <Icon size={20} />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-[#7A8599]">{request.employeeName}</p>
-            <h2 className="text-lg font-black text-white">{request.typeLabel}</h2>
-          </div>
-        </div>
-        <StatusBadge status={request.status} />
-      </div>
-
-      <div className="grid gap-2 rounded-[20px] bg-[#111A2E]/65 p-3 text-sm font-bold text-[#7A8599] bg-[#111A2E]/60 text-[#7A8599]">
-        <InfoRow label="Дата" value={request.dateLabel} />
-        <InfoRow label={request.kind === 'timeoff' ? 'Часы' : 'Дни'} value={request.amountLabel} />
-        <InfoRow label="Причина" value={request.reason} />
-        {request.approverComment && <InfoRow label="Комментарий" value={request.approverComment} />}
-      </div>
-
-      {request.status === 'PENDING' && (canReview || canCancel) && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {canReview ? (
+  const columns: Column<RequestRow>[] = [
+    { key: 'employeeName', header: 'Сотрудник', width: '20%', sortable: true, render: (r) => <span className="font-semibold text-white/90">{r.employeeName || '—'}</span> },
+    { key: 'typeLabel', header: 'Тип', width: '12%', sortable: true, render: (r) => <span className="text-white/60">{r.typeLabel}</span> },
+    { key: 'date', header: 'Дата', width: '22%', sortable: true, render: (r) => <span className="text-white/60 text-[12px] font-mono">{r.date}</span> },
+    { key: 'amountLabel', header: 'Кол-во', width: '8%', align: 'right', sortable: true, render: (r) => <span className="font-semibold text-white/70">{r.amountLabel}</span> },
+    { key: 'reason', header: 'Причина', width: '18%', render: (r) => <span className="text-white/50 truncate max-w-[180px] block">{r.reason || '—'}</span> },
+    { key: 'status', header: 'Статус', width: '10%', sortable: true, align: 'center',
+      render: (r) => <span className={clsx('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', statusClasses[r.status])}>{getStatusLabel(r.status)}</span> },
+    { key: 'actions', header: '', width: '10%', align: 'right',
+      render: (r) => (
+        <div className="flex items-center justify-end gap-1">
+          {canReview && r.status === 'PENDING' && (
             <>
-              <Button variant="danger" disabled={disabled} onClick={onReject}>
-                <X size={18} /> Отклонить
+              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleApprove(r); }} className="!min-h-0 h-7 w-7 !p-0 text-emerald-400 hover:text-emerald-300">
+                <Check size={14} />
               </Button>
-              <Button disabled={disabled} onClick={onApprove}>
-                <Check size={18} /> Одобрить
+              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setRejectTarget(r); }} className="!min-h-0 h-7 w-7 !p-0 text-rose-400 hover:text-rose-300">
+                <X size={14} />
               </Button>
             </>
-          ) : (
-            <Button className="col-span-2" variant="secondary" disabled={disabled} onClick={onCancel}>
-              <X size={18} /> Отменить заявку
+          )}
+          {!canReview && r.status === 'PENDING' && (
+            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); if (window.confirm('Отменить заявку?')) { r.kind === 'vacation' ? api.cancelVacation(r.id).then(() => queryClient.invalidateQueries()) : api.cancelTimeOff(r.id).then(() => queryClient.invalidateQueries()); } }} className="!min-h-0 h-7 !px-2 text-[11px] text-rose-400">
+              Отменить
             </Button>
           )}
+          <Clock3 size={12} className="text-white/15" />
         </div>
-      )}
+      ),
+    },
+  ];
 
-      {request.status === 'REJECTED' && request.approverComment && (
-        <div className="mt-3 flex items-start gap-2 rounded-[18px] bg-rose-950/30 p-3 text-sm font-bold text-rose-200 bg-rose-950 text-rose-200">
-          <MessageSquareText className="mt-0.5 shrink-0" size={17} />
-          <span>{request.approverComment}</span>
-        </div>
-      )}
-    </Card>
-  );
-}
+  if (isLoading) return <Loader label="Загрузка заявок" />;
+  if (isError) return <ErrorState title="Ошибка загрузки" description="Не удалось загрузить заявки." onRetry={() => queryClient.invalidateQueries()} />;
 
-function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-[#7A8599]">{label}</span>
-      <span className="text-right text-[#B8C0D0]">{value}</span>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[22px] font-bold text-white">{canReview ? 'Заявки команды' : 'Мои заявки'}</h1>
+          <p className="text-[13px] text-white/40 mt-1">{sorted.length} заявок</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {(['ALL', 'PENDING', 'APPROVED'] as const).map((f) => (
+            <button key={f} onClick={() => { setFilter(f); setPage(1); }}
+              className={clsx('rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors',
+                filter === f ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]')}>
+              {f === 'ALL' ? 'Все' : f === 'PENDING' ? 'Ожидают' : 'Одобрены'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={paginated}
+        keyField="id"
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={handleSort}
+        page={page}
+        total={sorted.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        emptyMessage="Нет заявок"
+        loading={false}
+      />
+
+      {rejectTarget && (
+        <Modal open={!!rejectTarget} title="Отклонить заявку" onClose={() => { setRejectTarget(null); setRejectComment(''); }}
+          footer={
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => { setRejectTarget(null); setRejectComment(''); }}>Отмена</Button>
+              <Button variant="danger" onClick={handleReject} disabled={rejectTimeOff.isPending}>{rejectTimeOff.isPending ? 'Отклоняется...' : 'Отклонить'}</Button>
+            </div>
+          }>
+          <div className="space-y-3">
+            <p className="text-[13px] text-white/60">{rejectTarget.employeeName} — {rejectTarget.typeLabel}</p>
+            <Textarea label="Комментарий" placeholder="Причина отклонения..." value={rejectComment} onChange={(e) => setRejectComment(e.target.value)} rows={3} />
+          </div>
+        </Modal>
+      )}
     </div>
   );
-}
-
-function mapTimeOffRequest(request: TimeOffRequest): RequestCardModel {
-  return {
-    id: request.id,
-    kind: 'timeoff',
-    employeeName: request.user.fullName,
-    typeLabel: 'Отгул',
-    dateLabel: formatDate(request.date),
-    amountLabel: `${request.hours} ч`,
-    reason: request.reason || request.comment || 'Без причины',
-    status: request.status,
-    createdAt: request.createdAt ?? request.date,
-    approverComment: request.approverComment,
-    raw: request,
-  };
-}
-
-function mapVacationRequest(request: VacationRequest): RequestCardModel {
-  return {
-    id: request.id,
-    kind: 'vacation',
-    employeeName: request.user.fullName,
-    typeLabel: getVacationTypeLabel(request.vacationType),
-    dateLabel: request.startDate === request.endDate ? formatDate(request.startDate) : `${formatDate(request.startDate)} - ${formatDate(request.endDate)}`,
-    amountLabel: `${request.daysCount} дн.`,
-    reason: request.comment || getVacationTypeLabel(request.vacationType),
-    status: request.status,
-    createdAt: request.createdAt ?? request.startDate,
-    approverComment: request.approverComment,
-    raw: request,
-  };
-}
-
-function fallbackTimeOff(requests: TimeOffRequest[], userId: string, canReview: boolean) {
-  return requests.filter((request) => (canReview ? request.status === 'PENDING' && request.userId !== userId : request.userId === userId));
-}
-
-function fallbackVacations(requests: VacationRequest[], userId: string, canReview: boolean) {
-  return requests.filter((request) => (canReview ? request.status === 'PENDING' && request.userId !== userId : request.userId === userId));
-}
-
-function compareRequests(a: RequestCardModel, b: RequestCardModel) {
-  if (a.status === 'PENDING' && b.status !== 'PENDING') {
-    return -1;
-  }
-  if (a.status !== 'PENDING' && b.status === 'PENDING') {
-    return 1;
-  }
-
-  return getComparableDate(b).localeCompare(getComparableDate(a));
-}
-
-function getComparableDate(request: RequestCardModel) {
-  return request.createdAt || ('date' in request.raw ? request.raw.date : request.raw.startDate);
-}
-
-function formatDate(value: string) {
-  return value.slice(0, 10);
 }
