@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import { AlertCircle, CheckCircle2, ChevronDown, Loader2, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from 'react';
+import { Children, useCallback, useEffect, useRef, useState, type ElementType, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { getStatusLabel, hapticImpact } from '../../shared/utils';
 
@@ -131,14 +131,14 @@ export function Select({
   const options: SelectOption[] = [];
   let selectedLabel = '';
 
-  const childArray = Array.isArray(children) ? children : [children];
+  const childArray = Children.toArray(children);
   for (const child of childArray) {
-    if (child && typeof child === 'object' && 'type' in child && child.type === 'option') {
+    if (child && typeof child === 'object' && 'type' in child && (child as React.ReactElement).type === 'option') {
       const option = child as React.ReactElement<React.OptionHTMLAttributes<HTMLOptionElement>>;
       const optionValue = String(option.props.value ?? '');
       const optionLabel = String(option.props.children ?? optionValue);
       options.push({ value: optionValue, label: optionLabel });
-      if (optionValue === value) {
+      if (optionValue === String(value ?? '')) {
         selectedLabel = optionLabel;
       }
     }
