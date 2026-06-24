@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -9,13 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaService;
-  let telegramAuth: TelegramAuthService;
 
   const mockPrisma = {
     user: {
-      findFirst: jest.fn(),
+      findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
-      upsert: jest.fn(),
+      update: jest.fn(),
     },
     timeBalance: {
       create: jest.fn(),
@@ -24,13 +22,6 @@ describe('AuthService', () => {
 
   const mockJwt = {
     signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
-  };
-
-  const mockConfig = {
-    get: jest.fn((key: string) => {
-      if (key === 'ADMIN_TELEGRAM_ID') return undefined;
-      return null;
-    }),
   };
 
   const mockTelegramAuth = {
@@ -43,14 +34,12 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwt },
-        { provide: ConfigService, useValue: mockConfig },
         { provide: TelegramAuthService, useValue: mockTelegramAuth },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = module.get<PrismaService>(PrismaService);
-    telegramAuth = module.get<TelegramAuthService>(TelegramAuthService);
 
     jest.clearAllMocks();
   });
@@ -63,24 +52,34 @@ describe('AuthService', () => {
       username: 'testuser',
     };
 
-    it('должен успешно аутентифицировать с валидным initData', async () => {
+    const existingUser = {
+      id: 'user-1',
+      telegramId: '12345',
+      fullName: 'Test User',
+      role: 'EMPLOYEE' as const,
+      teamId: 'team-1',
+      username: 'testuser',
+      isActive: true,
+      timeBalance: { balanceHours: 40 },
+      team: { id: 'team-1', name: 'QA Team' },
+      manager: null,
+    };
+
+    it('должен успешно аутентифицировать существующего пользователя', async () => {
       mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
-      mockPrisma.user.findFirst.mockResolvedValue(null); // no existing users
-      mockPrisma.user.upsert.mockResolvedValue({
-        id: 'user-1',
-        telegramId: '12345',
-        fullName: 'Test User',
-        role: 'ADMIN', // first user becomes admin
-        username: 'testuser',
-        timeBalance: { balanceHours: 0 },
-      });
+      mockPrisma.user.findUnique.mockResolvedValue(existingUser);
 
       const result = await service.telegramLogin('valid-init-data');
 
-      expect(telegramAuth.validateInitData).toHaveBeenCalledWith('valid-init-data');
+      expect(mockTelegramAuth.validateInitData).toHaveBeenCalledWith('valid-init-data');
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { telegramId: '12345' },
+        include: { timeBalance: true, team: true, manager: true },
+      });
       expect(mockJwt.signAsync).toHaveBeenCalledWith({
         sub: 'user-1',
-        role: 'ADMIN',
+        role: 'EMPLOYEE',
+        teamId: 'team-1',
       });
       expect(result).toEqual({
         token: 'mock-jwt-token',
@@ -98,28 +97,20 @@ describe('AuthService', () => {
       await expect(service.telegramLogin('invalid-data')).rejects.toThrow(UnauthorizedException);
     });
 
-    it('должен создать пользователя если его нет в БД', async () => {
+    it('должен выбросить UnauthorizedException если пользователь не найден', async () => {
       mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
-      mockPrisma.user.findFirst.mockResolvedValue(null);
-      mockPrisma.user.upsert.mockResolvedValue({
-        id: 'new-user',
-        telegramId: '12345',
-        fullName: 'Test User',
-        role: 'EMPLOYEE',
-        timeBalance: { balanceHours: 0 },
-      });
+      mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await service.telegramLogin('valid-init-data');
+      await expect(service.telegramLogin('valid-init-data')).rejects.toThrow(UnauthorizedException);
+      await expect(service.telegramLogin('valid-init-data')).rejects.toThrow('Пользователь не найден');
+    });
 
-      expect(mockPrisma.user.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
-            telegramId: '12345',
-            fullName: 'Test User',
-            username: 'testuser',
-          }),
-        }),
-      );
+    it('должен выбросить UnauthorizedException если пользователь заблокирован', async () => {
+      mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
+      mockPrisma.user.findUnique.mockResolvedValue({ ...existingUser, isActive: false });
+
+      await expect(service.telegramLogin('valid-init-data')).rejects.toThrow(UnauthorizedException);
+      await expect(service.telegramLogin('valid-init-data')).rejects.toThrow('Доступ заблокирован');
     });
   });
 
