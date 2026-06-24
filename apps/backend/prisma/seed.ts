@@ -22,6 +22,16 @@ async function main() {
     teamId: qaTeam.id,
   });
 
+  const webAdmin = await upsertUser({
+    fullName: 'Eduard Kancer',
+    email: 'ekancer@detmir.ru',
+    position: 'System Administrator',
+    hourlyRate: 2000,
+    role: Role.ADMIN,
+    teamId: qaTeam.id,
+    passwordHash: '$2b$10$IEsRJ2m00CPRy5eEzbD0KuFdXf6VH1HuzUoPAjRnwRnL1zAssTEsO',
+  });
+
   const manager = await upsertUser({
     telegramId: '100000002',
     fullName: 'Manager',
@@ -82,7 +92,7 @@ async function main() {
     managerId: lead.id,
   });
 
-  const users = [admin, manager, lead, employee1, employee2, employee3];
+  const users = [admin, webAdmin, manager, lead, employee1, employee2, employee3];
   const userIds = users.map((user) => user.id);
 
   await cleanSeedData(userIds);
@@ -260,44 +270,50 @@ function upsertUser({
   role,
   teamId,
   managerId,
+  passwordHash,
 }: {
-  telegramId: string;
+  telegramId?: string;
   fullName: string;
-  username: string;
+  username?: string;
   email: string;
   position: string;
   hourlyRate: number;
   role: Role;
   teamId: string;
   managerId?: string;
+  passwordHash?: string;
 }) {
-  return prisma.user.upsert({
-    where: { telegramId },
-    update: {
-      fullName,
-      username,
-      email,
-      position,
-      hourlyRate,
-      role,
-      teamId,
-      managerId,
-      isActive: true,
-    },
-    create: {
-      telegramId,
-      fullName,
-      username,
-      email,
-      position,
-      hourlyRate,
-      role,
-      teamId,
-      managerId,
-      isActive: true,
-      timeBalance: {
-        create: {},
+  const data = {
+    fullName,
+    username,
+    email,
+    position,
+    hourlyRate,
+    role,
+    teamId,
+    managerId,
+    isActive: true,
+    ...(passwordHash ? { passwordHash } : {}),
+    ...(telegramId ? { telegramId } : {}),
+  };
+
+  if (telegramId) {
+    return prisma.user.upsert({
+      where: { telegramId },
+      update: data,
+      create: {
+        ...data,
+        timeBalance: { create: {} },
       },
+    });
+  }
+
+  return prisma.user.upsert({
+    where: { email },
+    update: data,
+    create: {
+      ...data,
+      timeBalance: { create: {} },
     },
   });
 }
