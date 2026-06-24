@@ -80,7 +80,7 @@ export function LoginPage() {
                 Вход...
               </>
             ) : (
-              'Sign in'
+              'Войти'
             )}
           </button>
         </form>
