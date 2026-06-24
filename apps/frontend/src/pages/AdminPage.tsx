@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, Brain, CalendarDays, Clock3, Download, FileSpreadsheet, History, Pencil, Plus, Search, ShieldAlert, TrendingUp, UserPlus, Wallet } from 'lucide-react';
+import { BarChart3, Brain, CalendarDays, Clock3, Download, FileSpreadsheet, History, Pencil, Plus, Search, ShieldAlert, TrendingUp, Trash2, UserPlus, Users, Wallet } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, Loader, Modal, Select, SkeletonCard } from '../components/ui';
 import { api } from '../shared/api';
@@ -9,7 +9,7 @@ import { confirmTelegram, getOperationTypeLabel, getRoleLabel, showAppToast } fr
 
 type BalanceAction = 'add' | 'writeOff';
 type BalanceDraft = { user: User; action: BalanceAction; hours: number; reason: string };
-type AdminTab = 'employees' | 'overtime-calendar' | 'overtime-report' | 'payroll' | 'kpi' | 'analytics' | 'ai-forecast' | 'export';
+type AdminTab = 'employees' | 'teams' | 'overtime-calendar' | 'overtime-report' | 'payroll' | 'kpi' | 'analytics' | 'ai-forecast' | 'export';
 
 const roles: Role[] = ['EMPLOYEE', 'LEAD', 'MANAGER', 'ADMIN'];
 
@@ -160,6 +160,41 @@ export function AdminPage() {
     onError: () => showAppToast('Не удалось обновить ставку', 'Попробуйте еще раз', 'error'),
   });
 
+  // ── Team management ──────────────────────────────────────────────
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [editTeamTarget, setEditTeamTarget] = useState<Team | null>(null);
+
+  const createTeam = useMutation({
+    mutationFn: api.createTeam,
+    onSuccess: () => {
+      setCreateTeamOpen(false);
+      showAppToast('Команда создана');
+      invalidateAdminData();
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+    onError: () => showAppToast('Не удалось создать команду', 'Возможно, такая команда уже существует', 'error'),
+  });
+  const updateTeam = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; description?: string } }) =>
+      api.updateTeam(id, payload),
+    onSuccess: () => {
+      setEditTeamTarget(null);
+      showAppToast('Команда обновлена');
+      invalidateAdminData();
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+    onError: () => showAppToast('Не удалось обновить команду', 'Попробуйте еще раз', 'error'),
+  });
+  const deleteTeam = useMutation({
+    mutationFn: api.deleteTeam,
+    onSuccess: () => {
+      showAppToast('Команда удалена');
+      invalidateAdminData();
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+    onError: () => showAppToast('Не удалось удалить команду', 'Убедитесь, что в команде нет сотрудников', 'error'),
+  });
+
   if (!isAdmin) {
     return (
       <EmptyState
@@ -180,6 +215,7 @@ export function AdminPage() {
 
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     { key: 'employees', label: 'Сотрудники', icon: <UserPlus size={16} /> },
+    { key: 'teams', label: 'Команды', icon: <Users size={16} /> },
     { key: 'overtime-calendar', label: 'Календарь', icon: <CalendarDays size={16} /> },
     { key: 'overtime-report', label: 'Отчёт по переработкам', icon: <BarChart3 size={16} /> },
     { key: 'payroll', label: 'Расчёт стоимости', icon: <Wallet size={16} /> },
@@ -280,6 +316,57 @@ export function AdminPage() {
         </>
       )}
 
+      {activeTab === 'teams' && (
+        <>
+          <Card>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-bold text-white">Управление командами</p>
+              <Button size="sm" onClick={() => setCreateTeamOpen(true)}>
+                <Plus size={17} />
+                Создать
+              </Button>
+            </div>
+          </Card>
+
+          {teams.length === 0 ? (
+            <EmptyState title="Команд нет" description="Создайте первую команду" />
+          ) : (
+            <div className="grid gap-3">
+              {teams.map((team) => (
+                <Card key={team.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-white">{team.name}</p>
+                      {team.description && <p className="text-[11px] font-medium text-[#B8C0D0]">{team.description}</p>}
+                      <p className="mt-1 text-[10px] font-medium text-[#7A8599]">
+                        {(team.users ?? []).length} сотрудников
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Button variant="ghost" size="sm" onClick={() => setEditTeamTarget(team)}>
+                        <Pencil size={14} />
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        disabled={deleteTeam.isPending}
+                        onClick={async () => {
+                          if (await confirmTelegram('Удалить команду?', team.name)) {
+                            deleteTeam.mutate(team.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
       {activeTab === 'overtime-calendar' && <OvertimeCalendarView isAdmin={isAdmin} />}
       {activeTab === 'overtime-report' && <OvertimeReportView isAdmin={isAdmin} />}
       {activeTab === 'payroll' && <PayrollReportView isAdmin={isAdmin} />}
@@ -340,6 +427,27 @@ export function AdminPage() {
             writeOffBalance.mutate(payload);
           }
         }}
+      />
+
+      <TeamFormModal
+        mode="create"
+        open={createTeamOpen}
+        pending={createTeam.isPending}
+        onClose={() => setCreateTeamOpen(false)}
+        onSubmit={async (payload) => {
+          if (await confirmTelegram('Создать команду?', payload.name)) {
+            createTeam.mutate(payload);
+          }
+        }}
+      />
+
+      <TeamFormModal
+        mode="edit"
+        open={!!editTeamTarget}
+        target={editTeamTarget}
+        pending={updateTeam.isPending}
+        onClose={() => setEditTeamTarget(null)}
+        onSubmit={(payload) => editTeamTarget && updateTeam.mutate({ id: editTeamTarget.id, payload })}
       />
 
       <OperationsModal
@@ -1888,4 +1996,63 @@ function getInitials(fullName: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('');
+}
+
+function TeamFormModal({
+  mode,
+  open,
+  target,
+  pending,
+  onClose,
+  onSubmit,
+}: {
+  mode: 'create' | 'edit';
+  open: boolean;
+  target?: Team | null;
+  pending: boolean;
+  onClose: () => void;
+  onSubmit: (payload: { name: string; description?: string }) => void;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    setName(target?.name ?? '');
+    setDescription(target?.description ?? '');
+  }, [open, target]);
+
+  const canSubmit = name.trim().length > 0;
+
+  return (
+    <Modal
+      open={open}
+      title={mode === 'create' ? 'Создать команду' : 'Редактировать команду'}
+      onClose={onClose}
+      footer={
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Отмена
+          </Button>
+          <Button disabled={!canSubmit || pending} onClick={() => onSubmit({ name: name.trim(), description: description.trim() || undefined })}>
+            {mode === 'create' ? 'Создать' : 'Сохранить'}
+          </Button>
+        </div>
+      }
+    >
+      <div className="grid gap-3">
+        <Field label="Название команды" value={name} onChange={(event) => setName(event.target.value)} placeholder="Например: Отдел тестирования SAP" />
+        <div>
+          <label className="mb-1.5 block text-[12px] font-semibold text-[#B8C0D0]">Описание (необязательно)</label>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            maxLength={200}
+            placeholder="QA для SAP EWM модуля"
+            className="field-input min-h-20 resize-none"
+          />
+        </div>
+      </div>
+    </Modal>
+  );
 }

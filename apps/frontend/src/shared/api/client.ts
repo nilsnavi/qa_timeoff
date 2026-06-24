@@ -157,6 +157,9 @@ export const api = {
   approveCalendarEvent: (id: string) => request<CalendarEventEntry>(`/calendar/events/${id}/approve`, { method: 'POST' }),
 
   teams: () => request<Team[]>('/teams'),
+  createTeam: (payload: { name: string; description?: string }) => request<Team>('/teams', { method: 'POST', body: JSON.stringify(payload) }),
+  updateTeam: (id: string, payload: { name?: string; description?: string }) => request<Team>(`/teams/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteTeam: (id: string) => request<void>(`/teams/${id}`, { method: 'DELETE' }),
   notifications: () => request<NotificationItem[]>('/notifications'),
   markNotificationRead: (id: string) => request<NotificationItem>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsRead: () => request<NotificationItem[]>('/notifications/read-all', { method: 'PATCH' }),
