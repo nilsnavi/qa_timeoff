@@ -36,7 +36,7 @@ export function LoginPage() {
             <LogIn size={24} className="text-white" />
           </div>
           <h1 className="text-[22px] font-bold text-white">QA TimeOff</h1>
-          <p className="mt-1.5 text-[14px] font-medium text-[#B8C0D0]">Войдите в систему</p>
+          <p className="mt-1.5 text-[16px] font-medium text-[#B8C0D0]">Войдите в систему</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -66,13 +66,13 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-[13px] font-medium text-rose-400">{error}</p>
+            <p className="text-[15px] font-medium text-rose-400">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={isAuthLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-[10px] app-gradient px-4 py-3.5 text-[14px] font-semibold text-white shadow-lg shadow-blue-500/20 transition active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] app-gradient px-4 py-3.5 text-[16px] font-semibold text-white shadow-lg shadow-blue-500/20 transition active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isAuthLoading ? (
               <>

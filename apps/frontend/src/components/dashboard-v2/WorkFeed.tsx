@@ -36,8 +36,8 @@ export function WorkFeed({ notifications }: { notifications: NotificationItem[] 
   return (
     <div className="enterprise-card p-5 hover-lift">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-white/25">Активность</p>
-        <button onClick={() => navigate('/notifications')} className="flex items-center gap-1 text-[11px] font-semibold text-[#4C7DFF] hover:text-[#6B96FF] transition-colors">
+        <p className="text-[13px] font-bold uppercase tracking-widest text-white/25">Активность</p>
+        <button onClick={() => navigate('/notifications')} className="flex items-center gap-1 text-[13px] font-semibold text-[#4C7DFF] hover:text-[#6B96FF] transition-colors">
           Все <ArrowRight size={12} />
         </button>
       </div>
@@ -57,9 +57,9 @@ export function WorkFeed({ notifications }: { notifications: NotificationItem[] 
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-semibold text-white/80">{n.title}</p>
-                  <p className="truncate text-[11px] text-white/30 mt-0.5">{n.message}</p>
+                  <p className="truncate text-[13px] text-white/30 mt-0.5">{n.message}</p>
                 </div>
-                <span className="shrink-0 text-[10px] text-white/20 mt-1">{timeAgo(n.createdAt)}</span>
+                <span className="shrink-0 text-[12px] text-white/20 mt-1">{timeAgo(n.createdAt)}</span>
               </button>
             );
           })}

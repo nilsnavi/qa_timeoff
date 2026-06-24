@@ -25,7 +25,7 @@ export function TeamWorkload({ dashboard }: { dashboard: Dashboard }) {
     <div className="enterprise-card p-5">
       <div className="flex items-center gap-2 mb-4">
         <Users size={14} className="text-white/25" />
-        <p className="text-[11px] font-bold uppercase tracking-widest text-white/25">Нагрузка команды</p>
+        <p className="text-[13px] font-bold uppercase tracking-widest text-white/25">Нагрузка команды</p>
       </div>
 
       {members.length === 0 ? (
@@ -37,7 +37,7 @@ export function TeamWorkload({ dashboard }: { dashboard: Dashboard }) {
             const ratio = total / maxLoad;
             return (
               <div key={member.name} className="flex items-center gap-3">
-                <span className="w-28 shrink-0 text-[12px] font-semibold text-white/60 truncate">{member.name}</span>
+                <span className="w-28 shrink-0 text-[14px] font-semibold text-white/60 truncate">{member.name}</span>
                 <div className="flex-1 h-6 rounded-md bg-white/[0.03] overflow-hidden flex">
                   {member.approved > 0 && (
                     <div className="h-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold transition-all"
@@ -53,7 +53,7 @@ export function TeamWorkload({ dashboard }: { dashboard: Dashboard }) {
                   )}
                 </div>
                 {member.pending > 3 && <AlertCircle size={14} className="text-rose-400 shrink-0" />}
-                <span className="w-8 text-right text-[12px] font-bold text-white/30">{total}</span>
+                <span className="w-8 text-right text-[14px] font-bold text-white/30">{total}</span>
               </div>
             );
           })}

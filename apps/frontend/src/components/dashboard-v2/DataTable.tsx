@@ -60,7 +60,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 <th
                   key={col.key}
                   className={clsx(
-                    'h-10 px-4 text-left text-[11px] font-bold uppercase tracking-widest text-white/30 select-none',
+                    'h-10 px-4 text-left text-[13px] font-bold uppercase tracking-widest text-white/30 select-none',
                     col.sortable && 'cursor-pointer hover:text-white/50 transition-colors',
                     col.align === 'center' && 'text-center',
                     col.align === 'right' && 'text-right',
@@ -93,7 +93,7 @@ export function DataTable<T extends Record<string, unknown>>({
               ))
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="h-32 text-center text-[13px] text-white/20">{emptyMessage}</td>
+                <td colSpan={columns.length} className="h-32 text-center text-[15px] text-white/20">{emptyMessage}</td>
               </tr>
             ) : (
               data.map((row, idx) => (
@@ -110,7 +110,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     <td
                       key={col.key}
                       className={clsx(
-                        'h-12 px-4 text-[13px] text-white/80',
+                        'h-12 px-4 text-[15px] text-white/80',
                         col.align === 'center' && 'text-center',
                         col.align === 'right' && 'text-right',
                       )}
@@ -127,7 +127,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between border-t border-white/[0.04] px-4 py-2.5">
-          <span className="text-[11px] text-white/30">
+          <span className="text-[13px] text-white/30">
             {total > 0 ? `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)} из ${total}` : ''}
           </span>
           <div className="flex items-center gap-1">
@@ -146,7 +146,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 <button
                   key={p}
                   onClick={() => onPageChange?.(p)}
-                  className={clsx('grid h-7 min-w-[28px] place-items-center rounded text-[12px] font-semibold transition-colors',
+                  className={clsx('grid h-7 min-w-[28px] place-items-center rounded text-[14px] font-semibold transition-colors',
                     p === page ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/30 hover:text-white/60')}
                 >
                   {p}

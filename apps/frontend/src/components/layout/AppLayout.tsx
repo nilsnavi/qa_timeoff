@@ -212,7 +212,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <aside className={clsx('hidden shrink-0 flex-col border-r border-white/[0.06] bg-[#0B1220] transition-all lg:flex', collapsed ? 'w-[60px]' : 'w-[232px]')}>
         <div className={clsx('flex h-14 items-center border-b border-white/[0.06]', collapsed ? 'justify-center px-2' : 'gap-3 px-4')}>
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg app-gradient text-[10px] font-bold text-white">QT</div>
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg app-gradient text-[14px] font-bold text-white">QT</div>
           {!collapsed && <span className="text-[15px] font-bold text-white truncate">QA TimeOff</span>}
           <button
             type="button"
@@ -231,7 +231,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <button
                     type="button"
                     onClick={() => toggleSection(section.label)}
-                    className={clsx('flex w-full items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/25 hover:text-white/40 transition-colors', collapsed && 'justify-center px-0')}
+                    className={clsx('flex w-full items-center gap-2 px-3 py-1.5 text-[14px] font-bold uppercase tracking-widest text-white/25 hover:text-white/40 transition-colors', collapsed && 'justify-center px-0')}
                   >
                     {collapsed ? <section.icon size={14} /> : <><section.icon size={12} />{section.label}<ChevronDown size={10} className={clsx('ml-auto transition-transform', expandedSections.has(section.label) && 'rotate-180')} /></>}
                   </button>
@@ -241,7 +241,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       to={child.to}
                       end={child.to === '/'}
                       className={({ isActive }) =>
-                        clsx('flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[13px] font-semibold transition-colors', collapsed && 'mx-1 justify-center px-2',
+                        clsx('flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[15px] font-semibold transition-colors', collapsed && 'mx-1 justify-center px-2',
                           isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04] hover:text-[#B8C0D0]')
                       }
                       title={collapsed ? child.label : undefined}
@@ -249,7 +249,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       <child.icon size={18} />
                       {!collapsed && child.label}
                       {!collapsed && child.to === '/requests/my' && pendReq > 0 && (
-                        <span className="ml-auto grid h-5 w-5 place-items-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-400">{pendReq > 9 ? '9+' : pendReq}</span>
+                        <span className="ml-auto grid h-5 w-5 place-items-center rounded-full bg-amber-500/20 text-[14px] font-bold text-amber-400">{pendReq > 9 ? '9+' : pendReq}</span>
                       )}
                     </NavLink>
                   ))}
@@ -259,7 +259,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   to={section.to || '/'}
                   end
                   className={({ isActive }) =>
-                    clsx('flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[13px] font-semibold transition-colors', collapsed && 'mx-1 justify-center px-2',
+                    clsx('flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[15px] font-semibold transition-colors', collapsed && 'mx-1 justify-center px-2',
                       isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04] hover:text-[#B8C0D0]')
                   }
                 >
@@ -276,7 +276,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <NavLink
               to="/admin"
               className={({ isActive }) =>
-                clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors', collapsed && 'justify-center px-2',
+                clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold transition-colors', collapsed && 'justify-center px-2',
                   isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04] hover:text-[#B8C0D0]')
               }
                title={collapsed ? 'Админка' : undefined}
@@ -313,7 +313,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder="Поиск..."
-                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pl-9 pr-3 text-[13px] text-white placeholder:text-white/20 outline-none focus:border-[#4C7DFF]/30 transition-colors"
+                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pl-9 pr-3 text-[15px] text-white placeholder:text-white/20 outline-none focus:border-[#4C7DFF]/30 transition-colors"
               />
             </div>
           </div>
@@ -326,7 +326,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <button type="button" className="grid h-9 w-9 place-items-center rounded-lg text-[#B8C0D0] hover:bg-white/[0.06] hover:text-white">
               <HelpCircle size={17} />
             </button>
-            <button type="button" onClick={() => navigate('/profile')} className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] text-[11px] font-bold text-white" title={currentUser.fullName}>
+            <button type="button" onClick={() => navigate('/profile')} className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] text-[15px] font-bold text-white" title={currentUser.fullName}>
               {initials}
             </button>
             <button type="button" onClick={() => { logout(); navigate('/login'); }} className="grid h-9 w-9 place-items-center rounded-lg text-[#B8C0D0] hover:bg-white/[0.06] hover:text-rose-400" title="Выйти">
@@ -342,10 +342,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <nav className="flex-1 space-y-3">
                 {sidebarSections.map((section) => (
                   <div key={section.label}>
-                    <div className="mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-white/25">{section.label}</div>
+                    <div className="mb-1 px-3 text-[14px] font-bold uppercase tracking-widest text-white/25">{section.label}</div>
                     {section.children?.map((child) => (
                       <NavLink key={child.to} to={child.to} end={child.to === '/'} onClick={() => setSidebarOpen(false)}
-                        className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold',
+                        className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold',
                           isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
                         <child.icon size={18} />{child.label}
                       </NavLink>
@@ -353,12 +353,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   </div>
                 ))}
                 {d.user.role === 'ADMIN' && (
-                  <NavLink to="/admin" onClick={() => setSidebarOpen(false)} className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold', isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
+                  <NavLink to="/admin" onClick={() => setSidebarOpen(false)} className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold', isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
                     <Shield size={18} />Admin
                   </NavLink>
                 )}
               </nav>
-              <button type="button" onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-950/300/20">
+              <button type="button" onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold text-rose-400 hover:bg-rose-950/300/20">
                 <LogOut size={18} />Выйти
               </button>
             </div>

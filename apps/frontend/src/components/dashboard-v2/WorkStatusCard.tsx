@@ -36,11 +36,11 @@ export function WorkStatusCard({ dashboard }: { dashboard: Dashboard }) {
     <div className="enterprise-card p-5 hover-lift">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/25 mb-1">Статус</p>
+          <p className="text-[15px] font-bold uppercase tracking-widest text-white/25 mb-1">Статус</p>
           <h2 className="text-2xl font-bold text-white">{dashboard.user.fullName.split(' ')[0]}</h2>
-          <p className="text-[13px] text-white/40 mt-0.5">{dashboard.user.position || 'Сотрудник'}</p>
+          <p className="text-[15px] text-white/40 mt-0.5">{dashboard.user.position || 'Сотрудник'}</p>
         </div>
-        <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${config.color} ${config.bg}`}>
+        <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[15px] font-bold ${config.color} ${config.bg}`}>
           <Icon size={12} />
           {config.label}
         </span>
@@ -49,27 +49,27 @@ export function WorkStatusCard({ dashboard }: { dashboard: Dashboard }) {
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="rounded-lg bg-white/[0.03] p-3">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Доступно</span>
+            <span className="text-[12px] font-semibold uppercase tracking-wider text-white/30">Доступно</span>
             {balanceRatio < 0.3 ? <TrendingDown size={12} className="text-rose-400" /> : <TrendingUp size={12} className="text-emerald-400" />}
           </div>
           <span className="text-xl font-bold text-white">{balance.balanceHours}ч</span>
           <div className="mt-2 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
             <div className={`h-full rounded-full progress-fill ${balanceRatio < 0.3 ? 'bg-rose-950/300' : 'bg-emerald-500'}`} style={{ width: `${Math.min(balanceRatio * 100, 100)}%` }} />
           </div>
-          <div className="mt-1 flex justify-between text-[9px] text-white/25">
+          <div className="mt-1 flex justify-between text-[11px] text-white/25">
             <span>Исп: {balance.totalUsedHours}ч</span>
             <span>Всего: {balance.totalAddedHours}ч</span>
           </div>
         </div>
         <div className="rounded-lg bg-white/[0.03] p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-2">Заявки</p>
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/30 mb-2">Заявки</p>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-white/50">Ожидают</span>
+              <span className="text-[15px] text-white/50">Ожидают</span>
               <span className="text-sm font-bold text-amber-400">{pendingCount}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-white/50">Одобрено</span>
+              <span className="text-[15px] text-white/50">Одобрено</span>
               <span className="text-sm font-bold text-emerald-400">{approvedCount}</span>
             </div>
           </div>

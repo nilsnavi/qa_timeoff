@@ -24,8 +24,8 @@ export function HomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[22px] font-bold text-white">Дашборд</h1>
-        <p className="text-[13px] text-white/40 mt-1">
+        <h1 className="text-[24px] font-bold text-white">Дашборд</h1>
+        <p className="text-[15px] text-white/40 mt-1">
           С возвращением, {user.fullName}. {isManager ? 'Обзор команды и процессов.' : 'Обзор рабочей активности.'}
         </p>
       </div>

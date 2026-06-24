@@ -142,11 +142,11 @@ export function RequestsPage() {
   const columns: Column<RequestRow>[] = [
     { key: 'employeeName', header: 'Сотрудник', width: '20%', sortable: true, render: (r) => <span className="font-semibold text-white/90">{r.employeeName || '—'}</span> },
     { key: 'typeLabel', header: 'Тип', width: '12%', sortable: true, render: (r) => <span className="text-white/60">{r.typeLabel}</span> },
-    { key: 'date', header: 'Дата', width: '22%', sortable: true, render: (r) => <span className="text-white/60 text-[12px] font-mono">{r.date}</span> },
+    { key: 'date', header: 'Дата', width: '22%', sortable: true, render: (r) => <span className="text-white/60 text-[14px] font-mono">{r.date}</span> },
     { key: 'amountLabel', header: 'Кол-во', width: '8%', align: 'right', sortable: true, render: (r) => <span className="font-semibold text-white/70">{r.amountLabel}</span> },
     { key: 'reason', header: 'Причина', width: '18%', render: (r) => <span className="text-white/50 truncate max-w-[180px] block">{r.reason || '—'}</span> },
     { key: 'status', header: 'Статус', width: '10%', sortable: true, align: 'center',
-      render: (r) => <span className={clsx('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', statusClasses[r.status])}>{getStatusLabel(r.status)}</span> },
+      render: (r) => <span className={clsx('inline-flex rounded-full px-2.5 py-0.5 text-[14px] font-bold uppercase tracking-wider', statusClasses[r.status])}>{getStatusLabel(r.status)}</span> },
     { key: 'actions', header: '', width: '10%', align: 'right',
       render: (r) => (
         <div className="flex items-center justify-end gap-1">
@@ -161,7 +161,7 @@ export function RequestsPage() {
             </>
           )}
           {!canReview && r.status === 'PENDING' && (
-            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); if (window.confirm('Отменить заявку?')) { const invalidate = () => { queryClient.invalidateQueries(); }; if (r.kind === 'vacation') { api.cancelVacation(r.id).then(invalidate); } else { api.cancelTimeOff(r.id).then(invalidate); } } }} className="!min-h-0 h-7 !px-2 text-[11px] text-rose-400">
+            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); if (window.confirm('Отменить заявку?')) { const invalidate = () => { queryClient.invalidateQueries(); }; if (r.kind === 'vacation') { api.cancelVacation(r.id).then(invalidate); } else { api.cancelTimeOff(r.id).then(invalidate); } } }} className="!min-h-0 h-7 !px-2 text-[13px] text-rose-400">
               Отменить
             </Button>
           )}
@@ -179,12 +179,12 @@ export function RequestsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold text-white">{canReview ? 'Заявки команды' : 'Мои заявки'}</h1>
-          <p className="text-[13px] text-white/40 mt-1">{sorted.length} заявок</p>
+          <p className="text-[15px] text-white/40 mt-1">{sorted.length} заявок</p>
         </div>
         <div className="flex items-center gap-2">
           {(['ALL', 'PENDING', 'APPROVED'] as const).map((f) => (
             <button key={f} onClick={() => { setFilter(f); setPage(1); }}
-              className={clsx('rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors',
+              className={clsx('rounded-lg px-3 py-1.5 text-[14px] font-semibold transition-colors',
                 filter === f ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]')}>
               {f === 'ALL' ? 'Все' : f === 'PENDING' ? 'Ожидают' : 'Одобрены'}
             </button>
@@ -216,7 +216,7 @@ export function RequestsPage() {
             </div>
           }>
           <div className="space-y-3">
-            <p className="text-[13px] text-white/60">{rejectTarget.employeeName} — {rejectTarget.typeLabel}</p>
+            <p className="text-[15px] text-white/60">{rejectTarget.employeeName} — {rejectTarget.typeLabel}</p>
             <Textarea label="Комментарий" placeholder="Причина отклонения..." value={rejectComment} onChange={(e) => setRejectComment(e.target.value)} rows={3} />
           </div>
         </Modal>
