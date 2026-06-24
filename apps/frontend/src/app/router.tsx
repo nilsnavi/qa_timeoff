@@ -29,6 +29,8 @@ const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPag
 
 const LoginPage = lazy(() => import('../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 
+const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then((module) => ({ default: module.CreateUserPage })));
+
 export const router = createBrowserRouter([
   {
     path: '/login',
@@ -55,6 +57,7 @@ export const router = createBrowserRouter([
       { path: 'notifications', element: withSuspense(<NotificationsPage />) },
       { path: 'profile', element: withSuspense(<ProfilePage />) },
       { path: 'admin', element: withSuspense(<AdminPage />) },
+      { path: 'admin/users/new', element: withSuspense(<CreateUserPage />) },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

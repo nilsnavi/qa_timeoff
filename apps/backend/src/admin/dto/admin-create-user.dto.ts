@@ -1,10 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class AdminCreateUserDto {
+  @ApiPropertyOptional()
   @IsString()
-  telegramId!: string;
+  @IsOptional()
+  telegramId?: string;
 
   @IsString()
   fullName!: string;
@@ -13,6 +15,21 @@ export class AdminCreateUserDto {
   @IsString()
   @IsOptional()
   username?: string;
+
+  @ApiPropertyOptional()
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  passwordHash?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  position?: string;
 
   @ApiPropertyOptional({ enum: Role })
   @IsEnum(Role)
@@ -25,7 +42,17 @@ export class AdminCreateUserDto {
   teamId?: string;
 
   @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  managerId?: string;
+
+  @ApiPropertyOptional()
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  sendInviteEmail?: boolean;
 }

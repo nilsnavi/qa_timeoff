@@ -682,22 +682,32 @@ export class AdminService {
   // ── User Management ──────────────────────────────────────────────
 
   async createUser(admin: User, dto: AdminCreateUserDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: { telegramId: dto.telegramId },
-      select: { id: true },
-    });
-
-    if (existing) {
-      throw new BadRequestException('Пользователь с таким telegramId уже существует');
+    if (dto.telegramId) {
+      const existing = await this.prisma.user.findUnique({
+        where: { telegramId: dto.telegramId },
+        select: { id: true },
+      });
+      if (existing) throw new BadRequestException('Пользователь с таким telegramId уже существует');
+    }
+    if (dto.email) {
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+        select: { id: true },
+      });
+      if (existing) throw new BadRequestException('Пользователь с таким email уже существует');
     }
 
     const user = await this.prisma.user.create({
       data: {
-        telegramId: dto.telegramId,
+        ...(dto.telegramId && { telegramId: dto.telegramId }),
+        ...(dto.passwordHash && { passwordHash: dto.passwordHash }),
         fullName: dto.fullName,
         username: dto.username,
+        email: dto.email,
+        position: dto.position,
         role: dto.role ?? Role.EMPLOYEE,
         teamId: dto.teamId,
+        managerId: dto.managerId,
         isActive: dto.isActive ?? true,
         timeBalance: { create: {} },
       },
@@ -712,7 +722,7 @@ export class AdminService {
       action: 'CREATE_USER',
       entityType: 'User',
       entityId: user.id,
-      payload: { telegramId: dto.telegramId, fullName: dto.fullName, role: user.role },
+      payload: { email: dto.email, fullName: dto.fullName, role: user.role, teamId: dto.teamId },
     });
 
     return user;
