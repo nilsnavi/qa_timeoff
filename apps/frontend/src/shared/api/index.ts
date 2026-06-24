@@ -1,1 +1,1 @@
-export { api, setAccessToken, clearAccessToken } from './client';
+export { api, setAccessToken, clearAccessToken, setOnUnauthorized } from './client';

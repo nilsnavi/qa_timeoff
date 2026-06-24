@@ -10,23 +10,23 @@ beforeEach(() => {
   setAccessToken(undefined);
 });
 
-describe('api.auth', () => {
-  it('отправляет POST /auth/telegram с initData', async () => {
+describe('api.login', () => {
+  it('отправляет POST /auth/login с email и password', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: () => Promise.resolve(JSON.stringify({ token: 'test-token', user: { id: '1' } })),
+      text: () => Promise.resolve(JSON.stringify({ accessToken: 'jwt-token', refreshToken: 'rt', user: { id: '1' } })),
     });
 
-    const result = await api.auth('test-init-data');
+    const result = await api.login('test@test.com', 'pass123');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      '/api/auth/telegram',
+      '/api/auth/login',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ initData: 'test-init-data' }),
+        body: JSON.stringify({ email: 'test@test.com', password: 'pass123' }),
       }),
     );
-    expect(result).toEqual({ token: 'test-token', user: { id: '1' } });
+    expect(result).toEqual({ accessToken: 'jwt-token', refreshToken: 'rt', user: { id: '1' } });
   });
 
   it('пробрасывает ApiError при 401', async () => {
@@ -36,7 +36,7 @@ describe('api.auth', () => {
       text: () => Promise.resolve(JSON.stringify({ message: 'Unauthorized' })),
     });
 
-    await expect(api.auth('invalid-data')).rejects.toThrow('Unauthorized');
+    await expect(api.login('bad@test.com', 'wrong')).rejects.toThrow('Unauthorized');
   });
 });
 

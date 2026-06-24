@@ -60,7 +60,7 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('QA TimeOff API')
-    .setDescription('Telegram Mini App API for time off and vacation management')
+    .setDescription('API for time off and vacation management')
     .setVersion('0.1.0')
     .addBearerAuth()
     .build();

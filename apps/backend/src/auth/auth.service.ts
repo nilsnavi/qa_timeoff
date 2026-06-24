@@ -1,17 +1,62 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramAuthService, TelegramUser } from './telegram-auth.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly refreshExpiration: string;
 
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
     private readonly telegramAuth: TelegramAuthService,
-  ) { }
+  ) {
+    this.refreshExpiration = this.config.get<string>('JWT_REFRESH_EXPIRATION') ?? '7d';
+  }
+
+  async login(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { timeBalance: true, team: true, manager: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Доступ заблокирован. Обратитесь к администратору.');
+    }
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.issueToken(user),
+      this.issueRefreshToken(user.id),
+    ]);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    this.logger.log(`User logged in via web: ${user.fullName} (id=${user.id}, role=${user.role})`);
+
+    return { accessToken, refreshToken: refreshToken.token, user };
+  }
 
   async telegramLogin(initData: string) {
     this.logger.log(`Telegram auth request received (initData length: ${initData?.length ?? 0})`);
@@ -24,19 +69,61 @@ export class AuthService {
 
     const telegramUser = result.user;
     const user = await this.resolveTelegramUser(telegramUser);
-    const token = await this.jwt.signAsync({
-      sub: user.id,
-      role: user.role,
-      teamId: user.teamId,
+    const accessToken = await this.issueToken(user);
+    const refreshToken = await this.issueRefreshToken(user.id);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
     });
 
-    this.logger.log(`User authenticated: ${user.fullName} (id=${user.id}, role=${user.role})`);
+    this.logger.log(`User authenticated via Telegram: ${user.fullName} (id=${user.id}, role=${user.role})`);
 
     return {
-      token,
-      accessToken: token,
+      accessToken,
+      refreshToken: refreshToken.token,
       user,
     };
+  }
+
+  async refreshTokens(refreshTokenStr: string) {
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshTokenStr },
+      include: {
+        user: { include: { timeBalance: true, team: true, manager: true } },
+      },
+    });
+
+    if (!stored) {
+      throw new UnauthorizedException('Недействительный refresh token');
+    }
+
+    if (stored.expiresAt < new Date()) {
+      await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+      throw new UnauthorizedException('Refresh token истёк');
+    }
+
+    if (!stored.user.isActive) {
+      await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+      throw new UnauthorizedException('Доступ заблокирован. Обратитесь к администратору.');
+    }
+
+    await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.issueToken(stored.user),
+      this.issueRefreshToken(stored.user.id),
+    ]);
+
+    this.logger.log(`Tokens refreshed for user: ${stored.user.fullName} (id=${stored.user.id})`);
+
+    return { accessToken, refreshToken: refreshToken.token, user: stored.user };
+  }
+
+  async logout(refreshTokenStr: string) {
+    await this.prisma.refreshToken.deleteMany({
+      where: { token: refreshTokenStr },
+    });
   }
 
   async getProfile(userId: string) {
@@ -48,6 +135,41 @@ export class AuthService {
         timeBalance: true,
       },
     });
+  }
+
+  private async issueToken(user: { id: string; role: string; teamId: string | null }) {
+    return this.jwt.signAsync({
+      sub: user.id,
+      role: user.role,
+      teamId: user.teamId,
+    });
+  }
+
+  private async issueRefreshToken(userId: string) {
+    const token = randomBytes(48).toString('hex');
+    const expiresAt = this.parseExpiration(this.refreshExpiration);
+
+    return this.prisma.refreshToken.create({
+      data: { token, userId, expiresAt },
+    });
+  }
+
+  private parseExpiration(value: string): Date {
+    const match = value.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const num = parseInt(match[1], 10);
+    const unit = match[2];
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+
+    return new Date(Date.now() + num * (multipliers[unit] ?? 24 * 60 * 60 * 1000));
   }
 
   private async resolveTelegramUser(telegramUser: TelegramUser) {

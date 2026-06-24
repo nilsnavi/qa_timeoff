@@ -1,10 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateUserDto {
+  @ApiPropertyOptional()
   @IsString()
-  telegramId!: string;
+  @IsOptional()
+  telegramId?: string;
 
   @IsString()
   fullName!: string;
@@ -18,6 +20,11 @@ export class CreateUserDto {
   @IsEmail()
   @IsOptional()
   email?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  passwordHash?: string;
 
   @ApiPropertyOptional()
   @IsString()

@@ -126,7 +126,9 @@ export class AdminService {
     });
 
     // Telegram notifications (non-blocking)
-    this.telegramNotification.notifyPositionChange(user.telegramId, oldPosition, newPosition).catch(() => {});
+    if (user.telegramId) {
+      this.telegramNotification.notifyPositionChange(user.telegramId, oldPosition, newPosition).catch(() => {});
+    }
     this.adminNotifier.notifyPositionChanged(admin.fullName, user.fullName, oldPosition, newPosition).catch(() => {});
 
     return result;

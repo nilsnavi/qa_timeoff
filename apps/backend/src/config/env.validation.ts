@@ -5,7 +5,11 @@ interface ValidatedEnv {
   API_PORT: number;
   DATABASE_URL: string;
   JWT_SECRET: string;
-  TELEGRAM_BOT_TOKEN: string;
+  JWT_EXPIRATION?: string;
+  JWT_REFRESH_EXPIRATION?: string;
+  AUTH_MODE: 'web' | 'telegram' | 'both';
+  ENABLE_TELEGRAM_AUTH: boolean;
+  TELEGRAM_BOT_TOKEN?: string;
   FRONTEND_URL?: string;
   CORS_ORIGIN?: string;
   ALLOWED_ORIGINS?: string;
@@ -54,6 +58,21 @@ function parseNodeEnv(value: unknown): NodeEnv {
   return value as NodeEnv;
 }
 
+function parseAuthMode(value: unknown): 'web' | 'telegram' | 'both' {
+  const allowed: Array<'web' | 'telegram' | 'both'> = ['web', 'telegram', 'both'];
+  if (typeof value !== 'string' || !allowed.includes(value as 'web' | 'telegram' | 'both')) {
+    return 'web';
+  }
+  return value as 'web' | 'telegram' | 'both';
+}
+
+function parseBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true' || value === '1';
+  }
+  return fallback;
+}
+
 function parsePort(value: unknown) {
   const port = Number(value ?? 3000);
 
@@ -95,7 +114,11 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
   const API_PORT = parsePort(config.API_PORT);
   const DATABASE_URL = requiredString(config, 'DATABASE_URL');
   const JWT_SECRET = requiredString(config, 'JWT_SECRET');
-  const TELEGRAM_BOT_TOKEN = requiredString(config, 'TELEGRAM_BOT_TOKEN');
+  const JWT_EXPIRATION = optionalString(config, 'JWT_EXPIRATION');
+  const JWT_REFRESH_EXPIRATION = optionalString(config, 'JWT_REFRESH_EXPIRATION');
+  const AUTH_MODE = parseAuthMode(config.AUTH_MODE);
+  const ENABLE_TELEGRAM_AUTH = parseBoolean(config.ENABLE_TELEGRAM_AUTH, false);
+  const TELEGRAM_BOT_TOKEN = optionalString(config, 'TELEGRAM_BOT_TOKEN');
   const FRONTEND_URL = optionalString(config, 'FRONTEND_URL');
   const CORS_ORIGIN = optionalString(config, 'CORS_ORIGIN');
   const ALLOWED_ORIGINS = optionalString(config, 'ALLOWED_ORIGINS');
@@ -111,11 +134,19 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
     throw new Error('JWT_SECRET must be at least 32 characters in production');
   }
 
+  if (ENABLE_TELEGRAM_AUTH && !TELEGRAM_BOT_TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN is required when ENABLE_TELEGRAM_AUTH=true');
+  }
+
   return {
     NODE_ENV,
     API_PORT,
     DATABASE_URL,
     JWT_SECRET,
+    JWT_EXPIRATION,
+    JWT_REFRESH_EXPIRATION,
+    AUTH_MODE,
+    ENABLE_TELEGRAM_AUTH,
     TELEGRAM_BOT_TOKEN,
     FRONTEND_URL,
     CORS_ORIGIN,

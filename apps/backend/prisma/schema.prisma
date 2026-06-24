@@ -45,7 +45,8 @@ enum RiskLevel {
 
 model User {
   id                String             @id @default(cuid())
-  telegramId        String             @unique
+  telegramId        String?            @unique
+  passwordHash      String?
   fullName          String
   username          String?
   email             String?            @unique
@@ -59,6 +60,7 @@ model User {
   manager           User?              @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
   directReports     User[]             @relation("UserManager")
   isActive          Boolean            @default(true)
+  lastLoginAt       DateTime?
   timeBalance       TimeBalance?
   balanceOperations BalanceOperation[] @relation("BalanceOperationUser")
   createdOperations BalanceOperation[] @relation("BalanceOperationCreator")
@@ -77,6 +79,7 @@ model User {
   cancelledOvertimes Overtime[]        @relation("OvertimeCanceller")
   kpiPeriods        KpiPeriod[]
   auditLogs         AuditLog[]
+  refreshTokens     RefreshToken[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 }
@@ -277,6 +280,18 @@ model CalendarEvent {
   @@index([teamId])
   @@index([startDate, endDate])
   @@index([type, startDate])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
 }
 
 model AuditLog {

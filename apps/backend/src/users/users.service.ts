@@ -41,7 +41,8 @@ export class UsersService {
   create(dto: CreateUserDto) {
     return this.prisma.user.create({
       data: {
-        telegramId: dto.telegramId,
+        ...(dto.telegramId && { telegramId: dto.telegramId }),
+        ...(dto.passwordHash && { passwordHash: dto.passwordHash }),
         fullName: dto.fullName,
         username: dto.username,
         email: dto.email,

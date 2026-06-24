@@ -16,7 +16,7 @@ import { TelegramAuthService } from './telegram-auth.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '24h' as const },
+        signOptions: { expiresIn: (config.get<string>('JWT_EXPIRATION') ?? '24h') as any },
       }),
     }),
   ],
