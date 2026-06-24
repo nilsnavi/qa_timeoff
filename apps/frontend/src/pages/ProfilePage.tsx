@@ -6,7 +6,7 @@ import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { User } from '../shared/types';
-import { confirmTelegram, getRoleLabel, hapticImpact, showAppToast } from '../shared/utils';
+import { getRoleLabel, hapticImpact, showAppToast } from '../shared/utils';
 
 type NotificationSettings = {
   requestUpdates: boolean;

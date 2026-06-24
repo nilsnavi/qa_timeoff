@@ -46,7 +46,7 @@ export function WorkFeed({ notifications }: { notifications: NotificationItem[] 
         <p className="text-[13px] text-white/30 py-4 text-center">Нет активности</p>
       ) : (
         <div className="space-y-0.5">
-          {recent.map((n, idx) => {
+          {recent.map((n) => {
             const Icon = feedIcons[n.type] || Bell;
             const colorClass = feedColors[n.type] || 'text-white/40 bg-white/[0.04]';
             return (

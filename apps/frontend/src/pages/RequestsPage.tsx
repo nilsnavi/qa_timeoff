@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Clock3, MessageSquareText, X } from 'lucide-react';
+import { Check, Clock3, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, ErrorState, Loader, Modal, Textarea } from '../components/ui';
 import { api } from '../shared/api';
@@ -161,7 +161,7 @@ export function RequestsPage() {
             </>
           )}
           {!canReview && r.status === 'PENDING' && (
-            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); if (window.confirm('Отменить заявку?')) { r.kind === 'vacation' ? api.cancelVacation(r.id).then(() => queryClient.invalidateQueries()) : api.cancelTimeOff(r.id).then(() => queryClient.invalidateQueries()); } }} className="!min-h-0 h-7 !px-2 text-[11px] text-rose-400">
+            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); if (window.confirm('Отменить заявку?')) { const invalidate = () => { queryClient.invalidateQueries(); }; if (r.kind === 'vacation') { api.cancelVacation(r.id).then(invalidate); } else { api.cancelTimeOff(r.id).then(invalidate); } } }} className="!min-h-0 h-7 !px-2 text-[11px] text-rose-400">
               Отменить
             </Button>
           )}
