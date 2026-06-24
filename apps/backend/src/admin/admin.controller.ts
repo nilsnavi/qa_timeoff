@@ -145,6 +145,25 @@ export class AdminController {
   // ── User Management ──────────────────────────────────────────────
 
   @Roles(Role.ADMIN)
+  @Get('stats')
+  getStats() {
+    return this.adminService.getStats();
+  }
+
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @Get('users')
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'role', required: false })
+  @ApiQuery({ name: 'teamId', required: false })
+  getAllUsers(
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.adminService.getAllUsers({ search, role, teamId });
+  }
+
+  @Roles(Role.ADMIN)
   @Post('users')
   createUser(@Body() dto: AdminCreateUserDto, @CurrentUser() admin: User) {
     return this.adminService.createUser(admin, dto);

@@ -327,4 +327,14 @@ export const api = {
     const qs = search.toString();
     return request<AuditLogResponse>(`/admin/audit-log${qs ? `?${qs}` : ''}`);
   },
+
+  adminStats: () => request<{ totalUsers: number; activeUsers: number; blockedUsers: number; teamsCount: number; newUsersThisMonth: number; byRole: { role: string; count: number }[] }>('/admin/stats'),
+  adminUsers: (params?: { search?: string; role?: string; teamId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.search) search.set('search', params.search);
+    if (params?.role) search.set('role', params.role);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    const qs = search.toString();
+    return request<User[]>('/admin/users' + (qs ? `?${qs}` : ''));
+  },
 };

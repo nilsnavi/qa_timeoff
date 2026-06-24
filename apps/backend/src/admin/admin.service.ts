@@ -784,6 +784,62 @@ export class AdminService {
     return updated;
   }
 
+  // ── Admin Stats ───────────────────────────────────────────────────
+
+  async getStats() {
+    const [totalUsers, activeUsers, blockedUsers, teamsCount, newUsersThisMonth] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.user.count({ where: { isActive: false } }),
+      this.prisma.team.count(),
+      this.prisma.user.count({
+        where: {
+          createdAt: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          },
+        },
+      }),
+    ]);
+
+    const byRole = await this.prisma.user.groupBy({
+      by: ['role'],
+      _count: { id: true },
+    });
+
+    return {
+      totalUsers,
+      activeUsers,
+      blockedUsers,
+      teamsCount,
+      newUsersThisMonth,
+      byRole: byRole.map((r) => ({ role: r.role, count: r._count.id })),
+    };
+  }
+
+  async getAllUsers(params?: { search?: string; role?: string; teamId?: string }) {
+    const where: Prisma.UserWhereInput = {};
+    if (params?.search) {
+      where.OR = [
+        { fullName: { contains: params.search, mode: 'insensitive' } },
+        { email: { contains: params.search, mode: 'insensitive' } },
+        { position: { contains: params.search, mode: 'insensitive' } },
+      ];
+    }
+    if (params?.role) where.role = params.role as Role;
+    if (params?.teamId) where.teamId = params.teamId;
+
+    return this.prisma.user.findMany({
+      where,
+      select: {
+        id: true, fullName: true, email: true, position: true, role: true,
+        isActive: true, lastLoginAt: true, teamId: true,
+        team: { select: { id: true, name: true } },
+        timeBalance: { select: { balanceHours: true } },
+      },
+      orderBy: [{ isActive: 'desc' }, { fullName: 'asc' }],
+    });
+  }
+
   // ── Audit Log ─────────────────────────────────────────────────────
 
   async getAuditLog(params?: { entityType?: string; entityId?: string }) {
