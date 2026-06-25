@@ -22,6 +22,6 @@ import { TelegramAuthService } from './telegram-auth.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TelegramAuthService, ActiveUserGuard],
-  exports: [AuthService, JwtService, JwtStrategy, PassportModule, ActiveUserGuard],
+  exports: [AuthService, JwtModule, JwtStrategy, PassportModule, ActiveUserGuard],
 })
 export class AuthModule {}
