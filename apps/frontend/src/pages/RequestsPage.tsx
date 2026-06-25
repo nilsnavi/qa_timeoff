@@ -102,6 +102,22 @@ export function RequestsPage() {
     return result;
   }, [allRows, filter]);
 
+  const counts = useMemo(() => ({
+    ALL: allRows.length,
+    PENDING: allRows.filter(r => r.status === 'PENDING').length,
+    APPROVED: allRows.filter(r => r.status === 'APPROVED').length,
+    REJECTED: allRows.filter(r => r.status === 'REJECTED' || r.status === 'CANCELLED').length,
+  }), [allRows]);
+
+  const filterTabs = useMemo(() => {
+    const tabs: Array<{ value: 'ALL' | 'PENDING' | 'APPROVED'; label: string }> = [
+      { value: 'ALL', label: `Все (${counts.ALL})` },
+      { value: 'PENDING', label: `Ожидают (${counts.PENDING})` },
+    ];
+    if (!canReview) tabs.push({ value: 'APPROVED', label: `Одобрены (${counts.APPROVED})` });
+    return tabs;
+  }, [counts, canReview]);
+
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return filtered;
     return [...filtered].sort((a, b) => {
@@ -182,11 +198,11 @@ export function RequestsPage() {
           <p className="text-[15px] text-white/40 mt-1">{sorted.length} заявок</p>
         </div>
         <div className="flex items-center gap-2">
-          {(['ALL', 'PENDING', 'APPROVED'] as const).map((f) => (
-            <button key={f} onClick={() => { setFilter(f); setPage(1); }}
+          {filterTabs.map(({ value, label }) => (
+            <button key={value} onClick={() => { setFilter(value); setPage(1); }}
               className={clsx('rounded-lg px-3 py-1.5 text-[14px] font-semibold transition-colors',
-                filter === f ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]')}>
-              {f === 'ALL' ? 'Все' : f === 'PENDING' ? 'Ожидают' : 'Одобрены'}
+                filter === value ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]')}>
+              {label}
             </button>
           ))}
         </div>

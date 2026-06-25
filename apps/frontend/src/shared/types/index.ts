@@ -19,6 +19,9 @@ export interface User {
   managerId?: string;
   manager?: User;
   isActive: boolean;
+  notifyRequestUpdates?: boolean;
+  notifyTeamRequests?: boolean;
+  notifyEmailDigest?: boolean;
   timeBalance?: TimeBalance;
 }
 

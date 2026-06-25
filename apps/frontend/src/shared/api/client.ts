@@ -152,6 +152,8 @@ export const api = {
   rejectTimeOff: (id: string, approverComment?: string) =>
     request(`/timeoff/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ approverComment }) }),
   cancelTimeOff: (id: string) => request(`/timeoff/${id}/cancel`, { method: 'PATCH' }),
+  updateTimeOff: (id: string, payload: { date?: string; hours?: number; reason?: string }) =>
+    request(`/timeoff/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   approveVacation: (id: string) => request(`/vacation/${id}/approve`, { method: 'PATCH' }),
   rejectVacation: (id: string, approverComment?: string) =>
     request(`/vacation/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ approverComment }) }),
@@ -333,6 +335,9 @@ export const api = {
     const qs = search.toString();
     return request<AuditLogResponse>(`/admin/audit-log${qs ? `?${qs}` : ''}`);
   },
+  updateNotifications: (dto: { notifyRequestUpdates?: boolean; notifyTeamRequests?: boolean; notifyEmailDigest?: boolean }) =>
+    request<User>('/users/me/notifications', { method: 'PATCH', body: JSON.stringify(dto) }),
+
   auditLogs: (params?: { entityType?: string; limit?: number; offset?: number }) => {
     const qs = new URLSearchParams();
     if (params?.entityType) qs.set('entityType', params.entityType);

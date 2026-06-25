@@ -7,6 +7,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { CreateTimeOffRequestDto } from './dto/create-timeoff-request.dto';
 import { RejectTimeOffRequestDto } from './dto/reject-timeoff-request.dto';
+import { UpdateTimeOffRequestDto } from './dto/update-timeoff-request.dto';
 import { TimeOffService } from './timeoff.service';
 
 @ApiTags('timeoff')
@@ -31,6 +32,15 @@ export class TimeOffController {
   @Roles(Role.LEAD, Role.MANAGER, Role.ADMIN)
   getPending(@CurrentUser() currentUser: User) {
     return this.timeOffService.getPending(currentUser);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: UpdateTimeOffRequestDto,
+  ) {
+    return this.timeOffService.update(user.id, id, dto);
   }
 
   @Patch(':id/approve')

@@ -6,8 +6,10 @@ import { WorkFeed } from '../components/dashboard-v2/WorkFeed';
 import { AnalyticsSnapshot } from '../components/dashboard-v2/AnalyticsSnapshot';
 import { ProcessFunnel } from '../components/dashboard-v2/ProcessFunnel';
 import { TeamWorkload } from '../components/dashboard-v2/TeamWorkload';
+import { useNavigate } from 'react-router-dom';
 
 export function HomePage() {
+  const navigate = useNavigate();
   const { dashboard, data, isError, isLoading, refetch } = useDashboard();
 
   if (isError && !data) {
@@ -21,6 +23,9 @@ export function HomePage() {
   const user = dashboard.user;
   const isManager = user.role === 'MANAGER' || user.role === 'LEAD' || user.role === 'ADMIN';
 
+  const hasDraftTimeOff = !!localStorage.getItem('draft-timeoff');
+  const hasDraftVacation = !!localStorage.getItem('draft-vacation');
+
   return (
     <div className="space-y-6">
       <div>
@@ -29,6 +34,20 @@ export function HomePage() {
           С возвращением, {user.fullName}. {isManager ? 'Обзор команды и процессов.' : 'Обзор рабочей активности.'}
         </p>
       </div>
+
+      {hasDraftTimeOff && (
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-amber-400">Есть незаконченная заявка на отгул</span>
+          <button onClick={() => navigate('/timeoff/new')} className="text-xs text-amber-400 underline">Продолжить</button>
+        </div>
+      )}
+
+      {hasDraftVacation && (
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-amber-400">Есть незаконченная заявка на отпуск</span>
+          <button onClick={() => navigate('/vacation/new')} className="text-xs text-amber-400 underline">Продолжить</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left 2/3 */}

@@ -59,8 +59,11 @@ model User {
   managerId         String?
   manager           User?              @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
   directReports     User[]             @relation("UserManager")
-  isActive          Boolean            @default(true)
-  lastLoginAt       DateTime?
+  isActive              Boolean  @default(true)
+  notifyRequestUpdates  Boolean  @default(true)
+  notifyTeamRequests    Boolean  @default(true)
+  notifyEmailDigest     Boolean  @default(false)
+  lastLoginAt           DateTime?
   timeBalance       TimeBalance?
   balanceOperations BalanceOperation[] @relation("BalanceOperationUser")
   createdOperations BalanceOperation[] @relation("BalanceOperationCreator")

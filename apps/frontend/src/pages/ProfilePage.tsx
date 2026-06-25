@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, BellRing, Clock3, LogOut, Mail, Plane, Plus, ShieldCheck, UserRound, UsersRound, Wallet } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, ErrorState, Loader } from '../components/ui';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
@@ -21,6 +21,7 @@ const defaultNotificationSettings: NotificationSettings = {
 };
 
 export function ProfilePage() {
+  const queryClient = useQueryClient();
   const { dashboard } = useDashboard();
   const { clearAuth } = useAuth();
   const hasToken = !!localStorage.getItem('qa-timeoff-token');
@@ -32,7 +33,32 @@ export function ProfilePage() {
   });
   const user = profileQuery.data ?? dashboard.user;
   const storageKey = `qa-timeoff-notifications-${user.id}`;
-  const [notifications, setNotifications] = useState<NotificationSettings>(() => readNotificationSettings(storageKey));
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const [notifications, setNotifications] = useState<NotificationSettings>(() => {
+    const server: NotificationSettings = {
+      requestUpdates: user.notifyRequestUpdates ?? true,
+      teamRequests: user.notifyTeamRequests ?? true,
+      emailDigest: user.notifyEmailDigest ?? false,
+    };
+    const local = readNotificationSettings(storageKey);
+    return { ...server, ...local };
+  });
+
+  const NOTIFY_KEY_MAP: Record<keyof NotificationSettings, string> = {
+    requestUpdates: 'notifyRequestUpdates',
+    teamRequests: 'notifyTeamRequests',
+    emailDigest: 'notifyEmailDigest',
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: (dto: Partial<Record<string, boolean>>) => api.updateNotifications(dto),
+    onError: () => {
+      const fallback = readNotificationSettings(storageKey);
+      setNotifications(fallback);
+    },
+  });
+
   const initials = useMemo(() => getInitials(user.fullName), [user.fullName]);
   const balance = dashboard.balance;
 
@@ -45,16 +71,27 @@ export function ProfilePage() {
     (dashboard.vacations ?? []).filter((v) => v.status === 'APPROVED').length;
 
   useEffect(() => {
-    setNotifications(readNotificationSettings(storageKey));
-  }, [storageKey]);
-
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(notifications));
-  }, [notifications, storageKey]);
+    const merged: NotificationSettings = {
+      requestUpdates: user.notifyRequestUpdates ?? true,
+      teamRequests: user.notifyTeamRequests ?? true,
+      emailDigest: user.notifyEmailDigest ?? false,
+    };
+    const local = readNotificationSettings(storageKey);
+    setNotifications({ ...merged, ...local });
+  }, [storageKey, user.notifyRequestUpdates, user.notifyTeamRequests, user.notifyEmailDigest]);
 
   const toggleNotification = (key: keyof NotificationSettings) => {
     hapticImpact('light');
-    setNotifications((current) => ({ ...current, [key]: !current[key] }));
+    const nextValue = !notifications[key];
+    const next = { ...notifications, [key]: nextValue };
+    setNotifications(next);
+    localStorage.setItem(storageKey, JSON.stringify(next));
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      saveMutation.mutate({ [NOTIFY_KEY_MAP[key]]: nextValue });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    }, 500);
   };
 
   const handleLogout = async () => {

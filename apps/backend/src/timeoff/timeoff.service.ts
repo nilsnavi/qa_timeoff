@@ -188,6 +188,23 @@ export class TimeOffService {
     return updated;
   }
 
+  async update(userId: string, id: string, dto: { date?: string; hours?: number; reason?: string; comment?: string }) {
+    const request = await this.prisma.timeOffRequest.findUnique({ where: { id } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.userId !== userId) throw new ForbiddenException();
+    if (request.status !== 'PENDING') throw new BadRequestException('Можно редактировать только pending-заявки');
+
+    return this.prisma.timeOffRequest.update({
+      where: { id },
+      data: {
+        ...(dto.date && { date: new Date(dto.date) }),
+        ...(dto.hours && { hours: dto.hours }),
+        ...(dto.reason && { reason: dto.reason }),
+        ...(dto.comment !== undefined && { comment: dto.comment }),
+      },
+    });
+  }
+
   async cancel(currentUser: User, id: string) {
     const request = await this.prisma.timeOffRequest.findUnique({
       where: { id },

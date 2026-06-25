@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Prisma, Role, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateNotificationsDto } from './dto/update-notifications.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 const userInclude = {
@@ -77,6 +78,14 @@ export class UsersService {
       },
       include: userInclude,
     });
+  }
+
+  updateNotifications(userId: string, dto: UpdateNotificationsDto) {
+    const data: Record<string, boolean> = {};
+    if (dto.notifyRequestUpdates !== undefined) data.notifyRequestUpdates = dto.notifyRequestUpdates;
+    if (dto.notifyTeamRequests !== undefined) data.notifyTeamRequests = dto.notifyTeamRequests;
+    if (dto.notifyEmailDigest !== undefined) data.notifyEmailDigest = dto.notifyEmailDigest;
+    return this.prisma.user.update({ where: { id: userId }, data });
   }
 
   remove(id: string) {

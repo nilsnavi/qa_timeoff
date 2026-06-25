@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock3, Plane, X } from 'lucide-react';
+import { Clock3, Edit3, Plane, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorState, SkeletonCard, StatusBadge } from '../components/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, Field, Modal, SkeletonCard, StatusBadge } from '../components/ui';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { RequestStatus, TimeOffRequest, VacationRequest } from '../shared/types';
@@ -22,18 +22,29 @@ type MyRequestCard = {
   comparableDate: string;
 };
 
-const filters: Array<{ value: FilterValue; label: string }> = [
-  { value: 'ALL', label: 'Все' },
-  { value: 'PENDING', label: 'Ожидают' },
-  { value: 'APPROVED', label: 'Согласованы' },
-  { value: 'REJECTED', label: 'Отклонены' },
+const filterDefs: Array<{ value: FilterValue; labelKey: keyof typeof defaultFilterLabels }> = [
+  { value: 'ALL', labelKey: 'ALL' },
+  { value: 'PENDING', labelKey: 'PENDING' },
+  { value: 'APPROVED', labelKey: 'APPROVED' },
+  { value: 'REJECTED', labelKey: 'REJECTED' },
 ];
+
+const defaultFilterLabels: Record<string, string> = {
+  ALL: 'Все',
+  PENDING: 'Ожидают',
+  APPROVED: 'Согласованы',
+  REJECTED: 'Отклонены',
+};
 
 export function MyRequestsPage() {
   const { dashboard } = useDashboard();
   const queryClient = useQueryClient();
   const hasToken = !!localStorage.getItem('qa-timeoff-token');
   const [filter, setFilter] = useState<FilterValue>('ALL');
+  const [editTarget, setEditTarget] = useState<MyRequestCard | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editHours, setEditHours] = useState(0);
+  const [editReason, setEditReason] = useState('');
 
   const timeOffQuery = useQuery({
     queryKey: ['timeoff', 'my'],
@@ -60,6 +71,18 @@ export function MyRequestsPage() {
     () => allRequests.filter((request) => filter === 'ALL' || request.status === filter),
     [allRequests, filter],
   );
+
+  const counts = useMemo(() => ({
+    ALL: allRequests.length,
+    PENDING: allRequests.filter(r => r.status === 'PENDING').length,
+    APPROVED: allRequests.filter(r => r.status === 'APPROVED').length,
+    REJECTED: allRequests.filter(r => r.status === 'REJECTED' || r.status === 'CANCELLED').length,
+  }), [allRequests]);
+
+  const filters = useMemo(() => filterDefs.map(f => ({
+    ...f,
+    label: `${defaultFilterLabels[f.labelKey]} (${counts[f.value]})`,
+  })), [counts]);
   const isLoading = (timeOffQuery.isLoading || vacationsQuery.isLoading) && allRequests.length === 0;
   const hasError = (timeOffQuery.isError || vacationsQuery.isError) && allRequests.length === 0;
 
@@ -69,6 +92,17 @@ export function MyRequestsPage() {
     queryClient.invalidateQueries({ queryKey: ['vacation'] });
     queryClient.invalidateQueries({ queryKey: ['calendar'] });
   };
+
+  const update = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { date?: string; hours?: number; reason?: string } }) =>
+      api.updateTimeOff(id, payload),
+    onSuccess: () => {
+      showAppToast('Заявка изменена');
+      setEditTarget(null);
+      invalidateRequests();
+    },
+    onError: () => showAppToast('Не удалось изменить заявку', undefined, 'error'),
+  });
 
   const cancel = useMutation({
     mutationFn: (request: MyRequestCard) => (request.kind === 'timeoff' ? api.cancelTimeOff(request.id) : api.cancelVacation(request.id)),
@@ -135,9 +169,27 @@ export function MyRequestsPage() {
                   cancel.mutate(request);
                 }
               }}
+              onEdit={request.status === 'PENDING' && request.kind === 'timeoff' ? () => {
+                setEditTarget(request);
+                setEditDate(request.dateLabel.split('.').reverse().join('-'));
+                const hours = parseInt(request.amountLabel);
+                setEditHours(Number.isNaN(hours) ? 0 : hours);
+                setEditReason(request.comment === 'Без комментария' ? '' : request.comment);
+              } : undefined}
             />
           ))}
         </div>
+      )}
+
+      {editTarget && (
+        <Modal open title="Изменить отгул" onClose={() => setEditTarget(null)}
+          footer={<div className="flex gap-2"><Button variant="secondary" onClick={() => setEditTarget(null)}>Отмена</Button><Button onClick={() => update.mutate({ id: editTarget.id, payload: { date: editDate, hours: editHours, reason: editReason } })} disabled={update.isPending}>{update.isPending ? 'Сохранение...' : 'Сохранить'}</Button></div>}>
+          <div className="space-y-4">
+            <Field label="Дата" type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+            <Field label="Часы" type="number" value={String(editHours)} onChange={e => setEditHours(Number(e.target.value))} />
+            <Field label="Причина" value={editReason} onChange={e => setEditReason(e.target.value)} />
+          </div>
+        </Modal>
       )}
     </>
   );
@@ -157,10 +209,12 @@ function RequestCard({
   request,
   disabled,
   onCancel,
+  onEdit,
 }: {
   request: MyRequestCard;
   disabled: boolean;
   onCancel: () => void;
+  onEdit?: () => void;
 }) {
   const Icon = request.kind === 'timeoff' ? Clock3 : Plane;
   const canCancel = request.status === 'PENDING' || request.status === 'DRAFT';
@@ -187,12 +241,20 @@ function RequestCard({
         <InfoRow label="Создана" value={formatDateTime(request.createdAt)} />
       </div>
 
-      {canCancel && (
-        <Button className="mt-4 w-full" variant="secondary" disabled={disabled} onClick={onCancel}>
-          <X size={18} />
-          Отменить заявку
-        </Button>
-      )}
+      <div className="mt-4 flex gap-2">
+        {onEdit && (
+          <Button className="flex-1" variant="secondary" onClick={onEdit}>
+            <Edit3 size={18} />
+            Изменить
+          </Button>
+        )}
+        {canCancel && (
+          <Button className={onEdit ? 'flex-1' : 'w-full'} variant="secondary" disabled={disabled} onClick={onCancel}>
+            <X size={18} />
+            Отменить
+          </Button>
+        )}
+      </div>
     </Card>
   );
 }

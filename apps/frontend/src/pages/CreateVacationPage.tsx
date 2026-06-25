@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, Select, Textarea } from '../components/ui';
 import { api } from '../shared/api';
 import type { VacationType } from '../shared/types';
+import { useDraftForm } from '../shared/hooks/useDraftForm';
 import { hapticNotification, showAppToast, useTelegramMainButton } from '../shared/utils';
 import { toDateInputValue } from '../shared/utils/date';
 
@@ -21,10 +22,13 @@ export function CreateVacationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const today = useMemo(() => toDateInputValue(), []);
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
-  const [vacationType, setVacationType] = useState<VacationType>('ANNUAL');
-  const [comment, setComment] = useState('');
+  const [form, setForm, clearDraft] = useDraftForm('draft-vacation', {
+    startDate: today,
+    endDate: today,
+    vacationType: 'ANNUAL' as VacationType,
+    comment: '',
+  });
+  const { startDate, endDate, vacationType, comment } = form;
   const [errors, setErrors] = useState<FormErrors>({});
 
   const daysCount = useMemo(() => {
@@ -45,6 +49,7 @@ export function CreateVacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacations'] });
       hapticNotification('success');
       showAppToast('Заявка создана', 'Отпуск отправлен на согласование');
+      clearDraft();
       navigate('/calendar');
     },
     onError: () => {
@@ -100,19 +105,19 @@ export function CreateVacationPage() {
             label="Дата начала"
             value={startDate}
             error={errors.startDate}
-            onChange={(event) => setStartDate(event.target.value)}
+            onChange={(e) => setForm({ startDate: e.target.value })}
           />
           <DatePicker
             label="Дата окончания"
             value={endDate}
             error={errors.endDate}
-            onChange={(event) => setEndDate(event.target.value)}
+            onChange={(e) => setForm({ endDate: e.target.value })}
           />
           <Select
             label="Тип отпуска"
             value={vacationType}
             error={errors.vacationType}
-            onChange={(event) => setVacationType(event.target.value as VacationType)}
+            onChange={(e) => setForm({ vacationType: e.target.value as VacationType })}
           >
             {vacationTypes.map((type) => (
               <option key={type.value} value={type.value}>
@@ -124,7 +129,7 @@ export function CreateVacationPage() {
             label="Комментарий"
             value={comment}
             placeholder="Можно оставить пустым"
-            onChange={(event) => setComment(event.target.value)}
+            onChange={(e) => setForm({ comment: e.target.value })}
           />
 
           {mutation.isError && <p className="text-sm font-bold text-rose-500">Не удалось создать заявку. Попробуйте еще раз.</p>}

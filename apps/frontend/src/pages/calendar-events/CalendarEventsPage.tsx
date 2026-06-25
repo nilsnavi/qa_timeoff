@@ -15,7 +15,7 @@ import {
 import { ru } from 'date-fns/locale';
 import { Bell, ChevronLeft, ChevronRight, Clock, Edit3, Plane, Plus, Stethoscope, Sun, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Card, EmptyState, ErrorState, Input, Select, Skeleton, Textarea } from '../../components/ui';
 import { api } from '../../shared/api';
 import { hapticSelection, showAppToast } from '../../shared/utils';
@@ -50,10 +50,18 @@ const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 export function CalendarEventsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { dashboard } = useDashboard();
   const currentUser = dashboard.user;
-  const [cursorDate, setCursorDate] = useState(() => new Date());
+  const [cursorDate, setCursorDate] = useState(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const parsed = parseISO(dateParam);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  });
   const [typeFilter, setTypeFilter] = useState<CalendarFilter>('ALL');
   const [teamId, setTeamId] = useState('ALL');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventEntry | null>(null);

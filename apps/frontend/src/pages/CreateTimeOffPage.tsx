@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, EmptyState, Input, Select, Textarea } from '../components/ui';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
+import { useDraftForm } from '../shared/hooks/useDraftForm';
 import { hapticNotification, showAppToast, useTelegramMainButton } from '../shared/utils';
 import { toDateInputValue } from '../shared/utils/date';
 
@@ -17,10 +18,13 @@ export function CreateTimeOffPage() {
   const queryClient = useQueryClient();
   const { dashboard } = useDashboard();
   const availableHours = dashboard.balance.balanceHours;
-  const [date, setDate] = useState(toDateInputValue());
-  const [hours, setHours] = useState(8);
-  const [reason, setReason] = useState(reasons[0]);
-  const [comment, setComment] = useState('');
+  const [form, setForm, clearDraft] = useDraftForm('draft-timeoff', {
+    date: toDateInputValue(),
+    hours: 8,
+    reason: reasons[0],
+    comment: '',
+  });
+  const { date, hours, reason, comment } = form;
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -34,6 +38,7 @@ export function CreateTimeOffPage() {
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
       hapticNotification('success');
       showAppToast('Заявка создана', 'Отгул отправлен на согласование');
+      clearDraft();
       setIsSuccess(true);
     },
     onError: () => {
@@ -96,7 +101,7 @@ export function CreateTimeOffPage() {
       <Card>
         <h2 className="mb-4 text-lg font-black text-white">Создать отгул</h2>
         <div className="grid gap-4">
-          <DatePicker label="Дата" value={date} error={errors.date} onChange={(event) => setDate(event.target.value)} />
+          <DatePicker label="Дата" value={date} error={errors.date} onChange={(e) => setForm({ date: e.target.value })} />
           <Input
             label="Количество часов"
             type="number"
@@ -105,9 +110,9 @@ export function CreateTimeOffPage() {
             value={hours}
             error={errors.hours}
             hint={`Останется после заявки: ${remainingAfterRequest} ч`}
-            onChange={(event) => setHours(Number(event.target.value))}
+            onChange={(e) => setForm({ hours: Number(e.target.value) })}
           />
-          <Select label="Причина" value={reason} error={errors.reason} onChange={(event) => setReason(event.target.value)}>
+          <Select label="Причина" value={reason} error={errors.reason} onChange={(e) => setForm({ reason: e.target.value })}>
             {reasons.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -120,7 +125,7 @@ export function CreateTimeOffPage() {
             maxLength={500}
             error={errors.comment}
             hint={`${comment.length}/500`}
-            onChange={(event) => setComment(event.target.value)}
+            onChange={(e) => setForm({ comment: e.target.value })}
           />
           {mutation.isError && <p className="text-sm font-bold text-rose-500">Не удалось создать заявку. Попробуйте еще раз.</p>}
           <Button size="lg" onClick={submit} disabled={mutation.isPending}>

@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateNotificationsDto } from './dto/update-notifications.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -38,6 +39,11 @@ export class UsersController {
   @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
+  }
+
+  @Patch('me/notifications')
+  updateNotifications(@CurrentUser() user: User, @Body() dto: UpdateNotificationsDto) {
+    return this.usersService.updateNotifications(user.id, dto);
   }
 
   @Delete(':id')

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../shared/api';
 import type { Dashboard } from '../../shared/types';
 
@@ -12,6 +13,7 @@ function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).get
 function getFirstDayOffset(y: number, m: number) { const d = new Date(y, m, 1).getDay(); return d === 0 ? 6 : d - 1; }
 
 export function CalendarWidget({ dashboard }: { dashboard: Dashboard }) {
+  const navigate = useNavigate();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -77,9 +79,10 @@ export function CalendarWidget({ dashboard }: { dashboard: Dashboard }) {
           const dotColor = events.length > 0 ? (COLOR_MAP[events[0].status] ?? 'bg-gray-500') : isHoliday ? 'bg-yellow-500' : '';
 
           return (
-            <div key={day} className="relative flex flex-col items-center py-1"
+            <div key={day} className="relative flex flex-col items-center py-1 cursor-pointer"
               onMouseEnter={() => setHoveredDay(events.length > 0 ? day : null)}
               onMouseLeave={() => setHoveredDay(null)}
+              onClick={() => navigate(`/calendar?date=${ds}`)}
             >
               <span className={`text-[13px] font-semibold rounded-md w-7 h-7 flex items-center justify-center ${isToday ? 'bg-[#4C7DFF]/20 text-[#4C7DFF]' : 'text-white/50'}`}>{day}</span>
               {dotColor && <span className={`mt-0.5 h-1.5 w-1.5 rounded-full ${dotColor}`} />}
