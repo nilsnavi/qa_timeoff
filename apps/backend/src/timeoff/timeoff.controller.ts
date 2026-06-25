@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CreateTimeOffBatchDto } from './dto/create-timeoff-batch.dto';
 import { CreateTimeOffRequestDto } from './dto/create-timeoff-request.dto';
 import { RejectTimeOffRequestDto } from './dto/reject-timeoff-request.dto';
 import { UpdateTimeOffRequestDto } from './dto/update-timeoff-request.dto';
@@ -20,6 +21,11 @@ export class TimeOffController {
   @Post('request')
   create(@CurrentUser() currentUser: User, @Body() dto: CreateTimeOffRequestDto) {
     return this.timeOffService.create(currentUser, dto);
+  }
+
+  @Post('batch')
+  createBatch(@CurrentUser() user: User, @Body() dto: CreateTimeOffBatchDto) {
+    return this.timeOffService.createBatch(user, dto);
   }
 
   @Get('my')

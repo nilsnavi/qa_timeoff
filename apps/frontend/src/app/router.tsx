@@ -25,6 +25,7 @@ const NotificationsPage = lazy(() =>
 );
 const ProfilePage = lazy(() => import('../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const RequestsPage = lazy(() => import('../pages/RequestsPage').then((module) => ({ default: module.RequestsPage })));
+const TeamPage = lazy(() => import('../pages/TeamPage').then((module) => ({ default: module.TeamPage })));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPage />}>{node}</Suspense>;
 
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'requests', element: withSuspense(<RequestsPage />) },
       { path: 'notifications', element: withSuspense(<NotificationsPage />) },
       { path: 'profile', element: withSuspense(<ProfilePage />) },
+      { path: 'team', element: withSuspense(<TeamPage />) },
       { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
       { path: 'admin', element: withSuspense(<AdminPage />) },
       { path: 'admin/users/new', element: withSuspense(<CreateUserPage />) },

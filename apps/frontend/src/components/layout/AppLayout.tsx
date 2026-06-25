@@ -20,7 +20,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Toast } from '../ui';
+import { SearchModal, Toast } from '../ui';
 import { api } from '../../shared/api';
 import { useAuth } from '../../shared/auth/AuthContext';
 import { useSseNotifications } from '../../shared/hooks/useSseNotifications';
@@ -65,8 +65,7 @@ const sidebarSections: NavSection[] = [
     label: 'Организация',
     icon: Users,
     children: [
-      { label: 'Команды', to: '/teams', icon: Users },
-      { label: 'Пользователи', to: '/users', icon: UserRound },
+      { label: 'Команда', to: '/team', icon: Users },
     ],
   },
   {
@@ -110,6 +109,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Обзор', 'Заявки']));
   const [searchValue, setSearchValue] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -138,6 +138,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, [isAuthLoading, isAuthenticated, navigate]);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === 'Escape') setSearchOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   useSseNotifications(localStorage.getItem('qa-timeoff-token'));
 
@@ -322,6 +334,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setSearchOpen(true)} className="hidden lg:grid h-9 w-9 place-items-center rounded-lg text-[#B8C0D0] hover:bg-white/[0.06] hover:text-white" title="Поиск (Ctrl+K)">
+              <Search size={17} />
+            </button>
             <button type="button" onClick={() => navigate('/notifications')} className="relative grid h-9 w-9 place-items-center rounded-lg text-[#B8C0D0] hover:bg-white/[0.06] hover:text-white">
               <Bell size={17} />
               {!!unread && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-950/300 shadow-lg shadow-rose-500/40" />}
@@ -373,6 +388,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </div>
 
       {toast && <Toast title={toast.title} message={toast.message} tone={toast.tone} />}
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

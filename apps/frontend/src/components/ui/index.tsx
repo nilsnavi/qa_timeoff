@@ -557,3 +557,5 @@ export function Loader({ label = 'Загрузка' }: { label?: string }) {
     </div>
   );
 }
+
+export { SearchModal } from './SearchModal';

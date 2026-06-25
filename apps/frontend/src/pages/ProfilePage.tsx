@@ -70,6 +70,14 @@ export function ProfilePage() {
     dashboard.requests.filter((r) => r.status === 'APPROVED').length +
     (dashboard.vacations ?? []).filter((v) => v.status === 'APPROVED').length;
 
+  const kpiQuery = useQuery({
+    queryKey: ['kpi', 'me'],
+    queryFn: api.myKpi,
+    enabled: hasToken,
+  });
+
+  const recentKpi = useMemo(() => (kpiQuery.data ?? []).slice(0, 6), [kpiQuery.data]);
+
   useEffect(() => {
     const merged: NotificationSettings = {
       requestUpdates: user.notifyRequestUpdates ?? true,
@@ -202,7 +210,27 @@ export function ProfilePage() {
         </div>
       </Card>
 
-      {/* 5. Destructive Actions */}
+      {/* 5. My KPI */}
+      <Card>
+        <h2 className="text-[15px] font-bold text-white mb-3">Мой KPI</h2>
+        {kpiQuery.isLoading && <Loader />}
+        {!kpiQuery.isLoading && recentKpi.length === 0 && (
+          <p className="text-[13px] text-white/40">KPI ещё не рассчитан</p>
+        )}
+        {recentKpi.length > 0 && (
+          <div className="space-y-2">
+            {recentKpi.map((k) => (
+              <div key={k.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+                <span className="text-[12px] text-white/50 w-12">{k.month}.{k.year}</span>
+                <span className="text-[13px] text-white/70">Score: <b className="text-white">{k.kpiScore.toFixed(1)}</b></span>
+                <span className="text-[13px] text-white/70">Надёжность: <b className="text-white">{k.reliabilityScore.toFixed(1)}</b></span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* 6. Destructive Actions */}
       <Button variant="danger" size="lg" onClick={handleLogout}>
         <LogOut size={18} />
         Выйти

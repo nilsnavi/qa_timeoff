@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -142,6 +142,8 @@ export const api = {
   userOperations: (userId: string) => request<BalanceOperation[]>(`/balance/operations/${userId}`),
   createTimeOff: (payload: { date: string; hours: number; reason: string; comment?: string }) =>
     request('/timeoff/request', { method: 'POST', body: JSON.stringify(payload) }),
+  createTimeOffBatch: (payload: { dates: string[]; hours: number; reason: string; comment?: string }) =>
+    request('/timeoff/request', { method: 'POST', body: JSON.stringify(payload) }),
   createVacation: (payload: { startDate: string; endDate: string; vacationType: VacationType; comment?: string }) =>
     request('/vacation/request', { method: 'POST', body: JSON.stringify(payload) }),
   myTimeOff: () => request<TimeOffRequest[]>('/timeoff/my'),
@@ -232,6 +234,8 @@ export const api = {
     request<Overtime>(`/admin/overtime/${overtimeId}/cancel`, { method: 'PATCH' }),
 
   // ── KPI ──────────────────────────────────────────────────────────
+
+  myKpi: () => request<KpiPeriod[]>('/kpi/me'),
 
   kpiList: (params?: { userId?: string; month?: number; year?: number }) => {
     const search = new URLSearchParams();

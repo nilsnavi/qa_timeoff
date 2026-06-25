@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, RequestStatus, Role, User } from '@prisma/client';
 import { EventBusService } from '../events/event-bus.service';
+import { EmailNotificationService } from '../notifications/email-notification.service';
 import { NotificationType } from '../notifications/notification-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVacationRequestDto } from './dto/create-vacation-request.dto';
@@ -30,6 +31,7 @@ export class VacationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
+    private readonly emailNotification: EmailNotificationService,
   ) {}
 
   async create(currentUser: User, dto: CreateVacationRequestDto) {
@@ -126,6 +128,12 @@ export class VacationService {
       message: 'Ваш отпуск одобрен',
     });
 
+    this.prisma.user.findUnique({ where: { id: updated.userId }, select: { email: true, fullName: true } }).then(user => {
+      if (user?.email) {
+        this.emailNotification.sendRequestApproved(user.email, user.fullName, 'отпуск', `${this.formatDate(updated.startDate)} — ${this.formatDate(updated.endDate)}`);
+      }
+    });
+
     return updated;
   }
 
@@ -160,6 +168,12 @@ export class VacationService {
       type: 'VACATION_REJECTED',
       message: 'Ваш отпуск отклонён',
       approverComment,
+    });
+
+    this.prisma.user.findUnique({ where: { id: updated.userId }, select: { email: true, fullName: true } }).then(user => {
+      if (user?.email) {
+        this.emailNotification.sendRequestRejected(user.email, user.fullName, 'отпуск', `${this.formatDate(updated.startDate)} — ${this.formatDate(updated.endDate)}`, approverComment);
+      }
     });
 
     return updated;

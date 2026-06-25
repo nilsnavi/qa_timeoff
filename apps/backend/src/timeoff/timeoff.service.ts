@@ -1,8 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { BalanceOperationType, Prisma, RequestStatus, Role, User } from '@prisma/client';
 import { EventBusService } from '../events/event-bus.service';
+import { EmailNotificationService } from '../notifications/email-notification.service';
 import { NotificationType } from '../notifications/notification-types';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateTimeOffBatchDto } from './dto/create-timeoff-batch.dto';
 import { CreateTimeOffRequestDto } from './dto/create-timeoff-request.dto';
 
 const timeOffInclude = {
@@ -30,6 +32,7 @@ export class TimeOffService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
+    private readonly emailNotification: EmailNotificationService,
   ) {}
 
   async create(currentUser: User, dto: CreateTimeOffRequestDto) {
@@ -87,6 +90,29 @@ export class TimeOffService {
       include: timeOffInclude,
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
     });
+  }
+
+  async createBatch(currentUser: User, dto: CreateTimeOffBatchDto) {
+    const totalHours = dto.hours * dto.dates.length;
+    const balance = await this.prisma.timeBalance.findUnique({ where: { userId: currentUser.id } });
+    if (!balance || balance.balanceHours < totalHours) {
+      throw new BadRequestException(`Недостаточно баланса: нужно ${totalHours} ч, доступно ${balance?.balanceHours ?? 0} ч`);
+    }
+
+    return this.prisma.$transaction(
+      dto.dates.map(date =>
+        this.prisma.timeOffRequest.create({
+          data: {
+            userId: currentUser.id,
+            date: new Date(date),
+            hours: dto.hours,
+            reason: dto.reason,
+            comment: dto.comment,
+            status: 'PENDING',
+          },
+        })
+      )
+    );
   }
 
   async approve(currentUser: User, id: string) {
@@ -149,6 +175,12 @@ export class TimeOffService {
       message: 'Ваш отгул одобрен',
     });
 
+    this.prisma.user.findUnique({ where: { id: request.userId }, select: { email: true, fullName: true } }).then(user => {
+      if (user?.email) {
+        this.emailNotification.sendRequestApproved(user.email, user.fullName, 'отгул', request.date.toISOString().slice(0, 10));
+      }
+    });
+
     return updated;
   }
 
@@ -183,6 +215,12 @@ export class TimeOffService {
       type: 'TIMEOFF_REJECTED',
       message: 'Ваш отгул отклонён',
       approverComment,
+    });
+
+    this.prisma.user.findUnique({ where: { id: updated.userId }, select: { email: true, fullName: true } }).then(user => {
+      if (user?.email) {
+        this.emailNotification.sendRequestRejected(user.email, user.fullName, 'отгул', (updated as any).date?.toISOString().slice(0, 10) ?? new Date().toISOString().slice(0, 10), approverComment);
+      }
     });
 
     return updated;
