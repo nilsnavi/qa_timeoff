@@ -77,7 +77,7 @@ export function CustomSelect({
       {open && (
         <div
           className={clsx(
-            'absolute z-50 mt-1.5 w-full overflow-hidden',
+            'absolute z-50 mt-1.5 min-w-full w-max max-w-[280px] overflow-hidden',
             'rounded-xl border border-white/[0.10]',
             'bg-[#0F1829]',
             'shadow-[0_8px_32px_rgba(0,0,0,0.6)]',
@@ -93,7 +93,7 @@ export function CustomSelect({
                   setOpen(false);
                 }}
                 className={clsx(
-                  'flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors',
+                  'flex w-full items-center gap-2 px-3 py-2.5 text-left whitespace-nowrap transition-colors',
                   small ? 'text-[13px]' : 'text-[14px]',
                   opt.value === value
                     ? 'bg-[#4C7DFF]/15 text-[#6B96FF] font-semibold'
