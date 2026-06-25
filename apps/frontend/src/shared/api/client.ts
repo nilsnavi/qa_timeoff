@@ -77,7 +77,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   login: (email: string, password: string) =>
-    request<{ accessToken: string; refreshToken: string; user: User }>('/auth/login', {
+    request<{ accessToken: string; refreshToken: string; user: User; mustChangePassword?: boolean }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
@@ -120,8 +120,10 @@ export const api = {
     teamId?: string;
     managerId?: string;
     isActive?: boolean;
-    passwordHash?: string;
-  }) => request<User>('/users', { method: 'POST', body: JSON.stringify(payload) }),
+  }) => request<{ user: User; tempPassword: string }>('/users', { method: 'POST', body: JSON.stringify(payload) }),
+  resetUserPassword: (userId: string) => request<{ tempPassword: string }>(`/users/${userId}/reset-password`, { method: 'POST' }),
+  changePassword: (dto: { currentPassword: string; newPassword: string }) =>
+    request<{ success: boolean }>('/users/me/password', { method: 'PATCH', body: JSON.stringify(dto) }),
   updateUser: (
     id: string,
     payload: Partial<{

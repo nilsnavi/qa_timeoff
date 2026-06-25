@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, ChevronRight, Info, Mail, Shield, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Copy, Info, Mail, Shield, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, ErrorState, Field } from '../components/ui';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import type { Role, Team } from '../shared/types';
-import { getRoleLabel } from '../shared/utils';
+import { getRoleLabel, showAppToast } from '../shared/utils';
 import { clsx } from 'clsx';
 
 type Tab = 'general' | 'access' | 'additional';
@@ -39,6 +39,7 @@ export function CreateUserPage() {
   const [teamId, setTeamId] = useState('');
   const [managerId, setManagerId] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [sendInvite, setSendInvite] = useState(false);
 
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams, enabled: isAdmin });
@@ -52,17 +53,53 @@ export function CreateUserPage() {
     mutationFn: () => api.createUser({
       fullName, email: email || undefined, position: position || undefined,
       role, teamId: teamId || undefined, managerId: managerId || undefined,
-      isActive, passwordHash: undefined,
+      isActive,
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries();
-      navigate('/admin');
+      setTempPassword(data.tempPassword);
+    },
+    onError: (err: any) => {
+      showAppToast(err?.message ?? 'Не удалось создать пользователя', undefined, 'error');
     },
   });
 
   if (!isAdmin) return <ErrorState title="Доступ запрещён" description="Только для администраторов" />;
 
   const isValid = fullName.trim().length > 0 && email.includes('@');
+
+  if (tempPassword) {
+    return (
+      <div className="mx-auto max-w-md space-y-6 py-12 px-4">
+        <div className="text-center">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-xl bg-emerald-500/15">
+            <Check size={24} className="text-emerald-400" />
+          </div>
+          <h1 className="text-[20px] font-bold text-white">Пользователь создан</h1>
+          <p className="mt-1 text-[14px] text-white/40">Письмо с паролем отправлено на {email}</p>
+        </div>
+        <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5 space-y-3">
+          <p className="text-[13px] font-semibold text-white/50 uppercase tracking-wider">Временный пароль</p>
+          <div className="flex items-center gap-3">
+            <code className="flex-1 text-[22px] font-bold tracking-[0.15em] text-[#4C7DFF]">{tempPassword}</code>
+            <button type="button" onClick={() => { navigator.clipboard.writeText(tempPassword); showAppToast('Скопировано'); }}
+              className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.06] text-white/40 hover:bg-white/[0.1] hover:text-white/80 transition-colors" title="Копировать">
+              <Copy size={15} />
+            </button>
+          </div>
+          <p className="text-[12px] text-white/30">При первом входе система попросит пользователя сменить пароль на постоянный.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={() => { setTempPassword(null); setFullName(''); setEmail(''); setPosition(''); setRole('EMPLOYEE'); setTeamId(''); setManagerId(''); }}>
+            Создать ещё одного
+          </Button>
+          <Button className="flex-1" onClick={() => navigate('/admin')}>
+            В администрирование
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

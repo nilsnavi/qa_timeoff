@@ -1,6 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma, Role, User } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { generateTempPassword } from '../auth/temp-password.util';
+import { EmailNotificationService } from '../notifications/email-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateNotificationsDto } from './dto/update-notifications.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -13,7 +17,10 @@ const userInclude = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly email: EmailNotificationService,
+  ) {}
 
   findAll(currentUser: User) {
     return this.prisma.user.findMany({
@@ -39,26 +46,41 @@ export class UsersService {
     return user;
   }
 
-  create(dto: CreateUserDto) {
-    return this.prisma.user.create({
+  async create(dto: CreateUserDto): Promise<{ user: User; tempPassword: string }> {
+    if (!dto.email) {
+      throw new BadRequestException('Email обязателен для создания пользователя');
+    }
+
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) {
+      throw new ConflictException('Пользователь с таким email уже существует');
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    const user = await this.prisma.user.create({
       data: {
-        ...(dto.telegramId && { telegramId: dto.telegramId }),
-        ...(dto.passwordHash && { passwordHash: dto.passwordHash }),
         fullName: dto.fullName,
-        username: dto.username,
         email: dto.email,
+        username: dto.username,
         position: dto.position,
-        hourlyRate: dto.hourlyRate ?? 0,
-        role: dto.role ?? Role.EMPLOYEE,
-        teamId: dto.teamId,
-        managerId: dto.managerId,
+        role: dto.role ?? 'EMPLOYEE',
+        teamId: dto.teamId ?? null,
+        managerId: dto.managerId ?? null,
         isActive: dto.isActive ?? true,
-        timeBalance: {
-          create: {},
-        },
+        passwordHash,
+        mustChangePassword: true,
+        ...(dto.telegramId && { telegramId: dto.telegramId }),
+        timeBalance: { create: {} },
       },
       include: userInclude,
     });
+
+    this.email.sendTempPassword(user.email!, user.fullName, tempPassword, false)
+      .catch(err => console.error('Email send failed:', err));
+
+    return { user: user as User, tempPassword };
   }
 
   update(id: string, dto: UpdateUserDto) {
@@ -86,6 +108,58 @@ export class UsersService {
     if (dto.notifyTeamRequests !== undefined) data.notifyTeamRequests = dto.notifyTeamRequests;
     if (dto.notifyEmailDigest !== undefined) data.notifyEmailDigest = dto.notifyEmailDigest;
     return this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  async resetPassword(targetUserId: string): Promise<{ tempPassword: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, fullName: true, email: true, isActive: true },
+    });
+
+    if (!user) throw new NotFoundException('Пользователь не найден');
+    if (!user.isActive) throw new BadRequestException('Пользователь заблокирован');
+    if (!user.email) throw new BadRequestException('У пользователя нет email для отправки пароля');
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: { passwordHash, mustChangePassword: true },
+    });
+
+    this.email.sendTempPassword(user.email, user.fullName, tempPassword, true)
+      .catch(err => console.error('Email send failed:', err));
+
+    return { tempPassword };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+
+    if (!user?.passwordHash) {
+      throw new BadRequestException('Пароль не установлен');
+    }
+
+    const isValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Текущий пароль неверен');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('Новый пароль должен отличаться от временного');
+    }
+
+    const newHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash, mustChangePassword: false },
+    });
+
+    return { success: true };
   }
 
   remove(id: string) {

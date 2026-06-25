@@ -103,7 +103,7 @@ function getBreadcrumb(path: string) {
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isAuthLoading, authError, user, logout } = useAuth();
+  const { isAuthenticated, isAuthLoading, authError, user, logout, mustChangePassword } = useAuth();
   const [toast, setToast] = useState<{ title: string; message?: string; tone?: 'success' | 'error' | 'info' } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -132,10 +132,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isAuthLoading) return;
+    if (isAuthenticated && mustChangePassword && location.pathname !== '/change-password') {
+      navigate('/change-password', { replace: true });
+      return;
+    }
     if (!isAuthenticated && !isAuthLoading) {
       navigate('/login', { replace: true });
     }
-  }, [isAuthenticated, isAuthLoading, navigate]);
+  }, [isAuthenticated, isAuthLoading, mustChangePassword, location.pathname, navigate]);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 

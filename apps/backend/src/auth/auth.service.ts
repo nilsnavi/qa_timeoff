@@ -55,7 +55,7 @@ export class AuthService {
 
     this.logger.log(`User logged in via web: ${user.fullName} (id=${user.id}, role=${user.role})`);
 
-    return { accessToken, refreshToken: refreshToken.token, user };
+    return { accessToken, refreshToken: refreshToken.token, user, mustChangePassword: user.mustChangePassword };
   }
 
   async telegramLogin(initData: string) {

@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateNotificationsDto } from './dto/update-notifications.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -41,6 +42,11 @@ export class UsersController {
     return this.usersService.update(id, dto);
   }
 
+  @Patch('me/password')
+  async changeMyPassword(@CurrentUser() currentUser: User, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(currentUser.id, dto);
+  }
+
   @Patch('me/notifications')
   updateNotifications(@CurrentUser() user: User, @Body() dto: UpdateNotificationsDto) {
     return this.usersService.updateNotifications(user.id, dto);
@@ -51,5 +57,12 @@ export class UsersController {
   @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Post(':id/reset-password')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  resetPassword(@Param('id') id: string) {
+    return this.usersService.resetPassword(id);
   }
 }

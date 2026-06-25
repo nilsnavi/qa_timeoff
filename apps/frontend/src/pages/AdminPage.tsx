@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, Clock, Database, Download, Edit3, FileSpreadsheet, Plus, Search, ShieldAlert, Trash2, UserPlus, Wallet, Minus } from 'lucide-react';
+import { BarChart3, Clock, Database, Copy, Download, Edit3, FileSpreadsheet, KeyRound, Plus, Search, ShieldAlert, Trash2, UserPlus, Wallet, Minus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, EmptyState, ErrorState, Field, Loader, Modal } from '../components/ui';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import type { PositionHistory, Role, Team, User } from '../shared/types';
-import { getRoleLabel } from '../shared/utils';
+import { getRoleLabel, showAppToast } from '../shared/utils';
 import { DataTable, type Column, type SortDirection } from '../components/dashboard-v2/DataTable';
 import { clsx } from 'clsx';
 import { KpiTab } from './admin-tabs/KpiTab';
@@ -193,6 +193,15 @@ export function AdminPage() {
 
   const closeBalanceModal = () => { setBalanceModalOpen(false); setBalanceUserId(''); setBalanceUserName(''); setBalanceHours(0); setBalanceReason(''); };
 
+  const [resetTarget, setResetTarget] = useState<User | null>(null);
+  const [resetPassword, setResetPassword] = useState<string | null>(null);
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (userId: string) => api.resetUserPassword(userId),
+    onSuccess: (data) => setResetPassword(data.tempPassword),
+    onError: () => showAppToast('Не удалось сбросить пароль', undefined, 'error'),
+  });
+
   const handleCreate = () => {
     api.createUser({ fullName: newFullName, email: newEmail || undefined, role: newRole, teamId: newTeamId || undefined })
       .then(() => { queryClient.invalidateQueries(); queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] }); setCreateOpen(false); setNewFullName(''); setNewEmail(''); })
@@ -222,6 +231,9 @@ export function AdminPage() {
         </Button>
         <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openBalanceModal(u, 'write-off'); }} className="!min-h-0 h-7 w-7 !p-0 text-amber-400">
           <Minus size={14} />
+        </Button>
+        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setResetTarget(u); setResetPassword(null); }} className="!min-h-0 h-7 w-7 !p-0 text-white/25 hover:text-amber-400" title="Сбросить пароль">
+          <KeyRound size={13} />
         </Button>
         {u.isActive && (
           <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDisable(u); }} className="!min-h-0 h-7 w-7 !p-0 text-rose-400">
@@ -499,6 +511,40 @@ export function AdminPage() {
             <Field label="Часы" type="number" value={String(balanceHours)} onChange={e => setBalanceHours(Number(e.target.value))} placeholder="0" />
             <Field label="Причина" value={balanceReason} onChange={e => setBalanceReason(e.target.value)} placeholder="Причина операции" />
           </div>
+        </Modal>
+      )}
+      {resetTarget && (
+        <Modal open title={resetPassword ? 'Пароль сброшен' : `Сбросить пароль: ${resetTarget.fullName}`}
+          onClose={() => { setResetTarget(null); setResetPassword(null); }}
+          footer={resetPassword ? (
+            <Button onClick={() => { setResetTarget(null); setResetPassword(null); }}>Готово</Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => setResetTarget(null)}>Отмена</Button>
+              <Button variant="danger" disabled={resetPasswordMutation.isPending} onClick={() => resetPasswordMutation.mutate(resetTarget.id)}>
+                {resetPasswordMutation.isPending ? 'Сбрасываем...' : 'Сбросить пароль'}
+              </Button>
+            </div>
+          )}
+        >
+          {!resetPassword ? (
+            <div className="space-y-3">
+              <p className="text-[14px] text-white/60">Будет сгенерирован новый временный пароль. {resetTarget.email ? `Письмо отправится на ${resetTarget.email}.` : 'У пользователя нет email — передайте пароль вручную.'}</p>
+              <p className="text-[13px] text-white/40">При следующем входе пользователь будет обязан сменить пароль.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-[14px] text-white/60">Новый временный пароль для <b className="text-white">{resetTarget.fullName}</b>:</p>
+              <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/[0.08] px-4 py-3">
+                <code className="flex-1 text-[20px] font-bold tracking-[0.15em] text-[#4C7DFF]">{resetPassword}</code>
+                <button type="button" onClick={() => { navigator.clipboard.writeText(resetPassword); showAppToast('Скопировано'); }}
+                  className="grid h-8 w-8 place-items-center rounded-lg bg-white/[0.06] text-white/40 hover:text-white/80">
+                  <Copy size={14} />
+                </button>
+              </div>
+              <p className="text-[12px] text-white/30">{resetTarget.email ? 'Письмо уже отправлено на email пользователя.' : 'Передайте пароль пользователю лично — email не задан.'}</p>
+            </div>
+          )}
         </Modal>
       )}
     </div>

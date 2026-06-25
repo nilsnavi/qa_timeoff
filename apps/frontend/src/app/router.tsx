@@ -31,6 +31,7 @@ const TeamPage = lazy(() => import('../pages/TeamPage').then((module) => ({ defa
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPage />}>{node}</Suspense>;
 
 const LoginPage = lazy(() => import('../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ChangePasswordPage = lazy(() => import('../pages/ChangePasswordPage').then((module) => ({ default: module.ChangePasswordPage })));
 
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then((module) => ({ default: module.CreateUserPage })));
 
@@ -38,6 +39,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: withSuspense(<LoginPage />),
+  },
+  {
+    path: '/change-password',
+    element: withSuspense(<ChangePasswordPage />),
   },
   {
     path: '/',

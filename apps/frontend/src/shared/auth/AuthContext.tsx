@@ -11,12 +11,14 @@ export interface AuthState {
   isAuthenticated: boolean;
   isAuthLoading: boolean;
   authError: string | null;
+  mustChangePassword: boolean;
 }
 
 export interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   clearAuth: () => void;
+  setMustChangePassword: (v: boolean) => void;
 }
 
 const CTX = createContext<AuthContextValue | null>(null);
@@ -26,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const validatedRef = useRef(false);
 
@@ -131,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(REFRESH_KEY, authResult.refreshToken);
       setToken(newToken);
       setUser(authResult.user);
+      setMustChangePassword(authResult.mustChangePassword ?? false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ошибка авторизации';
       setAuthError(message);
@@ -163,9 +167,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         isAuthLoading,
         authError,
+        mustChangePassword,
         login,
         logout,
         clearAuth,
+        setMustChangePassword,
       }}
     >
       {children}
