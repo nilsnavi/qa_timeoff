@@ -13,10 +13,11 @@ import {
   subMonths,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Bell, ChevronLeft, ChevronRight, Clock, Edit3, Plane, Plus, Stethoscope, Sun, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Edit3, Plane, Plus, Stethoscope, Sun, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, Card, EmptyState, ErrorState, Input, Select, Skeleton, Textarea } from '../../components/ui';
+import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Input, Skeleton, Textarea } from '../../components/ui';
+import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
 import { hapticSelection, showAppToast } from '../../shared/utils';
 import type { CalendarEventEntry, CalendarEventType, Team } from '../../shared/types';
@@ -67,6 +68,7 @@ export function CalendarEventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventEntry | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEventEntry | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(format(new Date(), 'yyyy-MM-dd'));
 
   const isManager = currentUser.role === 'LEAD' || currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN';
   const isAdmin = currentUser.role === 'ADMIN';
@@ -91,6 +93,16 @@ export function CalendarEventsPage() {
     queryFn: api.teams,
     staleTime: 10 * 60 * 1000,
   });
+
+  const teamOptions: SelectOption[] = [
+    { value: 'ALL', label: 'Все команды' },
+    ...(teamsQuery.data ?? []).map((t: Team) => ({ value: t.id, label: t.name })),
+  ];
+
+  const typeOptions: SelectOption[] = Object.entries(FILTER_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  }));
 
   const events = useMemo(() => eventsQuery.data?.items ?? [], [eventsQuery.data]);
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
@@ -124,6 +136,15 @@ export function CalendarEventsPage() {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const todayEvents = eventsByDate.get(todayStr) ?? [];
 
+  const upcomingEvents = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return events
+      .filter(e => e.status === 'APPROVED' && new Date(e.startDate) >= today)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .slice(0, 5);
+  }, [events]);
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['calendar-events', params] });
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -151,160 +172,231 @@ export function CalendarEventsPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-4 pb-24 safe-area">
+    <div className="flex flex-col gap-6">
       {/* Header */}
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-[10px] bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] text-[9px] font-bold text-white">
-            {currentUser.fullName?.slice(0, 2).toUpperCase() ?? 'QA'}
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-white">Календарь отсутствий</h1>
-            <p className="text-[10px] font-medium text-white/40">
-              {eventsQuery.data ? `${events.length} событий · ${todayEvents.length} сегодня` : 'Загрузка...'}
-            </p>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[24px] font-bold text-white">Календарь</h1>
+          <p className="text-[14px] text-white/40 mt-0.5">
+            {eventsQuery.data ? `${events.length} событий · ${todayEvents.length} сегодня` : 'Загрузка...'}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => { hapticSelection(); navigate('/notifications'); }}
-          className="relative grid h-8 w-8 place-items-center rounded-lg bg-white/[0.04] text-white/50"
-          aria-label="Уведомления"
-        >
-          <Bell size={16} />
-        </button>
-      </header>
-
-      {/* Filter Panel */}
-      <Card>
-        <div className="grid grid-cols-2 gap-3">
-          <Select label="Команда" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-            <option value="ALL">Все команды</option>
-            {teams.map((team: Team) => (
-              <option key={team.id} value={team.id}>{team.name}</option>
-            ))}
-          </Select>
-          <Select label="Тип" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as CalendarFilter)}>
-            {Object.entries(FILTER_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </Select>
-        </div>
-        {/* Quick filter chips */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(['VACATION', 'TIME_OFF', 'SICK_LEAVE', 'HOLIDAY'] as CalendarFilter[]).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setTypeFilter(typeFilter === type ? 'ALL' : type)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-bold transition ${
-                typeFilter === type ? 'bg-white/[0.10] text-white' : 'bg-white/[0.04] text-white/50'
-              }`}
-            >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: TYPE_COLORS[type] }} />
-              {FILTER_LABELS[type]}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {/* Calendar Navigation */}
-      <Card>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <Button variant="secondary" size="sm" onClick={moveBack} aria-label="Предыдущий месяц">
-            <ChevronLeft size={16} />
-          </Button>
-          <div className="text-center">
-            <h2 className="text-sm font-bold text-white">
-              {format(cursorDate, 'LLLL yyyy', { locale: ru })}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setCursorDate(new Date())}
-              className="text-[10px] font-bold text-blue-400"
-            >
-              Сегодня
-            </button>
-          </div>
-          <Button variant="secondary" size="sm" onClick={moveForward} aria-label="Следующий месяц">
-            <ChevronRight size={16} />
-          </Button>
-        </div>
-
-        {eventsQuery.isLoading && events.length === 0 ? (
-          <CalendarSkeleton />
-        ) : (
-          <>
-            {/* Day headers */}
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-white/30 mb-1">
-              {DAYS.map((day) => <span key={day}>{day}</span>)}
-            </div>
-
-            {/* Grid */}
-            <div className="grid grid-cols-7 gap-1">
-              {visibleDays.map((day) => {
-                const dayStr = format(day, 'yyyy-MM-dd');
-                const dayEvents = eventsByDate.get(dayStr) ?? [];
-                const isToday = isSameDay(day, new Date());
-                const isCurrentMonth = isSameMonth(day, cursorDate);
-
-                return (
-                  <div
-                    key={dayStr}
-                    className={`min-h-16 rounded-[10px] p-1.5 transition ${
-                      isCurrentMonth ? 'bg-white/[0.04]' : 'bg-white/[0.02]'
-                    } ${isToday ? 'ring-2 ring-[#4C7DFF]/50' : ''}`}
-                  >
-                    <div className={`text-[10px] font-bold mb-1 ${
-                      isCurrentMonth ? 'text-white/60' : 'text-white/20'
-                    } ${isToday ? 'text-[#4C7DFF]' : ''}`}>
-                      {format(day, 'd')}
-                    </div>
-                    <div className="grid gap-0.5">
-                      {dayEvents.slice(0, 2).map((event) => (
-                        <button
-                          key={event.id}
-                          type="button"
-                          onClick={() => setSelectedEvent(event)}
-                          className="flex items-center gap-1 rounded-[4px] px-1 py-0.5 text-[8px] font-bold text-white truncate transition hover:opacity-80"
-                          style={{ backgroundColor: TYPE_COLORS[event.type] + '40' }}
-                        >
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: TYPE_COLORS[event.type] }} />
-                          <span className="truncate">{event.user.fullName}</span>
-                        </button>
-                      ))}
-                      {dayEvents.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => setTypeFilter('ALL')}
-                          className="text-[8px] font-bold text-white/30 hover:text-white/50 text-left"
-                        >
-                          +{dayEvents.length - 2}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
+        {isManager && (
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 rounded-xl app-gradient px-4 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-90"
+          >
+            <Plus size={16} />
+            Создать событие
+          </button>
         )}
-      </Card>
+      </div>
 
-      {/* No events */}
-      {!eventsQuery.isLoading && events.length === 0 && (
-        <EmptyState title="Нет событий" description="За этот месяц событий не найдено." />
-      )}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
+        {/* ═══ LEFT COLUMN ═══ */}
+        <div className="flex flex-col gap-4">
+          {/* Filter Panel */}
+          <Card>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="field-shell">
+                <span className="field-label">Команда</span>
+                <CustomSelect
+                  value={teamId}
+                  onChange={setTeamId}
+                  options={teamOptions}
+                />
+              </div>
+              <div className="field-shell">
+                <span className="field-label">Тип</span>
+                <CustomSelect
+                  value={typeFilter}
+                  onChange={(v) => setTypeFilter(v as CalendarFilter)}
+                  options={typeOptions}
+                />
+              </div>
+            </div>
+            {/* Quick filter chips */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(['VACATION', 'TIME_OFF', 'SICK_LEAVE', 'HOLIDAY'] as CalendarFilter[]).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setTypeFilter(typeFilter === type ? 'ALL' : type)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${
+                    typeFilter === type ? 'bg-white/[0.10] text-white' : 'bg-white/[0.04] text-white/50'
+                  }`}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: TYPE_COLORS[type] }} />
+                  {FILTER_LABELS[type]}
+                </button>
+              ))}
+            </div>
+          </Card>
 
-      {/* FAB */}
-      <button
-        type="button"
-        onClick={() => { hapticSelection(); setShowCreateModal(true); }}
-        className="fixed bottom-[calc(5rem+max(var(--tg-safe-bottom),env(safe-area-inset-bottom)))] right-5 z-20 grid h-12 w-12 place-items-center rounded-2xl app-gradient text-white shadow-lg shadow-blue-500/30 active:scale-90 transition-transform"
-        aria-label="Создать событие"
-      >
-        <Plus size={22} />
-      </button>
+          {/* Mini-stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="enterprise-card p-4 text-center">
+              <p className="text-[12px] font-medium text-white/45 mb-1">Сегодня</p>
+              <p className="text-[24px] font-bold text-white">{todayEvents.length}</p>
+              <p className="text-[12px] text-white/30">отсутствий</p>
+            </div>
+            <div className="enterprise-card p-4 text-center">
+              <p className="text-[12px] font-medium text-white/45 mb-1">За месяц</p>
+              <p className="text-[24px] font-bold text-white">{events.length}</p>
+              <p className="text-[12px] text-white/30">событий</p>
+            </div>
+            <div className="enterprise-card p-4 text-center">
+              <p className="text-[12px] font-medium text-white/45 mb-1">Ожидают</p>
+              <p className="text-[24px] font-bold text-amber-400">
+                {events.filter(e => e.status === 'PENDING').length}
+              </p>
+              <p className="text-[12px] text-white/30">согласования</p>
+            </div>
+          </div>
+
+          {/* Calendar Navigation */}
+          <Card>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <Button variant="secondary" size="sm" onClick={moveBack} aria-label="Предыдущий месяц">
+                <ChevronLeft size={16} />
+              </Button>
+              <div className="text-center">
+                <h2 className="text-[18px] font-bold text-white">
+                  {format(cursorDate, 'LLLL yyyy', { locale: ru })}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setCursorDate(new Date())}
+                  className="text-[13px] font-semibold text-[#4C7DFF]"
+                >
+                  Сегодня
+                </button>
+              </div>
+              <Button variant="secondary" size="sm" onClick={moveForward} aria-label="Следующий месяц">
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+
+            {eventsQuery.isLoading && events.length === 0 ? (
+              <CalendarSkeleton />
+            ) : (
+              <>
+                {/* Day headers */}
+                <div className="grid grid-cols-7 gap-1 text-center text-[12px] font-semibold text-white/40 mb-1">
+                  {DAYS.map((day) => <span key={day}>{day}</span>)}
+                </div>
+
+                {/* Grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {visibleDays.map((day) => {
+                    const dayStr = format(day, 'yyyy-MM-dd');
+                    const dayEvents = eventsByDate.get(dayStr) ?? [];
+                    const isToday = isSameDay(day, new Date());
+                    const isCurrentMonth = isSameMonth(day, cursorDate);
+
+                    return (
+                      <div
+                        key={dayStr}
+                        onClick={() => setSelectedDay(dayStr)}
+                        className={`min-h-[80px] rounded-xl p-2 transition cursor-pointer hover:ring-1 hover:ring-white/20 ${
+                          isCurrentMonth ? 'bg-white/[0.04]' : 'bg-white/[0.02]'
+                        } ${isToday ? 'ring-2 ring-[#4C7DFF]/50' : ''} ${
+                          selectedDay === dayStr ? 'ring-2 ring-[#4C7DFF]/70' : ''
+                        }`}
+                      >
+                        <div className={`text-[13px] font-semibold mb-1.5 ${
+                          isCurrentMonth ? 'text-white/60' : 'text-white/20'
+                        } ${isToday ? 'text-[#4C7DFF]' : ''}`}>
+                          {format(day, 'd')}
+                        </div>
+                        <div className="grid gap-0.5">
+                          {dayEvents.slice(0, 2).map((event) => (
+                            <button
+                              key={event.id}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
+                              className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-white truncate transition hover:opacity-80"
+                              style={{ backgroundColor: TYPE_COLORS[event.type] + '40' }}
+                            >
+                              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: TYPE_COLORS[event.type] }} />
+                              <span className="truncate">{event.user.fullName}</span>
+                            </button>
+                          ))}
+                          {dayEvents.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => setTypeFilter('ALL')}
+                              className="text-[11px] font-semibold text-white/30 hover:text-white/50 text-left"
+                            >
+                              +{dayEvents.length - 2}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </Card>
+
+          {/* No events */}
+          {!eventsQuery.isLoading && events.length === 0 && (
+            <EmptyState title="Нет событий" description="За этот месяц событий не найдено." />
+          )}
+
+          {/* Upcoming events */}
+          {upcomingEvents.length > 0 && (
+            <div className="enterprise-card p-5">
+              <p className="text-[14px] font-semibold text-white/50 mb-3">Ближайшие события</p>
+              <div className="flex flex-col gap-2">
+                {upcomingEvents.map(event => {
+                  const color = TYPE_COLORS[event.type] ?? '#64748B';
+                  const daysLeft = Math.ceil(
+                    (new Date(event.startDate).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000
+                  );
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => setSelectedDay(event.startDate.slice(0, 10))}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-colors"
+                    >
+                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-semibold text-white/80 truncate">
+                          {event.user.fullName}
+                        </p>
+                        <p className="text-[12px] text-white/40">
+                          {FILTER_LABELS[event.type as CalendarFilter]} ·{' '}
+                          {format(parseISO(event.startDate), 'd MMM', { locale: ru })}
+                          {event.startDate !== event.endDate && ` — ${format(parseISO(event.endDate), 'd MMM', { locale: ru })}`}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 text-[13px] font-bold ${
+                        daysLeft === 0 ? 'text-emerald-400' : daysLeft <= 3 ? 'text-amber-400' : 'text-white/30'
+                      }`}>
+                        {daysLeft === 0 ? 'Сегодня' : `${daysLeft}дн`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ═══ RIGHT COLUMN ═══ */}
+        <DayDetailPanel
+          selectedDay={selectedDay}
+          eventsByDate={eventsByDate}
+          isManager={isManager}
+          onApprove={(id) => approveMutation.mutate(id)}
+          onDelete={(id) => deleteMutation.mutate(id)}
+          onEdit={(event) => { setEditingEvent(event); setShowCreateModal(true); }}
+          isMutating={approveMutation.isPending || deleteMutation.isPending}
+        />
+      </div>
 
       {/* Create/Edit Event Modal */}
       <CreateEventModal
@@ -329,6 +421,135 @@ export function CalendarEventsPage() {
           onEdit={() => { setEditingEvent(selectedEvent); setSelectedEvent(null); setShowCreateModal(true); }}
           isMutating={approveMutation.isPending || deleteMutation.isPending}
         />
+      )}
+    </div>
+  );
+}
+
+// ── Day Detail Panel ─────────────────────────────────────────────────────
+
+function DayDetailPanel({
+  selectedDay,
+  eventsByDate,
+  isManager,
+  onApprove,
+  onDelete,
+  onEdit,
+  isMutating,
+}: {
+  selectedDay: string | null;
+  eventsByDate: Map<string, CalendarEventEntry[]>;
+  isManager: boolean;
+  onApprove: (id: string) => void;
+  onDelete: (id: string) => void;
+  onEdit: (event: CalendarEventEntry) => void;
+  isMutating: boolean;
+}) {
+  const dayEvents = selectedDay ? (eventsByDate.get(selectedDay) ?? []) : [];
+  const dayLabel = selectedDay
+    ? format(parseISO(selectedDay), 'd MMMM yyyy, EEEE', { locale: ru })
+    : null;
+
+  return (
+    <div className="enterprise-card p-5 sticky top-6">
+      <div className="mb-4">
+        <p className="text-[13px] font-semibold text-white/50">
+          {dayLabel ?? 'Выберите день'}
+        </p>
+        {dayEvents.length > 0 && (
+          <p className="text-[13px] text-white/35 mt-0.5">
+            {dayEvents.length} {dayEvents.length === 1 ? 'событие' : 'событий'}
+          </p>
+        )}
+      </div>
+
+      {dayEvents.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/[0.04]">
+            <Sun size={20} className="text-white/25" />
+          </div>
+          <p className="text-[14px] font-medium text-white/35">Нет событий</p>
+          <p className="text-[12px] text-white/25">В этот день все на месте</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {dayEvents.map(event => {
+            const Icon = TYPE_ICONS[event.type] ?? Plane;
+            const color = TYPE_COLORS[event.type] ?? '#64748B';
+            return (
+              <div
+                key={event.id}
+                className="rounded-xl p-3 border border-white/[0.06]"
+                style={{ background: color + '0D' }}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg"
+                    style={{ backgroundColor: color + '25' }}
+                  >
+                    <Icon size={15} style={{ color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-white truncate">
+                      {event.user.fullName}
+                    </p>
+                    <p className="text-[12px] text-white/50">
+                      {FILTER_LABELS[event.type as CalendarFilter]}
+                    </p>
+                    <p className="text-[12px] text-white/35 mt-0.5">
+                      {format(parseISO(event.startDate), 'd MMM', { locale: ru })}
+                      {' — '}
+                      {format(parseISO(event.endDate), 'd MMM yyyy', { locale: ru })}
+                    </p>
+                  </div>
+                  <Badge tone={event.status === 'APPROVED' ? 'success' : 'warning'} className="text-[11px] shrink-0">
+                    {event.status === 'APPROVED' ? 'Одобрено' : 'Ожидает'}
+                  </Badge>
+                </div>
+
+                {event.comment && (
+                  <p className="mt-2 text-[12px] text-white/40 pl-12 truncate">
+                    {event.comment}
+                  </p>
+                )}
+
+                {isManager && (
+                  <div className="flex gap-2 mt-2 pl-12">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(event)}
+                      className="text-[12px] font-semibold text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      Изменить
+                    </button>
+                    {event.status === 'PENDING' && (
+                      <>
+                        <span className="text-white/20">·</span>
+                        <button
+                          type="button"
+                          disabled={isMutating}
+                          onClick={() => onApprove(event.id)}
+                          className="text-[12px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                        >
+                          Одобрить
+                        </button>
+                        <span className="text-white/20">·</span>
+                        <button
+                          type="button"
+                          disabled={isMutating}
+                          onClick={() => onDelete(event.id)}
+                          className="text-[12px] font-semibold text-rose-400 hover:text-rose-300 transition-colors"
+                        >
+                          Удалить
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -385,6 +606,20 @@ function CreateEventModal({
     { value: 'HOLIDAY', label: 'Праздник', adminOnly: true },
   ];
 
+  const typeOptions: SelectOption[] = eventTypes
+    .filter((t) => !t.adminOnly || isAdmin)
+    .map((t) => ({ value: t.value, label: t.label }));
+
+  const userOptions: SelectOption[] = [
+    { value: currentUserId, label: 'Себя' },
+    ...teams.flatMap((team) =>
+      (team.users ?? []).filter((u) => u.id !== currentUserId).map((u) => ({
+        value: u.id,
+        label: `${u.fullName} (${team.name})`,
+      }))
+    ),
+  ];
+
   const isValid = type && startDate && endDate;
 
   return (
@@ -401,11 +636,14 @@ function CreateEventModal({
         </div>
 
         <div className="grid gap-3">
-          <Select label="Тип" value={type} onChange={(e) => setType(e.target.value as CalendarEventType)}>
-            {eventTypes.filter((t) => !t.adminOnly || isAdmin).map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </Select>
+          <div className="field-shell">
+            <span className="field-label">Тип</span>
+            <CustomSelect
+              value={type}
+              onChange={(v) => setType(v as CalendarEventType)}
+              options={typeOptions}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Input label="Дата начала" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -413,14 +651,14 @@ function CreateEventModal({
           </div>
 
           {(isManager || isEditing) && (
-            <Select label="Сотрудник" value={userId} onChange={(e) => setUserId(e.target.value)}>
-              <option value={currentUserId}>Себя</option>
-              {teams.flatMap((team) =>
-                (team.users ?? []).filter((u) => u.id !== currentUserId).map((u) => (
-                  <option key={u.id} value={u.id}>{u.fullName} ({team.name})</option>
-                ))
-              )}
-            </Select>
+            <div className="field-shell">
+              <span className="field-label">Сотрудник</span>
+              <CustomSelect
+                value={userId}
+                onChange={setUserId}
+                options={userOptions}
+              />
+            </div>
           )}
 
           <Textarea label="Комментарий (необязательно)" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={500} hint={`${comment.length}/500`} />
@@ -466,12 +704,12 @@ function EventDetailModal({
       <section className="enterprise-card w-full max-w-md p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] text-white" style={{ backgroundColor: color }}>
-              <Icon size={18} />
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] text-white" style={{ backgroundColor: color }}>
+              <Icon size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">{event.user.fullName}</p>
-              <p className="text-[10px] font-medium text-white/50">{FILTER_LABELS[event.type]}</p>
+              <p className="text-[16px] font-bold text-white">{event.user.fullName}</p>
+              <p className="text-[13px] font-medium text-white/50">{FILTER_LABELS[event.type]}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Закрыть">
@@ -479,7 +717,7 @@ function EventDetailModal({
           </Button>
         </div>
 
-        <div className="grid gap-1.5 rounded-[12px] bg-white/[0.04] p-3 text-xs font-medium">
+        <div className="grid gap-1.5 rounded-[12px] bg-white/[0.04] p-3 text-[14px] font-medium">
           <InfoRow label="Даты" value={`${format(parseISO(event.startDate), 'd MMM', { locale: ru })} - ${format(parseISO(event.endDate), 'd MMMM yyyy', { locale: ru })}`} />
           <InfoRow label="Статус" value={event.status === 'PENDING' ? 'Ожидает' : event.status === 'APPROVED' ? 'Одобрено' : event.status} />
           {event.comment && <InfoRow label="Комментарий" value={event.comment} />}
@@ -522,7 +760,7 @@ function CalendarSkeleton() {
       </div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: 35 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 rounded-[10px]" />
+          <Skeleton key={i} className="h-20 rounded-[12px]" />
         ))}
       </div>
     </>
