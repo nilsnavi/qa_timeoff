@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, RequestStatus, Role, User } from '@prisma/client';
+import { EventBusService } from '../events/event-bus.service';
 import { NotificationType } from '../notifications/notification-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVacationRequestDto } from './dto/create-vacation-request.dto';
@@ -26,7 +27,10 @@ const vacationInclude = {
 
 @Injectable()
 export class VacationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventBus: EventBusService,
+  ) {}
 
   async create(currentUser: User, dto: CreateVacationRequestDto) {
     const startDate = this.parseDate(dto.startDate);
@@ -93,8 +97,8 @@ export class VacationService {
   async approve(currentUser: User, id: string) {
     await this.getPendingRequestForReview(currentUser, id);
 
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.vacationRequest.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      return await tx.vacationRequest.update({
         where: { id },
         data: {
           status: RequestStatus.APPROVED,
@@ -103,25 +107,33 @@ export class VacationService {
         },
         include: vacationInclude,
       });
-
-      await tx.notification.create({
-        data: {
-          userId: updated.userId,
-          title: 'Отпуск согласован',
-          message: `Отпуск с ${this.formatDate(updated.startDate)} по ${this.formatDate(updated.endDate)} согласован`,
-          type: NotificationType.REQUEST_APPROVED,
-        },
-      });
-
-      return updated;
     });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: updated.userId,
+        title: 'Отпуск согласован',
+        message: `Отпуск с ${this.formatDate(updated.startDate)} по ${this.formatDate(updated.endDate)} согласован`,
+        type: NotificationType.REQUEST_APPROVED,
+      },
+    });
+
+    this.eventBus.emit('leave-request.approved', {
+      requestId: id,
+      userId: updated.userId,
+      teamId: updated.user?.teamId ?? null,
+      type: 'VACATION_APPROVED',
+      message: 'Ваш отпуск одобрен',
+    });
+
+    return updated;
   }
 
   async reject(currentUser: User, id: string, approverComment?: string) {
     await this.getPendingRequestForReview(currentUser, id);
 
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.vacationRequest.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      return await tx.vacationRequest.update({
         where: { id },
         data: {
           status: RequestStatus.REJECTED,
@@ -130,18 +142,27 @@ export class VacationService {
         },
         include: vacationInclude,
       });
-
-      await tx.notification.create({
-        data: {
-          userId: updated.userId,
-          title: 'Отпуск отклонён',
-          message: approverComment || 'Заявка на отпуск была отклонена',
-          type: NotificationType.REQUEST_REJECTED,
-        },
-      });
-
-      return updated;
     });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: updated.userId,
+        title: 'Отпуск отклонён',
+        message: approverComment || 'Заявка на отпуск была отклонена',
+        type: NotificationType.REQUEST_REJECTED,
+      },
+    });
+
+    this.eventBus.emit('leave-request.rejected', {
+      requestId: id,
+      userId: updated.userId,
+      teamId: null,
+      type: 'VACATION_REJECTED',
+      message: 'Ваш отпуск отклонён',
+      approverComment,
+    });
+
+    return updated;
   }
 
   async cancel(currentUser: User, id: string) {

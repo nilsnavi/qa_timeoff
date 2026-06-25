@@ -12,7 +12,7 @@ type FormErrors = Partial<Record<'startDate' | 'endDate' | 'vacationType', strin
 
 const vacationTypes: Array<{ value: VacationType; label: string }> = [
   { value: 'ANNUAL', label: 'Ежегодный оплачиваемый' },
-  { value: 'UNPAID', label: 'Без сохранения' },
+  { value: 'UNPAID', label: 'Без сохранения заработной платы' },
   { value: 'SICK_LEAVE', label: 'Больничный' },
   { value: 'OTHER', label: 'Другое' },
 ];

@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -161,6 +161,7 @@ export const api = {
   calendar: () => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>('/calendar'),
   calendarTeam: (teamId: string) => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>(`/calendar/team/${teamId}`),
   calendarUser: (userId: string) => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>(`/calendar/user/${userId}`),
+  holidays: (year?: number) => request<string[]>(`/calendar/holidays${year !== undefined ? `?year=${year}` : ''}`),
 
   // ── Calendar Events (dedicated enterprise calendar) ────────────────────
 
@@ -331,6 +332,14 @@ export const api = {
     if (params?.entityId) search.set('entityId', params.entityId);
     const qs = search.toString();
     return request<AuditLogResponse>(`/admin/audit-log${qs ? `?${qs}` : ''}`);
+  },
+  auditLogs: (params?: { entityType?: string; limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.entityType) qs.set('entityType', params.entityType);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const q = qs.toString();
+    return request<{ items: AuditLogEntry[]; total: number }>(`/admin/audit${q ? `?${q}` : ''}`);
   },
 
   adminStats: () => request<{ totalUsers: number; activeUsers: number; blockedUsers: number; teamsCount: number; newUsersThisMonth: number; byRole: { role: string; count: number }[] }>('/admin/stats'),

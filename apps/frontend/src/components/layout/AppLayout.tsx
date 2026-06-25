@@ -23,6 +23,7 @@ import { clsx } from 'clsx';
 import { Toast } from '../ui';
 import { api } from '../../shared/api';
 import { useAuth } from '../../shared/auth/AuthContext';
+import { useSseNotifications } from '../../shared/hooks/useSseNotifications';
 
 type NavSection = {
   label: string;
@@ -92,7 +93,7 @@ const breadcrumbs: Record<string, string> = {
   '/profile': 'Профиль',
   '/timeoff/new': 'Новый отгул',
   '/vacation/new': 'Новый отпуск',
-  '/leave-requests': 'Заявки',
+
 };
 
 function getBreadcrumb(path: string) {
@@ -137,6 +138,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, [isAuthLoading, isAuthenticated, navigate]);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  useSseNotifications(localStorage.getItem('qa-timeoff-token'));
 
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],

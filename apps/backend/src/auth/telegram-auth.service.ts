@@ -21,14 +21,14 @@ export class TelegramAuthService {
 
   validateInitData(initData: string): InitDataValidationResult {
     const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
-    if (!botToken) {
-      this.logger.warn('[TelegramAuth] TELEGRAM_BOT_TOKEN is not configured');
-      return { valid: false, reason: 'TELEGRAM_BOT_TOKEN is not configured' };
-    }
-
     if (!initData) {
       this.logger.warn('[TelegramAuth] initData is empty');
       return { valid: false, reason: 'initData is empty' };
+    }
+
+    if (!botToken) {
+      this.logger.warn('[TelegramAuth] Telegram auth is disabled (no BOT_TOKEN)');
+      return { valid: false, reason: 'Telegram auth is disabled (no BOT_TOKEN)' };
     }
 
     // Log safe diagnostic info (no full initData, no secrets)

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -18,26 +18,31 @@ export class LeaveRequestsController {
   constructor(private readonly leaveRequestsService: LeaveRequestsService) {}
 
   @Get()
+  @ApiOperation({ deprecated: true })
   findAll(@CurrentUser() currentUser: User, @Query() query: QueryLeaveRequestsDto) {
     return this.leaveRequestsService.findAll(currentUser, query);
   }
 
   @Get('summary')
+  @ApiOperation({ deprecated: true })
   getTeamSummary(@CurrentUser() currentUser: User) {
     return this.leaveRequestsService.getTeamSummary(currentUser);
   }
 
   @Get(':id')
+  @ApiOperation({ deprecated: true })
   findOne(@CurrentUser() currentUser: User, @Param('id') id: string) {
     return this.leaveRequestsService.findOne(currentUser, id);
   }
 
   @Post()
+  @ApiOperation({ deprecated: true })
   create(@CurrentUser() currentUser: User, @Body() dto: CreateLeaveRequestDto) {
     return this.leaveRequestsService.create(currentUser, dto);
   }
 
   @Post(':id/approve')
+  @ApiOperation({ deprecated: true })
   @UseGuards(RolesGuard)
   @Roles(Role.LEAD, Role.MANAGER, Role.ADMIN)
   approve(@CurrentUser() currentUser: User, @Param('id') id: string) {
@@ -45,6 +50,7 @@ export class LeaveRequestsController {
   }
 
   @Post(':id/reject')
+  @ApiOperation({ deprecated: true })
   @UseGuards(RolesGuard)
   @Roles(Role.LEAD, Role.MANAGER, Role.ADMIN)
   reject(@CurrentUser() currentUser: User, @Param('id') id: string, @Body() dto: RejectLeaveRequestDto) {

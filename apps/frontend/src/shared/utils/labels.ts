@@ -17,7 +17,7 @@ const roleLabels: Record<Role, string> = {
 
 const vacationTypeLabels: Record<VacationType, string> = {
   ANNUAL: 'Ежегодный оплачиваемый',
-  UNPAID: 'Без сохранения',
+  UNPAID: 'Без сохранения заработной платы',
   SICK_LEAVE: 'Больничный',
   OTHER: 'Другое',
 };

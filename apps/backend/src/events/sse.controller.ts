@@ -1,22 +1,33 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { Controller, Get, Query, Res } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
 import { SseGateway } from './sse.gateway';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('sse')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('sse')
 export class SseController {
-  constructor(private readonly sseGateway: SseGateway) {}
+  constructor(
+    private readonly sseGateway: SseGateway,
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get('leave-requests')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  subscribe(@CurrentUser() user: User, @Res() res: Response) {
+  async subscribe(@Query('token') token: string, @Res() res: Response) {
+    let user: { id: string; teamId: string | null } | null;
+    try {
+      const payload = this.jwt.verify(token) as { sub: string };
+      user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, teamId: true } });
+      if (!user) throw new Error();
+    } catch {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
     if (!this.sseGateway.canAcceptClient(user.id)) {
       res.status(429).json({ message: 'Too many SSE connections. Close existing tabs and try again.' });
       return;

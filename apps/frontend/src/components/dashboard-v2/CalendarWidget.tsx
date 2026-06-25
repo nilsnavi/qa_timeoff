@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { api } from '../../shared/api';
 import type { Dashboard } from '../../shared/types';
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
@@ -14,6 +16,14 @@ export function CalendarWidget({ dashboard }: { dashboard: Dashboard }) {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+
+  const holidaysQuery = useQuery({
+    queryKey: ['holidays', year],
+    queryFn: () => api.holidays(year),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const holidaysSet = useMemo(() => new Set(holidaysQuery.data ?? []), [holidaysQuery.data]);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDayOffset = getFirstDayOffset(year, month);
@@ -63,7 +73,8 @@ export function CalendarWidget({ dashboard }: { dashboard: Dashboard }) {
           const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const events = eventMap.get(ds) || [];
-          const dotColor = events.length > 0 ? COLOR_MAP[events[0].status] ?? 'bg-gray-500' : '';
+          const isHoliday = holidaysSet.has(ds);
+          const dotColor = events.length > 0 ? (COLOR_MAP[events[0].status] ?? 'bg-gray-500') : isHoliday ? 'bg-yellow-500' : '';
 
           return (
             <div key={day} className="relative flex flex-col items-center py-1"

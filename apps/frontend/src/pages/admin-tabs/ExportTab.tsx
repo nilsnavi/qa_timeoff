@@ -1,39 +1,78 @@
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Card, Field } from '../../components/ui';
+import { downloadCsv } from '../../shared/utils/download';
+import { showAppToast } from '../../shared/utils';
 import { api } from '../../shared/api';
+import { useQuery } from '@tanstack/react-query';
 
 export function ExportTab() {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const [startDate, setStartDate] = useState(startOfMonth);
-  const [endDate, setEndDate] = useState(now.toISOString().slice(0, 10));
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [exportTeam, setExportTeam] = useState('');
   const [kpiMonth, setKpiMonth] = useState(now.getMonth() + 1);
   const [kpiYear, setKpiYear] = useState(now.getFullYear());
+  const [downloading, setDownloading] = useState<string | null>(null);
 
-  const openUrl = (url: string) => window.open(url, '_blank');
+  const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams });
+  const teams = teamsQuery.data ?? [];
+
+  const handleExport = async (type: string) => {
+    setDownloading(type);
+    try {
+      const params = new URLSearchParams();
+      if (exportFrom) params.set('startDate', exportFrom);
+      if (exportTo) params.set('endDate', exportTo);
+      if (exportTeam && exportTeam !== 'ALL') params.set('teamId', exportTeam);
+      const qs = params.toString() ? `?${params}` : '';
+
+      const map: Record<string, [string, string]> = {
+        overtime:     [`/admin/export/overtime.csv${qs}`,  'overtime.csv'],
+        payroll:      [`/admin/export/payroll.csv${qs}`,   'payroll.csv'],
+        kpi:          [`/admin/export/kpi.csv?month=${kpiMonth}&year=${kpiYear}`, 'kpi.csv'],
+        '1c-overtime': [`/admin/export/1c/overtime.csv${qs}`, '1c_overtime.csv'],
+        '1c-payroll':  [`/admin/export/1c/payroll.csv${qs}`,  '1c_payroll.csv'],
+      };
+      const [path, filename] = map[type];
+      await downloadCsv(path, filename);
+      showAppToast('Файл скачан');
+    } catch {
+      showAppToast('Ошибка экспорта', undefined, 'error');
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
       <Card>
-        <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">Овертайм и зарплата</span>
-        <div className="flex items-end gap-3 mb-4">
-          <Field label="От" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <Field label="До" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+        <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">Фильтры</span>
+        <div className="flex items-end gap-3 flex-wrap">
+          <Field label="Период с" type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)} />
+          <Field label="Период по" type="date" value={exportTo} onChange={e => setExportTo(e.target.value)} />
+          <div className="field-shell">
+            <span className="field-label">Команда</span>
+            <select value={exportTeam} onChange={e => setExportTeam(e.target.value)} className="field-input">
+              <option value="ALL">Все команды</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={() => openUrl(api.exportOvertimeCsv({ startDate, endDate }))}>
-            <Download size={14} className="mr-1" />Овертайм CSV
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => openUrl(api.exportPayrollCsv({ startDate, endDate }))}>
-            <Download size={14} className="mr-1" />Payroll CSV
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => openUrl(api.export1cOvertimeCsv({ startDate, endDate }))}>
-            <Download size={14} className="mr-1" />1С Овертайм CSV
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => openUrl(api.export1cPayrollCsv({ startDate, endDate }))}>
-            <Download size={14} className="mr-1" />1С Payroll CSV
-          </Button>
+      </Card>
+
+      <Card>
+        <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">Стандартные отчёты</span>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {([
+            ['overtime', 'Переработки CSV'],
+            ['payroll', 'Зарплатная ведомость CSV'],
+          ] as const).map(([key, label]) => (
+            <Button key={key} size="sm" variant="secondary" onClick={() => handleExport(key)} disabled={downloading !== null}>
+              {downloading === key ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Download size={14} className="mr-1" />}
+              {label}
+            </Button>
+          ))}
         </div>
       </Card>
 
@@ -48,9 +87,25 @@ export function ExportTab() {
           </div>
           <Field label="Год" type="number" value={String(kpiYear)} onChange={e => setKpiYear(Number(e.target.value))} />
         </div>
-        <Button size="sm" variant="secondary" onClick={() => openUrl(api.exportKpiCsv({ month: kpiMonth, year: kpiYear }))}>
-          <Download size={14} className="mr-1" />KPI CSV
+        <Button size="sm" variant="secondary" onClick={() => handleExport('kpi')} disabled={downloading !== null}>
+          {downloading === 'kpi' ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Download size={14} className="mr-1" />}
+          KPI CSV
         </Button>
+      </Card>
+
+      <Card>
+        <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">1С: Предприятие</span>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {([
+            ['1c-overtime', '1С: Переработки'],
+            ['1c-payroll', '1С: Ведомость'],
+          ] as const).map(([key, label]) => (
+            <Button key={key} size="sm" variant="secondary" onClick={() => handleExport(key)} disabled={downloading !== null}>
+              {downloading === key ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Download size={14} className="mr-1" />}
+              {label}
+            </Button>
+          ))}
+        </div>
       </Card>
     </div>
   );

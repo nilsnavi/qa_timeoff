@@ -19,6 +19,7 @@ const ManagerRequestsPage = lazy(() =>
   import('../pages/ManagerRequestsPage').then((module) => ({ default: module.ManagerRequestsPage })),
 );
 const MyRequestsPage = lazy(() => import('../pages/MyRequestsPage').then((module) => ({ default: module.MyRequestsPage })));
+const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })));
 const NotificationsPage = lazy(() =>
   import('../pages/NotificationsPage').then((module) => ({ default: module.NotificationsPage })),
 );
@@ -50,12 +51,13 @@ export const router = createBrowserRouter([
       { path: 'vacation/new', element: withSuspense(<CreateVacationPage />) },
       { path: 'calendar', element: withSuspense(<CalendarPage />) },
       { path: 'calendar/old', element: withSuspense(<OriginalCalendarPage />) },
-      { path: 'leave-requests', element: withSuspense(<LeaveRequestPage />) },
+      { path: 'leave-requests', element: <Navigate to="/requests/my" replace /> },
       { path: 'requests/manager', element: withSuspense(<ManagerRequestsPage />) },
       { path: 'requests/my', element: withSuspense(<MyRequestsPage />) },
       { path: 'requests', element: withSuspense(<RequestsPage />) },
       { path: 'notifications', element: withSuspense(<NotificationsPage />) },
       { path: 'profile', element: withSuspense(<ProfilePage />) },
+      { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
       { path: 'admin', element: withSuspense(<AdminPage />) },
       { path: 'admin/users/new', element: withSuspense(<CreateUserPage />) },
       { path: '*', element: <Navigate to="/" replace /> },

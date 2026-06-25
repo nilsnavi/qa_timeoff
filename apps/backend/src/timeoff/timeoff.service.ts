@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { BalanceOperationType, Prisma, RequestStatus, Role, User } from '@prisma/client';
+import { EventBusService } from '../events/event-bus.service';
 import { NotificationType } from '../notifications/notification-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTimeOffRequestDto } from './dto/create-timeoff-request.dto';
@@ -26,7 +27,10 @@ const timeOffInclude = {
 
 @Injectable()
 export class TimeOffService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventBus: EventBusService,
+  ) {}
 
   async create(currentUser: User, dto: CreateTimeOffRequestDto) {
     return this.prisma.$transaction(async (tx) => {
@@ -88,7 +92,7 @@ export class TimeOffService {
   async approve(currentUser: User, id: string) {
     const request = await this.getPendingRequestForReview(currentUser, id);
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const balance = await tx.timeBalance.upsert({
         where: { userId: request.userId },
         create: { userId: request.userId },
@@ -117,7 +121,7 @@ export class TimeOffService {
         },
       });
 
-      const updated = await tx.timeOffRequest.update({
+      return await tx.timeOffRequest.update({
         where: { id },
         data: {
           status: RequestStatus.APPROVED,
@@ -126,25 +130,33 @@ export class TimeOffService {
         },
         include: timeOffInclude,
       });
-
-      await tx.notification.create({
-        data: {
-          userId: request.userId,
-          title: 'Отгул согласован',
-          message: `${request.hours} ч списаны с баланса`,
-          type: NotificationType.REQUEST_APPROVED,
-        },
-      });
-
-      return updated;
     });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: request.userId,
+        title: 'Отгул согласован',
+        message: `${request.hours} ч списаны с баланса`,
+        type: NotificationType.REQUEST_APPROVED,
+      },
+    });
+
+    this.eventBus.emit('leave-request.approved', {
+      requestId: id,
+      userId: updated.userId,
+      teamId: updated.user?.teamId ?? null,
+      type: 'TIMEOFF_APPROVED',
+      message: 'Ваш отгул одобрен',
+    });
+
+    return updated;
   }
 
   async reject(currentUser: User, id: string, approverComment?: string) {
     await this.getPendingRequestForReview(currentUser, id);
 
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.timeOffRequest.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      return await tx.timeOffRequest.update({
         where: { id },
         data: {
           status: RequestStatus.REJECTED,
@@ -153,18 +165,27 @@ export class TimeOffService {
         },
         include: timeOffInclude,
       });
-
-      await tx.notification.create({
-        data: {
-          userId: updated.userId,
-          title: 'Отгул отклонён',
-          message: approverComment || 'Заявка на отгул была отклонена',
-          type: NotificationType.REQUEST_REJECTED,
-        },
-      });
-
-      return updated;
     });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: updated.userId,
+        title: 'Отгул отклонён',
+        message: approverComment || 'Заявка на отгул была отклонена',
+        type: NotificationType.REQUEST_REJECTED,
+      },
+    });
+
+    this.eventBus.emit('leave-request.rejected', {
+      requestId: id,
+      userId: updated.userId,
+      teamId: null,
+      type: 'TIMEOFF_REJECTED',
+      message: 'Ваш отгул отклонён',
+      approverComment,
+    });
+
+    return updated;
   }
 
   async cancel(currentUser: User, id: string) {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ActiveUserGuard } from './active-user.guard';
 import { AuthController } from './auth.controller';
@@ -22,6 +22,6 @@ import { TelegramAuthService } from './telegram-auth.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TelegramAuthService, ActiveUserGuard],
-  exports: [AuthService, JwtStrategy, PassportModule, ActiveUserGuard],
+  exports: [AuthService, JwtService, JwtStrategy, PassportModule, ActiveUserGuard],
 })
 export class AuthModule {}

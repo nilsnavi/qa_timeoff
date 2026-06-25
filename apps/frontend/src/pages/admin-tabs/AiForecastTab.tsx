@@ -1,8 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Card, EmptyState, ErrorState, Field, Loader } from '../../components/ui';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Badge, Button, Card, EmptyState, ErrorState, Field, Loader } from '../../components/ui';
 import { api } from '../../shared/api';
 import { clsx } from 'clsx';
+
+const RISK_LABELS: Record<string, string> = { LOW: 'Низкий', MEDIUM: 'Средний', HIGH: 'Высокий' };
+const RISK_TONES: Record<string, 'success' | 'warning' | 'danger'> = { LOW: 'success', MEDIUM: 'warning', HIGH: 'danger' };
 
 export function AiForecastTab() {
   const [teamId, setTeamId] = useState('');
@@ -18,17 +22,28 @@ export function AiForecastTab() {
 
   const forecast = forecastQuery.data;
 
+  const sortedUsers = useMemo(
+    () => (forecast?.overloadedUsers ?? []).filter(u => u.predictedOvertime > 0).sort((a, b) => b.predictedOvertime - a.predictedOvertime),
+    [forecast?.overloadedUsers],
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="field-shell">
-          <span className="field-label">Команда</span>
-          <select value={teamId} onChange={e => setTeamId(e.target.value)} className="field-input">
-            <option value="">Все команды</option>
-            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="field-shell">
+            <span className="field-label">Команда</span>
+            <select value={teamId} onChange={e => setTeamId(e.target.value)} className="field-input">
+              <option value="">Все команды</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <Field label="Месяцев анализа" type="number" value={String(monthsLookback)} onChange={e => setMonthsLookback(Number(e.target.value))} />
         </div>
-        <Field label="Месяцев анализа" type="number" value={String(monthsLookback)} onChange={e => setMonthsLookback(Number(e.target.value))} />
+        <Button size="sm" variant="secondary" onClick={() => forecastQuery.refetch()} disabled={forecastQuery.isFetching}>
+          <RefreshCw size={14} className={clsx('mr-1', forecastQuery.isFetching && 'animate-spin')} />
+          Обновить
+        </Button>
       </div>
 
       {forecastQuery.isLoading && <Loader />}
@@ -39,13 +54,11 @@ export function AiForecastTab() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Card>
               <span className="block text-[12px] font-bold text-white/30 uppercase">Уровень риска</span>
-              <span className={clsx('text-lg font-bold', forecast.riskLevel === 'HIGH' ? 'text-rose-400' : forecast.riskLevel === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400')}>
-                {forecast.riskLevel === 'HIGH' ? 'Высокий' : forecast.riskLevel === 'MEDIUM' ? 'Средний' : 'Низкий'}
-              </span>
+              <Badge tone={RISK_TONES[forecast.riskLevel]}>{RISK_LABELS[forecast.riskLevel]}</Badge>
             </Card>
             <Card>
               <span className="block text-[12px] font-bold text-white/30 uppercase">Прогноз овертайма</span>
-              <span className="text-lg font-bold text-white">{forecast.predictedOvertimeHours} ч</span>
+              <span className="text-2xl font-bold text-white">{forecast.predictedOvertimeHours} ч</span>
             </Card>
             <Card>
               <span className="block text-[12px] font-bold text-white/30 uppercase">Сгенерирован</span>
@@ -53,11 +66,13 @@ export function AiForecastTab() {
             </Card>
           </div>
 
-          {forecast.overloadedUsers.length > 0 && (
+          {sortedUsers.length > 0 && (
             <div>
-              <span className="text-[13px] font-bold text-white/40 uppercase mb-2 block">Перегруженные сотрудники</span>
+              <span className="text-[13px] font-bold text-white/40 uppercase mb-2 block">
+                Сотрудники с риском ({sortedUsers.length})
+              </span>
               <div className="space-y-2">
-                {forecast.overloadedUsers.map((u: any) => (
+                {sortedUsers.map(u => (
                   <Card key={u.userId}>
                     <div className="flex items-center justify-between">
                       <div>
@@ -65,10 +80,8 @@ export function AiForecastTab() {
                         <span className="text-[13px] text-white/30 ml-2">{u.teamName}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={clsx('text-[13px] font-bold', u.riskLevel === 'HIGH' ? 'text-rose-400' : u.riskLevel === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400')}>
-                          {u.riskLevel}
-                        </span>
-                        <span className="text-[13px] text-white/50">{u.currentOvertime} → {u.predictedOvertime} ч</span>
+                        <Badge tone={RISK_TONES[u.riskLevel]}>{RISK_LABELS[u.riskLevel]}</Badge>
+                        <span className="text-[13px] text-white/50">{u.currentOvertime} → <strong className="text-white/80">{u.predictedOvertime}</strong> ч</span>
                       </div>
                     </div>
                   </Card>
@@ -78,23 +91,25 @@ export function AiForecastTab() {
           )}
 
           {forecast.recommendations.length > 0 && (
-            <Card>
-              <span className="block text-[13px] font-bold text-white/40 uppercase mb-2">Рекомендации</span>
-              <ul className="space-y-1">
-                {forecast.recommendations.map((rec: string, i: number) => (
-                  <li key={i} className="text-[14px] text-white/70 flex gap-2">
-                    <span className="text-[#4C7DFF] shrink-0">•</span>
-                    {rec}
-                  </li>
+            <div>
+              <span className="text-[13px] font-bold text-white/40 uppercase mb-2 block">Рекомендации</span>
+              <div className="space-y-2">
+                {forecast.recommendations.map((rec, i) => (
+                  <Card key={i}>
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+                      <span className="text-[14px] text-white/70">{rec}</span>
+                    </div>
+                  </Card>
                 ))}
-              </ul>
-            </Card>
+              </div>
+            </div>
           )}
         </>
       )}
 
       {!forecastQuery.isLoading && !forecastQuery.isError && !forecast && (
-        <EmptyState title="Нет данных прогноза" description="Выберите параметры для загрузки" />
+        <EmptyState title="Нет данных прогноза" description="Выберите параметры и нажмите «Обновить»" />
       )}
     </div>
   );
