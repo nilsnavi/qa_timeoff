@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, EmptyState, ErrorState, Loader } from '../../components/ui';
+import { Button, Card, CustomSelect, EmptyState, ErrorState, Loader } from '../../components/ui';
+import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
 import type { KpiPeriod } from '../../shared/types';
 
@@ -13,6 +14,16 @@ export function KpiTab() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+
+  const monthOptions: SelectOption[] = monthNames.slice(1).map((name, i) => ({
+    value: String(i + 1),
+    label: name,
+  }));
+
+  const yearOptions: SelectOption[] = [now.getFullYear(), now.getFullYear() - 1].map(y => ({
+    value: String(y),
+    label: String(y),
+  }));
 
   const kpiQuery = useQuery({
     queryKey: ['admin', 'kpi', month, year],
@@ -31,12 +42,20 @@ export function KpiTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <select value={month} onChange={e => setMonth(Number(e.target.value))} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[13px] text-white/60 outline-none">
-            {monthNames.slice(1).map((name, i) => <option key={i + 1} value={i + 1}>{name}</option>)}
-          </select>
-          <select value={year} onChange={e => setYear(Number(e.target.value))} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[13px] text-white/60 outline-none">
-            {[now.getFullYear(), now.getFullYear() - 1].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
+          <CustomSelect
+            value={String(month)}
+            onChange={v => setMonth(Number(v))}
+            options={monthOptions}
+            placeholder="Месяц"
+            small
+          />
+          <CustomSelect
+            value={String(year)}
+            onChange={v => setYear(Number(v))}
+            options={yearOptions}
+            placeholder="Год"
+            small
+          />
         </div>
         <Button size="sm" variant="secondary" onClick={() => recalcMutation.mutate()} disabled={recalcMutation.isPending}>
           <RefreshCw size={14} className={clsx('mr-1', recalcMutation.isPending && 'animate-spin')} />

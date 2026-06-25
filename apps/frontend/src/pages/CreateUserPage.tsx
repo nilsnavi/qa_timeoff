@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, ChevronRight, Copy, Info, Mail, Shield, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, ErrorState, Field } from '../components/ui';
+import { Button, CustomSelect, ErrorState, Field } from '../components/ui';
+import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import type { Role, Team } from '../shared/types';
@@ -48,6 +49,19 @@ export function CreateUserPage() {
   const users = usersQuery.data ?? [];
   const selectedTeam = teams.find(t => t.id === teamId);
   const teamMembers = users.filter(u => u.teamId === teamId);
+
+  const teamOptions: SelectOption[] = [
+    { value: '', label: '—' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
+
+  const managerOptions: SelectOption[] = [
+    { value: '', label: '—' },
+    ...teamMembers.filter(u => u.role === 'MANAGER' || u.role === 'LEAD' || u.role === 'ADMIN').map(u => ({
+      value: u.id,
+      label: `${u.fullName} (${getRoleLabel(u.role)})`,
+    })),
+  ];
 
   const createMutation = useMutation({
     mutationFn: () => api.createUser({
@@ -159,19 +173,21 @@ export function CreateUserPage() {
                   <Field label="Должность" value={position} onChange={e => setPosition(e.target.value)} placeholder="QA Engineer" />
                   <div className="field-shell">
                     <span className="field-label">Команда</span>
-                    <select value={teamId} onChange={e => setTeamId(e.target.value)} className="field-input">
-                      <option value="">—</option>
-                      {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                    <CustomSelect
+                      value={teamId}
+                      onChange={setTeamId}
+                      options={teamOptions}
+                      placeholder="—"
+                    />
                   </div>
                   <div className="field-shell">
                     <span className="field-label">Руководитель</span>
-                    <select value={managerId} onChange={e => setManagerId(e.target.value)} className="field-input">
-                      <option value="">—</option>
-                      {teamMembers.filter(u => u.role === 'MANAGER' || u.role === 'LEAD' || u.role === 'ADMIN').map(u => (
-                        <option key={u.id} value={u.id}>{u.fullName} ({getRoleLabel(u.role)})</option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      value={managerId}
+                      onChange={setManagerId}
+                      options={managerOptions}
+                      placeholder="—"
+                    />
                   </div>
                 </div>
               </Section>

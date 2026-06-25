@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart3, Clock, Database, Copy, Download, Edit3, FileSpreadsheet, KeyRound, Plus, Search, ShieldAlert, Trash2, UserPlus, Wallet, Minus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, EmptyState, ErrorState, Field, Loader, Modal } from '../components/ui';
+import { Badge, Button, CustomSelect, EmptyState, ErrorState, Field, Loader, Modal } from '../components/ui';
+import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import type { PositionHistory, Role, Team, User } from '../shared/types';
@@ -17,6 +18,18 @@ import { AiForecastTab } from './admin-tabs/AiForecastTab';
 type AdminTab = 'users' | 'teams' | 'audit' | 'kpi' | 'overtime' | 'analytics' | 'export' | 'ai';
 
 const roles: Role[] = ['EMPLOYEE', 'LEAD', 'MANAGER', 'ADMIN'];
+
+const allRoleOptions: SelectOption[] = [
+  { value: 'ALL', label: 'Все роли' },
+  ...roles.map(r => ({ value: r, label: getRoleLabel(r) })),
+];
+
+const roleOptions: SelectOption[] = roles.map(r => ({ value: r, label: getRoleLabel(r) }));
+
+const auditEntityOptions: SelectOption[] = [
+  { value: '', label: 'Все типы' },
+  ...[...new Set(['USER', 'TIMEOFF', 'VACATION', 'BALANCE', 'TEAM', 'OVERTIME'])].map(t => ({ value: t, label: t })),
+];
 
 export function AdminPage() {
   const { user } = useAuth();
@@ -83,6 +96,17 @@ export function AdminPage() {
   const stats = statsQuery.data;
   const users = usersQuery.data ?? [];
   const teams = teamsQuery.data ?? [];
+
+  const teamOptions: SelectOption[] = [
+    { value: 'ALL', label: 'Все команды' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
+
+  const teamOptionsWithEmpty: SelectOption[] = [
+    { value: '', label: '—' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
+
   const auditData = auditQuery.data;
   const auditItems = auditData?.items ?? [];
   const auditTotal = auditData?.total ?? 0;
@@ -285,14 +309,22 @@ export function AdminPage() {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Поиск..." className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] py-2 pl-9 pr-3 text-[15px] text-white placeholder:text-white/20 outline-none" />
               </div>
-              <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1); }} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[13px] text-white/60 outline-none">
-                <option value="ALL">Все роли</option>
-                {roles.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
-              </select>
-              <select value={teamFilter} onChange={e => { setTeamFilter(e.target.value); setPage(1); }} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[13px] text-white/60 outline-none">
-                <option value="ALL">Все команды</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <CustomSelect
+                value={roleFilter}
+                onChange={v => { setRoleFilter(v); setPage(1); }}
+                options={allRoleOptions}
+                placeholder="Все роли"
+                small
+                className="w-36"
+              />
+              <CustomSelect
+                value={teamFilter}
+                onChange={v => { setTeamFilter(v); setPage(1); }}
+                options={teamOptions}
+                placeholder="Все команды"
+                small
+                className="w-40"
+              />
             </div>
           )}
 
@@ -329,13 +361,15 @@ export function AdminPage() {
           {activeTab === 'audit' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="field-shell">
-                  <span className="field-label">Тип сущности</span>
-                  <select value={auditEntityType} onChange={e => { setAuditEntityType(e.target.value); setAuditOffset(0); }} className="field-input">
-                    <option value="">Все типы</option>
-                    {['USER', 'TIMEOFF', 'VACATION', 'BALANCE', 'TEAM', 'OVERTIME'].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
+              <div className="field-shell">
+                <span className="field-label">Тип сущности</span>
+                <CustomSelect
+                  value={auditEntityType}
+                  onChange={v => { setAuditEntityType(v); setAuditOffset(0); }}
+                  options={auditEntityOptions}
+                  placeholder="Все типы"
+                />
+              </div>
                 <span className="text-[13px] text-white/30">{auditTotal} записей</span>
               </div>
 
@@ -408,16 +442,20 @@ export function AdminPage() {
             <Field label="Email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="user@company.ru" />
             <div className="field-shell">
               <span className="field-label">Роль</span>
-              <select value={newRole} onChange={e => setNewRole(e.target.value as Role)} className="field-input">
-                {roles.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
-              </select>
+              <CustomSelect
+                value={newRole}
+                onChange={v => setNewRole(v as Role)}
+                options={roleOptions}
+              />
             </div>
             <div className="field-shell">
               <span className="field-label">Команда</span>
-              <select value={newTeamId} onChange={e => setNewTeamId(e.target.value)} className="field-input">
-                <option value="">—</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <CustomSelect
+                value={newTeamId}
+                onChange={setNewTeamId}
+                options={teamOptionsWithEmpty}
+                placeholder="—"
+              />
             </div>
           </div>
         </Modal>
@@ -441,16 +479,20 @@ export function AdminPage() {
             <Field label="Email" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
             <div className="field-shell">
               <span className="field-label">Роль</span>
-              <select value={editRole} onChange={e => setEditRole(e.target.value as Role)} className="field-input">
-                {roles.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
-              </select>
+              <CustomSelect
+                value={editRole}
+                onChange={v => setEditRole(v as Role)}
+                options={roleOptions}
+              />
             </div>
             <div className="field-shell">
               <span className="field-label">Команда</span>
-              <select value={editTeamId} onChange={e => setEditTeamId(e.target.value)} className="field-input">
-                <option value="">—</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <CustomSelect
+                value={editTeamId}
+                onChange={setEditTeamId}
+                options={teamOptionsWithEmpty}
+                placeholder="—"
+              />
             </div>
             <div className="border-t border-white/[0.06] pt-4 space-y-4">
               <span className="text-[12px] font-bold text-white/40 uppercase">Должность и ставка</span>

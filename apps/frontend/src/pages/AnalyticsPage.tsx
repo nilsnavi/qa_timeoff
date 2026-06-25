@@ -5,7 +5,8 @@ import {
   BarChart, Bar as ReBar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid,
 } from 'recharts';
-import { Button, Card, EmptyState, ErrorState, Field, Loader } from '../components/ui';
+import { Button, Card, CustomSelect, EmptyState, ErrorState, Field, Loader } from '../components/ui';
+import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { WorkloadReport } from '../shared/types';
@@ -23,6 +24,11 @@ export function AnalyticsPage() {
 
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams });
   const teams = teamsQuery.data ?? [];
+
+  const teamOptions: SelectOption[] = [
+    { value: '', label: 'Все команды' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
 
   const reportQuery = useQuery({
     queryKey: ['admin', 'analytics', 'workload', applied.startDate, applied.endDate, applied.teamId],
@@ -60,10 +66,12 @@ export function AnalyticsPage() {
           <Field label="До" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           <div className="field-shell">
             <span className="field-label">Команда</span>
-            <select value={teamId} onChange={e => setTeamId(e.target.value)} className="field-input">
-              <option value="">Все команды</option>
-              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <CustomSelect
+              value={teamId}
+              onChange={setTeamId}
+              options={teamOptions}
+              placeholder="Все команды"
+            />
           </div>
           <Button onClick={() => setApplied({ startDate, endDate, teamId })}>
             Применить

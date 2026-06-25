@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorState, Loader } from '../components/ui';
+import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Loader } from '../components/ui';
+import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { User } from '../shared/types';
@@ -49,6 +50,11 @@ export function TeamPage() {
   const allUsers = usersQuery.data ?? [];
   const teams = teamsQuery.data ?? [];
 
+  const teamOptions: SelectOption[] = [
+    { value: '', label: 'Все команды' },
+    ...teams.map((t: any) => ({ value: t.id, label: t.name })),
+  ];
+
   const visibleUsers = useMemo(() => {
     let result = allUsers;
     if (dashboard.user.role === 'LEAD' && dashboard.user.teamId) {
@@ -71,10 +77,12 @@ export function TeamPage() {
         {(dashboard.user.role === 'ADMIN' || dashboard.user.role === 'MANAGER') && (
           <div className="field-shell">
             <span className="field-label">Команда</span>
-            <select value={teamFilter} onChange={e => setTeamFilter(e.target.value)} className="field-input">
-              <option value="">Все команды</option>
-              {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <CustomSelect
+              value={teamFilter}
+              onChange={setTeamFilter}
+              options={teamOptions}
+              placeholder="Все команды"
+            />
           </div>
         )}
       </div>
