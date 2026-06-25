@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Clock, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Loader, Modal } from '../../components/ui';
+import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Field, Loader, Modal } from '../../components/ui';
+import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
 import type { OvertimeCalendarEntry } from '../../shared/types';
 import { clsx } from 'clsx';
@@ -33,6 +34,16 @@ export function OvertimeTab() {
 
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: api.users });
   const users = usersQuery.data ?? [];
+
+  const userOptions: SelectOption[] = [
+    { value: '', label: 'Все' },
+    ...users.map(u => ({ value: u.id, label: u.fullName })),
+  ];
+
+  const userOptionsWithDash: SelectOption[] = [
+    { value: '', label: '—' },
+    ...users.map(u => ({ value: u.id, label: u.fullName })),
+  ];
 
   const overtimeQuery = useQuery({
     queryKey: ['admin', 'overtime', 'all'],
@@ -132,10 +143,13 @@ export function OvertimeTab() {
           <div className="flex items-center gap-2">
             <div className="field-shell">
               <span className="field-label">Сотрудник</span>
-              <select value={calUserId} onChange={e => setCalUserId(e.target.value)} className="field-input text-[12px]">
-                <option value="">Все</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-              </select>
+              <CustomSelect
+                value={calUserId}
+                onChange={setCalUserId}
+                options={userOptions}
+                placeholder="Все"
+                small
+              />
             </div>
             <Button size="sm" variant="ghost" onClick={() => { if (calMonth === 1) { setCalMonth(12); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); }} className="!min-h-0 h-7 w-7 !p-0">
               <ChevronLeft size={14} />
@@ -199,10 +213,12 @@ export function OvertimeTab() {
         <div className="flex items-center gap-3 mb-3">
           <div className="field-shell">
             <span className="field-label">Сотрудник</span>
-            <select value={detailsUserId} onChange={e => setDetailsUserId(e.target.value)} className="field-input">
-              <option value="">—</option>
-              {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select>
+            <CustomSelect
+              value={detailsUserId}
+              onChange={setDetailsUserId}
+              options={userOptionsWithDash}
+              placeholder="—"
+            />
           </div>
         </div>
 
@@ -241,10 +257,12 @@ export function OvertimeTab() {
           <div className="space-y-4">
             <div className="field-shell">
               <span className="field-label">Сотрудник</span>
-              <select value={overtimeUserId} onChange={e => setOvertimeUserId(e.target.value)} className="field-input">
-                <option value="">—</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-              </select>
+              <CustomSelect
+                value={overtimeUserId}
+                onChange={setOvertimeUserId}
+                options={userOptionsWithDash}
+                placeholder="—"
+              />
             </div>
             <Field label="Часы" type="number" value={String(overtimeHours)} onChange={e => setOvertimeHours(Number(e.target.value))} />
             <Field label="Дата" type="date" value={overtimeDate} onChange={e => setOvertimeDate(e.target.value)} />

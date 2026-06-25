@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Card, EmptyState, ErrorState, Field, Loader } from '../../components/ui';
+import { Card, CustomSelect, EmptyState, ErrorState, Field, Loader } from '../../components/ui';
+import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
 import type { WorkloadReport } from '../../shared/types';
 
@@ -13,6 +14,11 @@ export function AnalyticsTab() {
 
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams });
   const teams = teamsQuery.data ?? [];
+
+  const teamOptions: SelectOption[] = [
+    { value: '', label: 'Все команды' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
 
   const reportQuery = useQuery({
     queryKey: ['admin', 'analytics', 'workload', startDate, endDate, teamId],
@@ -29,10 +35,12 @@ export function AnalyticsTab() {
         <Field label="До" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
         <div className="field-shell">
           <span className="field-label">Команда</span>
-          <select value={teamId} onChange={e => setTeamId(e.target.value)} className="field-input">
-            <option value="">Все команды</option>
-            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          <CustomSelect
+            value={teamId}
+            onChange={setTeamId}
+            options={teamOptions}
+            placeholder="Все команды"
+          />
         </div>
       </div>
 

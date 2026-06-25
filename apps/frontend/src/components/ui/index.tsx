@@ -559,3 +559,5 @@ export function Loader({ label = 'Загрузка' }: { label?: string }) {
 }
 
 export { SearchModal } from './SearchModal';
+export { CustomSelect } from './CustomSelect';
+export type { SelectOption } from './CustomSelect';

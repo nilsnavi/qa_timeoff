@@ -1,6 +1,7 @@
 import { Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, Field } from '../../components/ui';
+import { Button, Card, CustomSelect, Field } from '../../components/ui';
+import type { SelectOption } from '../../components/ui/CustomSelect';
 import { downloadCsv } from '../../shared/utils/download';
 import { showAppToast } from '../../shared/utils';
 import { api } from '../../shared/api';
@@ -17,6 +18,26 @@ export function ExportTab() {
 
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams });
   const teams = teamsQuery.data ?? [];
+
+  const teamOptions: SelectOption[] = [
+    { value: 'ALL', label: 'Все команды' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
+
+  const monthOptions: SelectOption[] = [
+    { value: '1', label: 'Январь' },
+    { value: '2', label: 'Февраль' },
+    { value: '3', label: 'Март' },
+    { value: '4', label: 'Апрель' },
+    { value: '5', label: 'Май' },
+    { value: '6', label: 'Июнь' },
+    { value: '7', label: 'Июль' },
+    { value: '8', label: 'Август' },
+    { value: '9', label: 'Сентябрь' },
+    { value: '10', label: 'Октябрь' },
+    { value: '11', label: 'Ноябрь' },
+    { value: '12', label: 'Декабрь' },
+  ];
 
   const handleExport = async (type: string) => {
     setDownloading(type);
@@ -53,10 +74,12 @@ export function ExportTab() {
           <Field label="Период по" type="date" value={exportTo} onChange={e => setExportTo(e.target.value)} />
           <div className="field-shell">
             <span className="field-label">Команда</span>
-            <select value={exportTeam} onChange={e => setExportTeam(e.target.value)} className="field-input">
-              <option value="ALL">Все команды</option>
-              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <CustomSelect
+              value={exportTeam}
+              onChange={setExportTeam}
+              options={teamOptions}
+              placeholder="Все команды"
+            />
           </div>
         </div>
       </Card>
@@ -81,9 +104,12 @@ export function ExportTab() {
         <div className="flex items-end gap-3 mb-4">
           <div className="field-shell">
             <span className="field-label">Месяц</span>
-            <select value={kpiMonth} onChange={e => setKpiMonth(Number(e.target.value))} className="field-input">
-              {['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'].map((name, i) => <option key={i + 1} value={i + 1}>{name}</option>)}
-            </select>
+            <CustomSelect
+              value={String(kpiMonth)}
+              onChange={v => setKpiMonth(Number(v))}
+              options={monthOptions}
+              placeholder="Месяц"
+            />
           </div>
           <Field label="Год" type="number" value={String(kpiYear)} onChange={e => setKpiYear(Number(e.target.value))} />
         </div>

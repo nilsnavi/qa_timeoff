@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Loader } from '../../components/ui';
+import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Field, Loader } from '../../components/ui';
+import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
 import { clsx } from 'clsx';
 
@@ -14,6 +15,11 @@ export function AiForecastTab() {
 
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams });
   const teams = teamsQuery.data ?? [];
+
+  const teamOptions: SelectOption[] = [
+    { value: '', label: 'Все команды' },
+    ...teams.map(t => ({ value: t.id, label: t.name })),
+  ];
 
   const forecastQuery = useQuery({
     queryKey: ['admin', 'ai', 'forecast', teamId, monthsLookback],
@@ -33,10 +39,12 @@ export function AiForecastTab() {
         <div className="flex items-center gap-3">
           <div className="field-shell">
             <span className="field-label">Команда</span>
-            <select value={teamId} onChange={e => setTeamId(e.target.value)} className="field-input">
-              <option value="">Все команды</option>
-              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <CustomSelect
+              value={teamId}
+              onChange={setTeamId}
+              options={teamOptions}
+              placeholder="Все команды"
+            />
           </div>
           <Field label="Месяцев анализа" type="number" value={String(monthsLookback)} onChange={e => setMonthsLookback(Number(e.target.value))} />
         </div>
