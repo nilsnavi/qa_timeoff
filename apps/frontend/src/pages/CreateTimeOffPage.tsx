@@ -6,7 +6,7 @@ import { Button, Card, DatePicker, EmptyState, Input, Select, Textarea } from '.
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import { useDraftForm } from '../shared/hooks/useDraftForm';
-import { hapticNotification, showAppToast, useTelegramMainButton } from '../shared/utils';
+import { hapticNotification, showAppToast } from '../shared/utils';
 import { toDateInputValue } from '../shared/utils/date';
 
 type FormErrors = Partial<Record<'date' | 'hours' | 'reason' | 'comment', string>>;
@@ -106,14 +106,6 @@ export function CreateTimeOffPage() {
       singleMutation.mutate({ date, hours, reason, comment: comment || undefined });
     }
   }, [multiMode, selectedDates, hours, availableHours, batchMutation, date, reason, comment, singleMutation]);
-
-  useTelegramMainButton({
-    text: singleMutation.isPending || batchMutation.isPending ? 'Отправляем...' : 'Отправить на согласование',
-    visible: !isSuccess,
-    disabled: singleMutation.isPending || batchMutation.isPending,
-    loading: singleMutation.isPending || batchMutation.isPending,
-    onClick: submit,
-  });
 
   if (isSuccess) {
     return (

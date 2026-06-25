@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { App } from './App';
 import { FallbackPage } from '../pages/FallbackPage';
+import { PrivateRoute } from './PrivateRoute';
 
 const HomePage = lazy(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
 const AdminPage = lazy(() => import('../pages/AdminPage').then((module) => ({ default: module.AdminPage })));
@@ -40,13 +41,16 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <App />,
+    element: <PrivateRoute />,
     errorElement: <FallbackPage />,
     children: [
       {
-        index: true,
-        element: withSuspense(<HomePage />),
-      },
+        element: <App />,
+        children: [
+          {
+            index: true,
+            element: withSuspense(<HomePage />),
+          },
       { path: 'balance', element: withSuspense(<BalancePage />) },
       { path: 'timeoff/new', element: withSuspense(<CreateTimeOffPage />) },
       { path: 'vacation/new', element: withSuspense(<CreateVacationPage />) },
@@ -63,6 +67,8 @@ export const router = createBrowserRouter([
       { path: 'admin', element: withSuspense(<AdminPage />) },
       { path: 'admin/users/new', element: withSuspense(<CreateUserPage />) },
       { path: '*', element: <Navigate to="/" replace /> },
+        ],
+      },
     ],
   },
 ]);

@@ -1,30 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Clock, TrendingUp, Users } from 'lucide-react';
+import { Clock, TrendingUp, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import {
+  BarChart, Bar as ReBar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, CartesianGrid,
+} from 'recharts';
 import { Button, Card, EmptyState, ErrorState, Field, Loader } from '../components/ui';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { WorkloadReport } from '../shared/types';
 import { Navigate } from 'react-router-dom';
-
-const BAR_COLOR = '#4C7DFF';
-
-function Bar({ value, max, label, className }: { value: number; max: number; label: string; className?: string }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
-  return (
-    <div className={clsx('flex items-center gap-2', className)}>
-      <span className="w-28 shrink-0 text-right text-[13px] text-white/60 truncate" title={label}>{label}</span>
-      <div className="flex-1 h-5 rounded bg-white/[0.04] overflow-hidden">
-        <div className="h-full rounded transition-all duration-300" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: BAR_COLOR }} />
-      </div>
-      <span className="w-12 text-right text-[13px] font-semibold text-white/80">{value}</span>
-    </div>
-  );
-}
-
-function clsx(...classes: (string | false | undefined | null)[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 export function AnalyticsPage() {
   const { dashboard } = useDashboard();
@@ -47,22 +32,18 @@ export function AnalyticsPage() {
 
   const report: WorkloadReport | undefined = reportQuery.data;
 
-  const maxUserHours = useMemo(
-    () => Math.max(...(report?.workloadByUser ?? []).map(u => u.totalHours), 1),
-    [report?.workloadByUser],
-  );
-
-  const maxDayHours = useMemo(
-    () => Math.max(...(report?.workloadByDay ?? []).map(d => d.hours), 1),
-    [report?.workloadByDay],
-  );
-
   const peakDay = useMemo(() => {
     if (!report?.workloadByDay?.length) return null;
     return [...report.workloadByDay].sort((a, b) => b.hours - a.hours)[0];
   }, [report?.workloadByDay]);
 
   if (!canView) return <Navigate to="/" replace />;
+
+  const tooltipTheme = {
+    contentStyle: { background: '#111A2E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 },
+    labelStyle: { color: 'rgba(255,255,255,0.6)', fontSize: 11 },
+    itemStyle: { color: '#4C7DFF', fontSize: 12 },
+  } as const;
 
   return (
     <div className="space-y-6">
@@ -73,7 +54,6 @@ export function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Filters */}
       <Card>
         <div className="flex items-end gap-3 flex-wrap">
           <Field label="От" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -96,7 +76,6 @@ export function AnalyticsPage() {
 
       {report && (
         <>
-          {/* Summary cards */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Card>
               <div className="flex items-center gap-2 mb-1">
@@ -127,39 +106,70 @@ export function AnalyticsPage() {
             )}
           </div>
 
-          {/* Workload by day bar chart */}
           {report.workloadByDay && report.workloadByDay.length > 0 && (
             <Card>
               <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">Нагрузка по дням</span>
-              <div className="space-y-1 max-h-64 overflow-y-auto">
-                {report.workloadByDay.map(d => (
-                  <Bar key={d.date} value={d.hours} max={maxDayHours} label={d.date} />
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={report.workloadByDay} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)' }}
+                    tickFormatter={(v: string) => v.slice(5)}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)' }} />
+                  <Tooltip {...tooltipTheme} />
+                  <ReBar dataKey="hours" fill="#4C7DFF" radius={[3, 3, 0, 0]} maxBarSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
             </Card>
           )}
 
-          {/* Workload by user horizontal bar */}
           {report.workloadByUser && report.workloadByUser.length > 0 && (
             <Card>
               <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">Нагрузка по сотрудникам (топ-10)</span>
-              <div className="space-y-1">
-                {report.workloadByUser.slice(0, 10).map(u => (
-                  <Bar key={u.userId} value={u.totalHours} max={maxUserHours} label={u.fullName} />
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={Math.max(report.workloadByUser.slice(0, 10).length * 32, 120)}>
+                <BarChart
+                  layout="vertical"
+                  data={report.workloadByUser.slice(0, 10)}
+                  margin={{ top: 4, right: 40, left: 4, bottom: 0 }}
+                >
+                  <XAxis type="number" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)' }} />
+                  <YAxis
+                    type="category"
+                    dataKey="fullName"
+                    width={110}
+                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.5)' }}
+                  />
+                  <Tooltip {...tooltipTheme} />
+                  <ReBar dataKey="totalHours" fill="#4C7DFF" radius={[0, 3, 3, 0]} maxBarSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
             </Card>
           )}
 
-          {/* Overtime trend */}
           {report.overtimeTrend && report.overtimeTrend.length > 0 && (
             <Card>
               <span className="text-[13px] font-bold text-white/40 uppercase mb-3 block">Тренд переработок по месяцам</span>
-              <div className="space-y-1">
-                {report.overtimeTrend.map(m => (
-                  <Bar key={m.month} value={m.hours} max={Math.max(...report.overtimeTrend.map(x => x.hours), 1)} label={m.month} />
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={report.overtimeTrend} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)' }} />
+                  <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)' }} />
+                  <Tooltip
+                    contentStyle={{ background: '#111A2E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
+                    itemStyle={{ color: '#7C5CFF', fontSize: 12 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hours"
+                    stroke="#7C5CFF"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#7C5CFF' }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </Card>
           )}
         </>

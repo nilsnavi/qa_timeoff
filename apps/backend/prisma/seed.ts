@@ -1,10 +1,12 @@
 import { BalanceOperationType, PrismaClient, RequestStatus, Role, VacationType } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 const seedTelegramIds = ['100000001', '100000002', '100000003', '100000004', '100000005', '100000006'];
 
 async function main() {
+  const passwordHash = await bcrypt.hash('password123', 10);
   const [qaTeam, sapEwmTeam, automationTeam] = await Promise.all([
     upsertTeam('QA Team', 'Core quality assurance team'),
     upsertTeam('SAP EWM Team', 'Warehouse management testing team'),
@@ -20,6 +22,7 @@ async function main() {
     hourlyRate: 2000,
     role: Role.ADMIN,
     teamId: qaTeam.id,
+    passwordHash,
   });
 
   const webAdmin = await upsertUser({
@@ -42,6 +45,7 @@ async function main() {
     role: Role.MANAGER,
     teamId: qaTeam.id,
     managerId: admin.id,
+    passwordHash,
   });
 
   const lead = await upsertUser({
@@ -54,6 +58,7 @@ async function main() {
     role: Role.LEAD,
     teamId: qaTeam.id,
     managerId: manager.id,
+    passwordHash,
   });
 
   const employee1 = await upsertUser({
@@ -66,6 +71,7 @@ async function main() {
     role: Role.EMPLOYEE,
     teamId: qaTeam.id,
     managerId: lead.id,
+    passwordHash,
   });
 
   const employee2 = await upsertUser({
@@ -78,6 +84,7 @@ async function main() {
     role: Role.EMPLOYEE,
     teamId: sapEwmTeam.id,
     managerId: manager.id,
+    passwordHash,
   });
 
   const employee3 = await upsertUser({
@@ -90,6 +97,7 @@ async function main() {
     role: Role.EMPLOYEE,
     teamId: automationTeam.id,
     managerId: lead.id,
+    passwordHash,
   });
 
   const users = [admin, webAdmin, manager, lead, employee1, employee2, employee3];

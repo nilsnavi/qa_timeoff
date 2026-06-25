@@ -6,7 +6,7 @@ import { Button, Card, DatePicker, Select, Textarea } from '../components/ui';
 import { api } from '../shared/api';
 import type { VacationType } from '../shared/types';
 import { useDraftForm } from '../shared/hooks/useDraftForm';
-import { hapticNotification, showAppToast, useTelegramMainButton } from '../shared/utils';
+import { hapticNotification, showAppToast } from '../shared/utils';
 import { toDateInputValue } from '../shared/utils/date';
 
 type FormErrors = Partial<Record<'startDate' | 'endDate' | 'vacationType', string>>;
@@ -69,14 +69,6 @@ export function CreateVacationPage() {
 
     mutation.mutate({ startDate, endDate, vacationType, comment: comment.trim() || undefined });
   }, [comment, endDate, mutation, startDate, vacationType]);
-
-  useTelegramMainButton({
-    text: mutation.isPending ? 'Отправляем...' : 'Отправить заявку',
-    visible: true,
-    disabled: mutation.isPending,
-    loading: mutation.isPending,
-    onClick: submit,
-  });
 
   return (
     <div className="space-y-4">

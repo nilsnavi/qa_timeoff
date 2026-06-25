@@ -132,10 +132,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isAuthLoading) return;
-    if (isAuthenticated) return;
-    navigate('/login', { replace: true });
-  }, [isAuthLoading, isAuthenticated, navigate]);
+    if (!isAuthenticated && !isAuthLoading) {
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, isAuthLoading, navigate]);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 

@@ -321,7 +321,7 @@ export function AdminPage() {
                   <span className="field-label">Тип сущности</span>
                   <select value={auditEntityType} onChange={e => { setAuditEntityType(e.target.value); setAuditOffset(0); }} className="field-input">
                     <option value="">Все типы</option>
-                    {['USER', 'TIMEOFF', 'VACATION', 'BALANCE', 'TEAM'].map(t => <option key={t} value={t}>{t}</option>)}
+                    {['USER', 'TIMEOFF', 'VACATION', 'BALANCE', 'TEAM', 'OVERTIME'].map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <span className="text-[13px] text-white/30">{auditTotal} записей</span>
