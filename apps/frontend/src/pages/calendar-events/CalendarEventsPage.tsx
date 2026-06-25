@@ -13,7 +13,7 @@ import {
   subMonths,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Bell, ChevronLeft, ChevronRight, Clock, Plane, Plus, Stethoscope, Sun, X } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Clock, Edit3, Plane, Plus, Stethoscope, Sun, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, EmptyState, ErrorState, Input, Select, Skeleton, Textarea } from '../../components/ui';
@@ -58,6 +58,7 @@ export function CalendarEventsPage() {
   const [teamId, setTeamId] = useState('ALL');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventEntry | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEventEntry | null>(null);
 
   const isManager = currentUser.role === 'LEAD' || currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN';
   const isAdmin = currentUser.role === 'ADMIN';
@@ -297,15 +298,16 @@ export function CalendarEventsPage() {
         <Plus size={22} />
       </button>
 
-      {/* Create Event Modal */}
+      {/* Create/Edit Event Modal */}
       <CreateEventModal
         open={showCreateModal}
+        editingEvent={editingEvent}
         isAdmin={isAdmin}
         isManager={isManager}
         teams={teams}
         currentUserId={currentUser.id}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => { setShowCreateModal(false); invalidate(); }}
+        onClose={() => { setShowCreateModal(false); setEditingEvent(null); }}
+        onSuccess={() => { setShowCreateModal(false); setEditingEvent(null); invalidate(); }}
       />
 
       {/* Event Detail Modal */}
@@ -316,6 +318,7 @@ export function CalendarEventsPage() {
           onClose={() => setSelectedEvent(null)}
           onApprove={() => approveMutation.mutate(selectedEvent.id)}
           onDelete={() => deleteMutation.mutate(selectedEvent.id)}
+          onEdit={() => { setEditingEvent(selectedEvent); setSelectedEvent(null); setShowCreateModal(true); }}
           isMutating={approveMutation.isPending || deleteMutation.isPending}
         />
       )}
@@ -327,6 +330,7 @@ export function CalendarEventsPage() {
 
 function CreateEventModal({
   open,
+  editingEvent,
   isAdmin,
   isManager,
   teams,
@@ -335,6 +339,7 @@ function CreateEventModal({
   onSuccess,
 }: {
   open: boolean;
+  editingEvent?: CalendarEventEntry | null;
   isAdmin: boolean;
   isManager: boolean;
   teams: Team[];
@@ -342,11 +347,11 @@ function CreateEventModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [type, setType] = useState<CalendarEventType>('TIME_OFF');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [userId, setUserId] = useState(currentUserId);
-  const [comment, setComment] = useState('');
+  const [type, setType] = useState<CalendarEventType>(editingEvent?.type ?? 'TIME_OFF');
+  const [startDate, setStartDate] = useState(editingEvent ? editingEvent.startDate.slice(0, 10) : '');
+  const [endDate, setEndDate] = useState(editingEvent ? editingEvent.endDate.slice(0, 10) : '');
+  const [userId, setUserId] = useState(editingEvent?.userId ?? currentUserId);
+  const [comment, setComment] = useState(editingEvent?.comment ?? '');
   const [error, setError] = useState('');
 
   const createMutation = useMutation({
@@ -355,7 +360,15 @@ function CreateEventModal({
     onError: (err: Error) => setError(err.message),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: () => api.updateCalendarEvent(editingEvent!.id, { type, startDate, endDate, comment: comment || undefined }),
+    onSuccess,
+    onError: (err: Error) => setError(err.message),
+  });
+
   if (!open) return null;
+
+  const isEditing = !!editingEvent;
 
   const eventTypes: Array<{ value: CalendarEventType; label: string; adminOnly?: boolean }> = [
     { value: 'VACATION', label: 'Отпуск' },
@@ -371,8 +384,8 @@ function CreateEventModal({
       <section className="enterprise-card w-full max-w-md p-4 animate-slideUp">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-white/30">Новое событие</p>
-            <h2 className="text-sm font-bold text-white">Создать отсутствие</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-white/30">{isEditing ? 'Редактирование' : 'Новое событие'}</p>
+            <h2 className="text-sm font-bold text-white">{isEditing ? 'Редактировать отсутствие' : 'Создать отсутствие'}</h2>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Закрыть">
             <X size={14} />
@@ -391,7 +404,7 @@ function CreateEventModal({
             <Input label="Дата окончания" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
 
-          {isManager && (
+          {(isManager || isEditing) && (
             <Select label="Сотрудник" value={userId} onChange={(e) => setUserId(e.target.value)}>
               <option value={currentUserId}>Себя</option>
               {teams.flatMap((team) =>
@@ -408,8 +421,8 @@ function CreateEventModal({
         </div>
 
         <div className="mt-4">
-          <Button className="w-full" disabled={!isValid || createMutation.isPending} onClick={() => createMutation.mutate()}>
-            {createMutation.isPending ? 'Создание...' : 'Создать событие'}
+          <Button className="w-full" disabled={!isValid || createMutation.isPending || updateMutation.isPending} onClick={() => isEditing ? updateMutation.mutate() : createMutation.mutate()}>
+            {(createMutation.isPending || updateMutation.isPending) ? 'Сохранение...' : isEditing ? 'Сохранить изменения' : 'Создать событие'}
           </Button>
         </div>
       </section>
@@ -425,6 +438,7 @@ function EventDetailModal({
   onClose,
   onApprove,
   onDelete,
+  onEdit,
   isMutating,
 }: {
   event: CalendarEventEntry;
@@ -432,6 +446,7 @@ function EventDetailModal({
   onClose: () => void;
   onApprove: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   isMutating: boolean;
 }) {
   const Icon = TYPE_ICONS[event.type] ?? Plane;
@@ -462,16 +477,21 @@ function EventDetailModal({
           {event.comment && <InfoRow label="Комментарий" value={event.comment} />}
         </div>
 
-        {canManage && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Button variant="danger" disabled={isMutating} onClick={onDelete}>
-              <X size={16} /> Удалить
-            </Button>
-            <Button disabled={isMutating} onClick={onApprove}>
-              Одобрить
-            </Button>
-          </div>
-        )}
+        <div className="mt-3 flex gap-2">
+          <Button variant="secondary" size="sm" onClick={onEdit}>
+            <Edit3 size={14} /> Редактировать
+          </Button>
+          {canManage && (
+            <>
+              <Button variant="danger" size="sm" disabled={isMutating} onClick={onDelete}>
+                <X size={14} /> Удалить
+              </Button>
+              <Button size="sm" disabled={isMutating} onClick={onApprove}>
+                Одобрить
+              </Button>
+            </>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -22,6 +22,8 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   // ── Balance Operations ─────────────────────────────────────────────
+  // @deprecated Use POST /balance/add and POST /balance/write-off instead.
+  // These duplicate balance.controller.ts with less validation (no insufficient-balance check).
 
   @Post('accruals')
   accrue(@Body() dto: BalanceOperationDto, @CurrentUser() currentUser: User) {
@@ -64,6 +66,8 @@ export class AdminController {
   }
 
   // ── Overtime Management ────────────────────────────────────────────
+  // @deprecated GET /admin/overtime may overlap with GET /admin/reports/overtime;
+  // prefer reports for aggregated data and user-specific endpoints for detail.
 
   @Roles(Role.ADMIN)
   @Post('overtime')
@@ -163,12 +167,15 @@ export class AdminController {
     return this.adminService.getAllUsers({ search, role, teamId });
   }
 
+  // @deprecated Use POST /users (users.controller) for regular user creation.
+  // This admin variant adds sendInviteEmail support. Frontend uses POST /users via api.createUser().
   @Roles(Role.ADMIN)
   @Post('users')
   createUser(@Body() dto: AdminCreateUserDto, @CurrentUser() admin: User) {
     return this.adminService.createUser(admin, dto);
   }
 
+  // @deprecated Role changes are covered by PATCH /users/:id (users controller, UpdateUserDto includes role).
   @Roles(Role.ADMIN)
   @Patch('users/:id/role')
   updateUserRole(

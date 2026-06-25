@@ -38,6 +38,8 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) { }
 
+  // @deprecated Telegram auth is disabled by default (VITE_ENABLE_TELEGRAM_AUTH=false).
+  // Keep for backwards compatibility; no frontend consumer.
   @Post('telegram')
   telegram(@Body() dto: TelegramAuthDto) {
     this.logger.log(`Telegram auth request received`);

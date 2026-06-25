@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -94,6 +94,7 @@ export const api = {
   dashboard: () => request<Dashboard>('/dashboard'),
   me: () => request<User>('/auth/me'),
   balanceMe: () => request<Dashboard['balance']>('/balance/me'),
+  getUserBalance: (userId: string) => request<TimeBalance>(`/balance/user/${userId}`),
   balanceHistory: (days?: number) => request(`/balance/history${days ? `?days=${days}` : ''}`),
   balanceSummary: () => request('/balance/summary'),
   balanceLedger: (page?: number, limit?: number) => {
@@ -136,6 +137,8 @@ export const api = {
       passwordHash: string;
     }>,
   ) => request<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  getUser: (id: string) => request<User>(`/users/${id}`),
+  deleteUser: (id: string) => request<User>(`/users/${id}`, { method: 'DELETE' }),
   userOperations: (userId: string) => request<BalanceOperation[]>(`/balance/operations/${userId}`),
   createTimeOff: (payload: { date: string; hours: number; reason: string; comment?: string }) =>
     request('/timeoff/request', { method: 'POST', body: JSON.stringify(payload) }),
@@ -157,6 +160,7 @@ export const api = {
     status === 'APPROVED' ? api.approveTimeOff(id) : api.rejectTimeOff(id),
   calendar: () => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>('/calendar'),
   calendarTeam: (teamId: string) => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>(`/calendar/team/${teamId}`),
+  calendarUser: (userId: string) => request<{ approved: CalendarEvent[]; pending: CalendarEvent[] }>(`/calendar/user/${userId}`),
 
   // ── Calendar Events (dedicated enterprise calendar) ────────────────────
 
@@ -314,6 +318,7 @@ export const api = {
   leaveRequestsSummary: () => request<LeaveRequestSummary>('/leave-requests/summary'),
   createLeaveRequest: (payload: { type: 'TIME_OFF' | 'VACATION'; dateFrom: string; dateTo?: string; hours: number; reason: string; comment?: string }) =>
     request<LeaveRequest>('/leave-requests', { method: 'POST', body: JSON.stringify(payload) }),
+  getLeaveRequest: (id: string) => request<LeaveRequest>(`/leave-requests/${id}`),
   approveLeaveRequest: (id: string) => request<LeaveRequest>(`/leave-requests/${id}/approve`, { method: 'POST' }),
   rejectLeaveRequest: (id: string, approverComment?: string) =>
     request<LeaveRequest>(`/leave-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ approverComment }) }),

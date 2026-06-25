@@ -16,6 +16,8 @@ import { RequestsService } from './requests.service';
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
+  // @deprecated Generic request creation is superseded by timeoff/vacation/leave-requests endpoints.
+  // No frontend consumer. Keep for backwards compatibility.
   @Post()
   create(@CurrentUser() user: User, @Body() dto: CreateRequestDto) {
     return this.requestsService.create(user.id, dto);
