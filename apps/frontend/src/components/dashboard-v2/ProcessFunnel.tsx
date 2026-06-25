@@ -15,8 +15,8 @@ export function ProcessFunnel({ dashboard }: { dashboard: Dashboard }) {
   const maxCount = Math.max(...stages.map(s => all.filter(r => s.status.includes(r.status)).length), 1);
 
   return (
-    <div className="enterprise-card p-5">
-      <p className="text-[13px] font-bold uppercase tracking-widest text-white/25 mb-4">Воронка заявок</p>
+    <div className="enterprise-card p-6">
+      <p className="text-[13px] font-semibold text-white/50 mb-4">Воронка заявок</p>
       <div className="space-y-2">
         {stages.map((stage) => {
           const count = all.filter(r => stage.status.includes(r.status)).length;
@@ -24,15 +24,15 @@ export function ProcessFunnel({ dashboard }: { dashboard: Dashboard }) {
           return (
             <div key={stage.label} className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-[14px] font-semibold text-white/50">{stage.label}</span>
-              <div className="flex-1 h-7 rounded-md bg-white/[0.03] overflow-hidden">
+              <div className="flex-1 h-8 rounded-md bg-white/[0.03] overflow-hidden">
                 <div
-                  className={`h-full rounded-md ${stage.bg} ${stage.color} flex items-center px-3 text-[13px] font-bold transition-all duration-500`}
+                  className={`h-full rounded-md ${stage.bg} ${stage.color} flex items-center px-3 text-[14px] font-bold transition-all duration-500`}
                   style={{ width: `${width}%`, minWidth: count > 0 ? '40px' : '0' }}
                 >
                   {count > 0 && count}
                 </div>
               </div>
-              <span className="w-8 text-right text-[14px] font-bold text-white/30">{count}</span>
+              <span className="w-8 text-right text-[15px] font-bold text-white/30">{count}</span>
             </div>
           );
         })}

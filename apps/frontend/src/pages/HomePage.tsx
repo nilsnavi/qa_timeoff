@@ -2,8 +2,11 @@ import { ErrorState } from '../components/ui';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import { WorkStatusCard } from '../components/dashboard-v2/WorkStatusCard';
 import { CalendarWidget } from '../components/dashboard-v2/CalendarWidget';
-import { WorkFeed } from '../components/dashboard-v2/WorkFeed';
+import { NextEventsWidget } from '../components/dashboard-v2/NextEventsWidget';
+import { QuickActionsWidget } from '../components/dashboard-v2/QuickActionsWidget';
+import { BalanceProgressWidget } from '../components/dashboard-v2/BalanceProgressWidget';
 import { AnalyticsSnapshot } from '../components/dashboard-v2/AnalyticsSnapshot';
+import { WorkFeed } from '../components/dashboard-v2/WorkFeed';
 import { ProcessFunnel } from '../components/dashboard-v2/ProcessFunnel';
 import { TeamWorkload } from '../components/dashboard-v2/TeamWorkload';
 import { useNavigate } from 'react-router-dom';
@@ -50,15 +53,15 @@ export function HomePage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left 2/3 */}
         <div className="space-y-6 lg:col-span-2">
           <WorkStatusCard dashboard={dashboard} />
           <CalendarWidget dashboard={dashboard} />
           {isManager && <ProcessFunnel dashboard={dashboard} />}
         </div>
-
-        {/* Right 1/3 */}
         <div className="space-y-6">
+          <QuickActionsWidget dashboard={dashboard} />
+          <BalanceProgressWidget dashboard={dashboard} />
+          <NextEventsWidget dashboard={dashboard} />
           <AnalyticsSnapshot dashboard={dashboard} />
           {isManager && <TeamWorkload dashboard={dashboard} />}
           <WorkFeed notifications={dashboard.notifications} />

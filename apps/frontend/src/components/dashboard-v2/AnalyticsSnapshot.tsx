@@ -18,38 +18,39 @@ export function AnalyticsSnapshot({ dashboard }: { dashboard: Dashboard }) {
   }).length;
 
   return (
-    <div className="enterprise-card p-5 hover-lift">
+    <div className="enterprise-card p-6 hover-lift">
       <div className="flex items-center gap-2 mb-4">
-        <BarChart3 size={14} className="text-white/25" />
-        <p className="text-[13px] font-bold uppercase tracking-widest text-white/25">Аналитика</p>
+        <BarChart3 size={16} className="text-white/40" />
+        <p className="text-[13px] font-semibold text-white/50">Аналитика</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-white/[0.03] p-3">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/30 mb-1">Одобрение</p>
-          <div className="flex items-end gap-2">
-            <span className="text-2xl font-bold text-white">{approvalRate}%</span>
-            <span className={`flex items-center text-[13px] font-semibold ${approvalRate > 70 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {approvalRate > 70 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-            </span>
-          </div>
-          <p className="text-[12px] text-white/25 mt-1">{approved} одобр / {rejected} откл</p>
+      <div className="rounded-xl bg-white/[0.05] p-4 mb-3">
+        <p className="text-[13px] font-medium text-white/45 mb-1">Одобрение заявок</p>
+        <div className="flex items-end gap-3">
+          <span className="text-[32px] font-bold text-white leading-none">{approvalRate}%</span>
+          <span className={`text-[14px] font-semibold mb-0.5 flex items-center gap-1 ${approvalRate > 70 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {approvalRate > 70 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+            {approvalRate > 70 ? 'хороший' : 'низкий'}
+          </span>
         </div>
-        <div className="rounded-lg bg-white/[0.03] p-3">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/30 mb-1">За месяц</p>
-          <div className="flex items-end gap-2">
-            <span className="text-2xl font-bold text-white">{monthReq}</span>
-            <span className="text-[13px] font-semibold text-white/30">заявок</span>
-          </div>
-          <p className="text-[12px] text-white/25 mt-1">Всего {total} за год</p>
+        <div className="mt-2 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${approvalRate > 70 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${approvalRate}%` }} />
         </div>
-        <div className="rounded-lg bg-white/[0.03] p-3">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/30 mb-1">Ожидают</p>
-          <span className="text-2xl font-bold text-amber-400">{all.filter(r => r.status === 'PENDING').length}</span>
+        <p className="text-[13px] text-white/40 mt-1.5">{approved} одобр / {rejected} откл</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-white/[0.04] p-3 text-center">
+          <p className="text-[13px] text-white/45 mb-1">За месяц</p>
+          <span className="text-[22px] font-bold text-white">{monthReq}</span>
         </div>
-        <div className="rounded-lg bg-white/[0.03] p-3">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/30 mb-1">Команда</p>
-          <span className="text-2xl font-bold text-white">{new Set(reqs.map(r => ('user' in r ? (r as any).user?.id : '')).filter(Boolean)).size || 1}</span>
+        <div className="rounded-xl bg-white/[0.04] p-3 text-center">
+          <p className="text-[13px] text-white/45 mb-1">Ожидают</p>
+          <span className="text-[22px] font-bold text-amber-400">{all.filter(r => r.status === 'PENDING').length}</span>
+        </div>
+        <div className="rounded-xl bg-white/[0.04] p-3 text-center">
+          <p className="text-[13px] text-white/45 mb-1">В команде</p>
+          <span className="text-[22px] font-bold text-white">{new Set(reqs.map(r => ('user' in r ? (r as any).user?.id : '')).filter(Boolean)).size || 1}</span>
         </div>
       </div>
     </div>
