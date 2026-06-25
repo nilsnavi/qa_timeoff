@@ -36,6 +36,7 @@
     "helmet": "^8.1.0",
     "nest-winston": "^1.10.2",
     "node-gyp-build": "^4.8.4",
+    "nodemailer": "^9.0.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "redis": "^4.7.0",
