@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, ImportUserResult, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, ImportUserResult, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -302,15 +302,24 @@ export const api = {
 
   workloadReport: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
     const search = new URLSearchParams();
-    if (params?.startDate) search.set('startDate', params.startDate);
-    if (params?.endDate) search.set('endDate', params.endDate);
+    if (params?.startDate) search.set('dateFrom', params.startDate);
+    if (params?.endDate) search.set('dateTo', params.endDate);
     if (params?.teamId) search.set('teamId', params.teamId);
-    if (params?.userId) search.set('userId', params.userId);
+    if (params?.userId) search.set('employeeId', params.userId);
     const qs = search.toString();
-    return request<WorkloadReport>(`/admin/analytics/workload${qs ? `?${qs}` : ''}`);
+    return request<WorkloadReport>(`/analytics/workload${qs ? `?${qs}` : ''}`);
+  },
+  getWorkloadAnalytics: (params: { dateFrom: string; dateTo: string; teamId?: string; employeeId?: string; status?: string; loadType?: string; unit?: string }) => {
+    const search = new URLSearchParams({ dateFrom: params.dateFrom, dateTo: params.dateTo });
+    if (params.teamId) search.set('teamId', params.teamId);
+    if (params.employeeId) search.set('employeeId', params.employeeId);
+    if (params.status && params.status !== 'ALL') search.set('status', params.status);
+    if (params.loadType && params.loadType !== 'ALL') search.set('loadType', params.loadType);
+    if (params.unit && params.unit !== 'HOURS') search.set('unit', params.unit);
+    return request<WorkloadAnalyticsResponse>(`/analytics/workload?${search}`);
   },
   analyticsUserDetail: (userId: string) =>
-    request<any>(`/admin/analytics/user/${userId}`),
+    request<any>(`/analytics/user/${userId}`),
 
   // ── AI Forecast ──────────────────────────────────────────────────
 

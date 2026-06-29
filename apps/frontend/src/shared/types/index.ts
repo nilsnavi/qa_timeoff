@@ -263,46 +263,92 @@ export interface KpiRecalculationResult {
 
 // ── Analytics / Workload ────────────────────────────────────────────
 
-export interface WorkloadDay {
-  date: string;
-  approvedHours: number;
-  pendingHours: number;
-  rejectedHours: number;
-  cancelledHours: number;
-  totalHours: number;
-  users: string[];
-  topUsers: Array<{ name: string; hours: number }>;
-  pendingRequests: number;
+export interface WorkloadAnalyticsFilters {
+  dateFrom: string;
+  dateTo: string;
+  teamId: string | null;
+  employeeId: string | null;
+  status: string;
+  loadType: string;
+  unit: string;
 }
 
-export interface WorkloadUser {
-  userId: string;
+export interface WorkloadAnalyticsSummary {
+  totalOvertimeHours: number;
+  overloadedEmployeesCount: number;
+  activeEmployeesCount: number;
+  averageOvertimePerEmployee: number;
+  topEmployee: { id: string; fullName: string; hours: number; riskLevel: string } | null;
+  peakDay: { date: string; hours: number; percentOfTotal: number } | null;
+  pendingRequests: { count: number; hours: number };
+}
+
+export interface WorkloadRiskLevel {
+  code: string;
+  label: string;
+  from: number;
+  to: number | null;
+}
+
+export interface WorkloadRisk {
+  levels: WorkloadRiskLevel[];
+  criticalEmployees: Array<{ employeeId: string; fullName: string; hours: number }>;
+}
+
+export interface WorkloadDailyLoad {
+  date: string;
+  totalHours: number;
+  approvedHours: number;
+  pendingHours: number;
+  employeesCount: number;
+  pendingRequestsCount: number;
+  isAnomaly: boolean;
+  topEmployees: Array<{ employeeId: string; fullName: string; hours: number }>;
+}
+
+export interface WorkloadEmployeeDetail {
+  employeeId: string;
   fullName: string;
-  teamName: string;
+  shortName: string;
+  teamId: string | null;
+  teamName: string | null;
+  position: string | null;
+  role: string;
   totalHours: number;
   approvedHours: number;
   pendingHours: number;
   rejectedHours: number;
   cancelledHours: number;
-  requestCount: number;
-  peakDay: string;
-  riskLevel: 'normal' | 'increased' | 'overload' | 'critical';
-  balanceHours: number;
+  requestsCount: number;
+  peakDay: { date: string; hours: number } | null;
+  lastTimeOffDate: string | null;
+  timeOffBalanceHours: number;
+  riskLevel: 'NORMAL' | 'WARNING' | 'HIGH' | 'CRITICAL';
+  weeklyTrend: Array<{ date: string; hours: number }>;
+}
+
+export interface WorkloadRecommendation {
+  type: string;
+  severity: string;
+  title: string;
+  description: string;
+}
+
+export interface WorkloadAnalyticsResponse {
+  filters: WorkloadAnalyticsFilters;
+  summary: WorkloadAnalyticsSummary;
+  risk: WorkloadRisk;
+  dailyLoad: WorkloadDailyLoad[];
+  employeeLoad: WorkloadEmployeeDetail[];
+  recommendations: WorkloadRecommendation[];
 }
 
 export interface WorkloadReport {
-  kpi: {
-    totalOvertime: number;
-    overloadedCount: number;
-    avgLoad: number;
-    topUser: { fullName: string; hours: number } | null;
-    peakDay: { date: string; hours: number } | null;
-    pendingRequests: number;
-  };
-  workloadByDay: WorkloadDay[];
-  workloadByUser: WorkloadUser[];
-  anomalyWarning: string | null;
-  recommendations: string[];
+  summary: WorkloadAnalyticsSummary;
+  employeeLoad: WorkloadEmployeeDetail[];
+  dailyLoad: WorkloadDailyLoad[];
+  risk: WorkloadRisk;
+  recommendations: WorkloadRecommendation[];
 }
 
 // ── AI Forecast ─────────────────────────────────────────────────────
