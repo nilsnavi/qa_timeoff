@@ -1,9 +1,10 @@
 import { Body, Controller, Get, Logger, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { User } from '@prisma/client';
 import { IsEmail, IsString, MinLength } from 'class-validator';
 import { Request, Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
 import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -37,7 +38,10 @@ class LogoutDto {
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
+  ) { }
 
   private readonly REFRESH_COOKIE = 'refresh_token';
   private readonly REFRESH_PATH = '/api/auth';
@@ -94,6 +98,18 @@ export class AuthController {
       await this.authService.logout(token);
     }
     res.clearCookie(this.REFRESH_COOKIE, { path: this.REFRESH_PATH });
+  }
+
+  @Post('sse-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получить короткоживущий токен для SSE-подключения' })
+  async getSseToken(@CurrentUser() user: User) {
+    const token = await this.jwtService.signAsync(
+      { sub: user.id, scope: 'sse' },
+      { expiresIn: '5m' },
+    );
+    return { token };
   }
 
   @Get('me')

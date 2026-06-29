@@ -392,6 +392,9 @@ export const api = {
   updateNotifications: (dto: { notifyRequestUpdates?: boolean; notifyTeamRequests?: boolean; notifyEmailDigest?: boolean }) =>
     request<User>('/users/me/notifications', { method: 'PATCH', body: JSON.stringify(dto) }),
 
+  getSseToken: () =>
+    request<{ token: string }>('/auth/sse-token', { method: 'POST' }),
+
   auditLogs: (params?: { entityType?: string; limit?: number; offset?: number }) => {
     const qs = new URLSearchParams();
     if (params?.entityType) qs.set('entityType', params.entityType);

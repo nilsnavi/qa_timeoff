@@ -1,26 +1,34 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { api } from '../api';
 import { showAppToast } from '../utils';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 const RETRY_DELAYS = [3000, 6000, 12000, 30000]; // ms
 
-export function useSseNotifications(token: string | null) {
+export function useSseNotifications() {
   const queryClient = useQueryClient();
   const retryRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const esRef = useRef<EventSource>();
 
   useEffect(() => {
-    if (!token) return;
-
-    function connect() {
+    async function connect() {
       if (esRef.current) {
         esRef.current.close();
       }
 
+      let sseToken: string;
+      try {
+        const result = await api.getSseToken();
+        sseToken = result.token;
+      } catch {
+        // Not authenticated — nothing to connect
+        return;
+      }
+
       const es = new EventSource(
-        `${API_URL}/sse/leave-requests?token=${encodeURIComponent(token!)}`,
+        `${API_URL}/sse/leave-requests?token=${encodeURIComponent(sseToken)}`,
       );
       esRef.current = es;
 
@@ -71,17 +79,10 @@ export function useSseNotifications(token: string | null) {
 
     connect();
 
-    const handleOnline = () => {
-      retryRef.current = 0;
-      connect();
-    };
-    window.addEventListener('online', handleOnline);
-
     return () => {
       clearTimeout(timerRef.current);
-      window.removeEventListener('online', handleOnline);
       esRef.current?.close();
       esRef.current = undefined;
     };
-  }, [token, queryClient]);
+  }, [queryClient]);
 }

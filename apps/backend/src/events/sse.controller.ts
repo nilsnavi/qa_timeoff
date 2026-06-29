@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
@@ -9,6 +9,8 @@ import { Throttle } from '@nestjs/throttler';
 @ApiTags('sse')
 @Controller('sse')
 export class SseController {
+  private readonly logger = new Logger(SseController.name);
+
   constructor(
     private readonly sseGateway: SseGateway,
     private readonly jwt: JwtService,
@@ -20,7 +22,11 @@ export class SseController {
   async subscribe(@Query('token') token: string, @Res() res: Response) {
     let user: { id: string; teamId: string | null } | null;
     try {
-      const payload = this.jwt.verify(token) as { sub: string };
+      const payload = this.jwt.verify(token) as { sub: string; scope?: string };
+      // Accept both main JWT and short-lived SSE token
+      if (payload.scope && payload.scope !== 'sse') {
+        throw new Error('Invalid token scope');
+      }
       user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, teamId: true } });
       if (!user) throw new Error();
     } catch {

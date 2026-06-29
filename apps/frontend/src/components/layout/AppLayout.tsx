@@ -156,7 +156,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  useSseNotifications(localStorage.getItem('qa-timeoff-token'));
+  useSseNotifications();
 
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],
