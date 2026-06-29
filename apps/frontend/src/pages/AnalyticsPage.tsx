@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  BarChart3, Bell, Calendar, ChevronLeft, ChevronRight,
-  Clock, Crown, Download, FileSpreadsheet, Loader2, Menu, TrendingUp, TriangleAlert, Users, X,
+  BarChart3, Calendar, ChevronLeft, ChevronRight,
+  Clock, Crown, Download, FileSpreadsheet, Loader2, TrendingUp, TriangleAlert, Users, X,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -13,37 +13,13 @@ import { getAccessToken } from '../shared/api/client';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import { showAppToast } from '../shared/utils';
 import type { WorkloadAnalyticsResponse, WorkloadEmployeeDetail } from '../shared/types';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 const RISK_COLORS: Record<string, string> = { NORMAL: '#22c55e', WARNING: '#f59e0b', HIGH: '#f97316', CRITICAL: '#ef4444' };
 const RISK_BG: Record<string, string> = { NORMAL: 'bg-emerald-500/10', WARNING: 'bg-amber-500/10', HIGH: 'bg-orange-500/10', CRITICAL: 'bg-rose-500/10' };
 const RISK_TEXT: Record<string, string> = { NORMAL: 'text-emerald-400', WARNING: 'text-amber-400', HIGH: 'text-orange-400', CRITICAL: 'text-rose-400' };
 const RISK_LABEL: Record<string, string> = { NORMAL: 'Норма', WARNING: 'Повышенная', HIGH: 'Перегруз', CRITICAL: 'Критично' };
-
-const MENU_ITEMS = [
-  { section: 'ОБЗОР', items: [{ label: 'Дашборд', icon: BarChart3, path: '/' }] },
-  { section: 'ЗАЯВКИ', items: [
-    { label: 'Мои заявки', icon: FileSpreadsheet, path: '/requests/my' },
-    { label: 'Команда', icon: Users, path: '/requests/manager' },
-    { label: 'Календарь', icon: Calendar, path: '/calendar' },
-  ]},
-  { section: 'БАЛАНС', items: [{ label: 'Баланс', icon: Clock, path: '/balance' }] },
-  { section: 'ОРГАНИЗАЦИЯ', items: [
-    { label: 'Сотрудники', icon: Users, path: '/team' },
-    { label: 'Команды', icon: Users, path: '/team' },
-  ]},
-  { section: 'АНАЛИТИКА', items: [
-    { label: 'Аналитика нагрузки', icon: BarChart3, path: '/analytics', active: true },
-    { label: 'Отчёты', icon: FileSpreadsheet, path: '/analytics' },
-  ]},
-  { section: 'АДМИНИСТРИРОВАНИЕ', items: [
-    { label: 'Пользователи', icon: Users, path: '/admin' },
-    { label: 'Настройки', icon: BarChart3, path: '/admin' },
-    { label: 'Справочники', icon: FileSpreadsheet, path: '/admin' },
-    { label: 'Журналы', icon: FileSpreadsheet, path: '/admin' },
-  ]},
-];
 
 function getPeriodRange(period: string): { from: string; to: string } {
   const now = new Date();
@@ -66,10 +42,8 @@ function formatDate(d: string) {
 
 export function AnalyticsPage() {
   const { dashboard } = useDashboard();
-  const navigate = useNavigate();
   const canView = ['ADMIN', 'MANAGER', 'LEAD'].includes(dashboard.user.role);
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [period, setPeriod] = useState('month');
   const [customFrom, setCustomFrom] = useState(DEFAULT_RANGE.from);
   const [customTo, setCustomTo] = useState(DEFAULT_RANGE.to);
@@ -205,78 +179,23 @@ export function AnalyticsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#060D18] text-white overflow-hidden">
-      {/* Sidebar */}
-      {sidebarOpen && (
-        <div className="w-[220px] shrink-0 bg-[#091020] border-r border-[#1A2942] flex flex-col overflow-y-auto">
-          <div className="p-4 border-b border-[#1A2942] flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] flex items-center justify-center text-white font-bold text-sm">Q</div>
-            <span className="text-[15px] font-bold text-white">QA TimeOff</span>
-          </div>
-          <div className="flex-1 py-3 space-y-4">
-            {MENU_ITEMS.map((section) => (
-              <div key={section.section}>
-                <p className="px-4 text-[10px] font-bold text-white/20 uppercase tracking-wider mb-1">{section.section}</p>
-                {section.items.map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={() => navigate(item.path)}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-[13px] transition-colors ${
-                      item.active
-                        ? 'bg-[#4C7DFF]/15 text-[#4C7DFF] font-semibold border-r-2 border-[#4C7DFF]'
-                        : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.03]'
-                    }`}
-                  >
-                    <item.icon size={15} />
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-          <div className="p-4 border-t border-[#1A2942]">
-            <button type="button" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 text-[13px] text-[#94A3B8] hover:text-white">
-              <Menu size={15} /> Свернуть меню
-            </button>
-          </div>
+    <>
+      <div className="space-y-5">
+        {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[20px] font-bold text-white">Аналитика нагрузки</h1>
+          <p className="text-[13px] text-[#94A3B8]">Анализ переработок и загрузки сотрудников</p>
         </div>
-      )}
-
-      {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-[#1A2942] bg-[#091020]/80">
-          <div className="flex items-center gap-3">
-            {!sidebarOpen && <button type="button" onClick={() => setSidebarOpen(true)} className="text-[#94A3B8] hover:text-white"><Menu size={18} /></button>}
-            <div>
-              <h1 className="text-[20px] font-bold text-white">Аналитика нагрузки</h1>
-              <p className="text-[13px] text-[#94A3B8]">Анализ переработок и загрузки сотрудников</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={exportCsv} disabled={!data} className="flex items-center gap-1.5 rounded-lg border border-[#1E2D45] px-3 py-1.5 text-[12px] text-[#94A3B8] hover:text-white hover:border-white/20 transition-colors">
-              <Download size={13} /> CSV
-            </button>
-            <button type="button" onClick={exportExcel} disabled={!data} className="flex items-center gap-1.5 rounded-lg border border-[#1E2D45] px-3 py-1.5 text-[12px] text-[#94A3B8] hover:text-white hover:border-white/20 transition-colors">
-              <FileSpreadsheet size={13} /> Excel
-            </button>
-            <button type="button" className="relative p-1.5 text-[#94A3B8] hover:text-white">
-              <Bell size={17} />
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center">{s?.pendingRequests?.count ?? 0}</span>
-            </button>
-            <div className="flex items-center gap-2 pl-3 border-l border-[#1A2942]">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] flex items-center justify-center text-[11px] font-bold">КЕ</div>
-              <div>
-                <p className="text-[13px] font-semibold text-white leading-tight">{dashboard.user.fullName}</p>
-                <p className="text-[11px] text-[#94A3B8] leading-tight">{dashboard.user.role === 'ADMIN' ? 'Администратор' : dashboard.user.role === 'MANAGER' ? 'Менеджер' : 'Руководитель'}</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={exportCsv} disabled={!data} className="flex items-center gap-1.5 rounded-lg border border-[#1E2D45] px-3 py-1.5 text-[12px] text-[#94A3B8] hover:text-white hover:border-white/20 transition-colors">
+            <Download size={13} /> CSV
+          </button>
+          <button type="button" onClick={exportExcel} disabled={!data} className="flex items-center gap-1.5 rounded-lg border border-[#1E2D45] px-3 py-1.5 text-[12px] text-[#94A3B8] hover:text-white hover:border-white/20 transition-colors">
+            <FileSpreadsheet size={13} /> Excel
+          </button>
+        </div>
+      </div>
           {/* Filters */}
           <div className="rounded-xl bg-[#0F1929] border border-[#1E2D45] p-4">
             <div className="flex items-end gap-3 flex-wrap">
@@ -530,20 +449,20 @@ export function AnalyticsPage() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Employee detail panel */}
-      {(detailEmployee || detailUserId) && (
-        <div className="w-[360px] shrink-0 bg-[#091020] border-l border-[#1A2942] overflow-y-auto">
-          <div className="sticky top-0 bg-[#091020] border-b border-[#1A2942] px-5 py-3.5 flex items-center justify-between">
-            <div>
-              <p className="text-[15px] font-bold text-white">{detailEmployee?.fullName ?? 'Загрузка...'}</p>
-              <p className="text-[12px] text-[#64748B]">{detailEmployee?.teamName ? `Команда ${detailEmployee.teamName}` : ''}</p>
-            </div>
-            <button type="button" onClick={closeDetail} className="p-1 rounded-lg hover:bg-white/[0.06]"><X size={15} className="text-[#64748B]" /></button>
-          </div>
-
-          <div className="p-5 space-y-4">
+        {/* Employee detail panel */}
+        {(detailEmployee || detailUserId) && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="absolute inset-0 bg-black/40" onClick={closeDetail} />
+            <div className="relative w-[360px] bg-[#091020] border-l border-[#1A2942] overflow-y-auto">
+              <div className="sticky top-0 bg-[#091020] border-b border-[#1A2942] px-5 py-3.5 flex items-center justify-between">
+                <div>
+                  <p className="text-[15px] font-bold text-white">{detailEmployee?.fullName ?? 'Загрузка...'}</p>
+                  <p className="text-[12px] text-[#64748B]">{detailEmployee?.teamName ? `Команда ${detailEmployee.teamName}` : ''}</p>
+                </div>
+                <button type="button" onClick={closeDetail} className="p-1 rounded-lg hover:bg-white/[0.06]"><X size={15} className="text-[#64748B]" /></button>
+              </div>
+              <div className="p-5 space-y-4">
             {/* Avatar + role */}
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#4C7DFF] to-[#7C5CFF] flex items-center justify-center text-[14px] font-bold">{detailEmployee?.fullName?.split(' ').map(s => s[0]).join('').slice(0, 2) ?? '?'}</div>
@@ -616,7 +535,8 @@ export function AnalyticsPage() {
             )}
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )}
+  </>
   );
 }
