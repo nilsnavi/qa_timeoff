@@ -263,13 +263,46 @@ export interface KpiRecalculationResult {
 
 // ── Analytics / Workload ────────────────────────────────────────────
 
+export interface WorkloadDay {
+  date: string;
+  approvedHours: number;
+  pendingHours: number;
+  rejectedHours: number;
+  cancelledHours: number;
+  totalHours: number;
+  users: string[];
+  topUsers: Array<{ name: string; hours: number }>;
+  pendingRequests: number;
+}
+
+export interface WorkloadUser {
+  userId: string;
+  fullName: string;
+  teamName: string;
+  totalHours: number;
+  approvedHours: number;
+  pendingHours: number;
+  rejectedHours: number;
+  cancelledHours: number;
+  requestCount: number;
+  peakDay: string;
+  riskLevel: 'normal' | 'increased' | 'overload' | 'critical';
+  balanceHours: number;
+}
+
 export interface WorkloadReport {
-  workloadByDay: Array<{ date: string; hours: number }>;
-  workloadByUser: Array<{ userId: string; fullName: string; totalHours: number }>;
-  workloadByTeam: Array<{ teamName: string; totalHours: number }>;
-  overtimeTrend: Array<{ month: string; hours: number }>;
-  absenceTrend: Array<{ date: string; hours: number }>;
-  topOverloaded: Array<{ userId: string; fullName: string; totalHours: number }>;
+  kpi: {
+    totalOvertime: number;
+    overloadedCount: number;
+    avgLoad: number;
+    topUser: { fullName: string; hours: number } | null;
+    peakDay: { date: string; hours: number } | null;
+    pendingRequests: number;
+  };
+  workloadByDay: WorkloadDay[];
+  workloadByUser: WorkloadUser[];
+  anomalyWarning: string | null;
+  recommendations: string[];
 }
 
 // ── AI Forecast ─────────────────────────────────────────────────────

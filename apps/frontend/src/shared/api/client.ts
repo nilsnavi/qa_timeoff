@@ -300,14 +300,17 @@ export const api = {
 
   // ── Analytics ────────────────────────────────────────────────────
 
-  workloadReport: (params?: { startDate?: string; endDate?: string; teamId?: string }) => {
+  workloadReport: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
     const search = new URLSearchParams();
     if (params?.startDate) search.set('startDate', params.startDate);
     if (params?.endDate) search.set('endDate', params.endDate);
     if (params?.teamId) search.set('teamId', params.teamId);
+    if (params?.userId) search.set('userId', params.userId);
     const qs = search.toString();
     return request<WorkloadReport>(`/admin/analytics/workload${qs ? `?${qs}` : ''}`);
   },
+  analyticsUserDetail: (userId: string) =>
+    request<any>(`/admin/analytics/user/${userId}`),
 
   // ── AI Forecast ──────────────────────────────────────────────────
 
