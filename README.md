@@ -646,3 +646,51 @@ docker compose logs backend --tail=100 | grep -i "error\|warn\|fail"
 # Логи в файлах (если настроен LOG_DIR)
 docker compose exec backend tail -f /app/logs/error-$(date +%Y-%m-%d).log
 ```
+
+---
+
+## CSP production checklist
+
+Content Security Policy (CSP) защищает от XSS-атак. В проекте CSP настроена на двух уровнях:
+
+### Backend (helm) — для API-ответов
+
+Директивы задаются в `apps/backend/src/main.ts`:
+
+| Переменная | По умолчанию | Описание |
+|---|---|---|
+| `CSP_REPORT_ONLY` | `true` | `true` — report-only (логи, не блокировка). `false` — блокирующий режим |
+
+```bash
+# Включить блокирующий режим в .env:
+CSP_REPORT_ONLY=false
+```
+
+Если `SENTRY_DSN` задан — его origin (`https://o*.ingest.sentry.io`) автоматически
+добавляется в `connect-src`. Если `ENABLE_TELEGRAM_AUTH=true` — добавляется
+`https://api.telegram.org` и `https://web.telegram.org`.
+
+### Frontend (Caddy) — для HTML-страниц
+
+Статические файлы фронтенда обслуживает Caddy. CSP задана в `infra/Caddyfile`.
+При изменении директив оба файла должны быть синхронизированы.
+
+### Перед production
+
+1. Убедиться, что приложение работает без CSP-нарушений в report-only:
+   ```bash
+   # Включить report-only
+   CSP_REPORT_ONLY=true
+   ```
+2. Проверить Console в браузере — нет предупреждений вида:
+   `[Report Only] Refused to connect to '...' because it violates CSP`
+3. Найти источник нарушений и либо исправить, либо добавить в директивы:
+   - Sentry DSN → `connect-src` (добавляется автоматически)
+   - Telegram WebApp → `connect-src` `https://web.telegram.org`
+   - Внешние API → `connect-src`
+4. Включить блокировку:
+   ```bash
+   CSP_REPORT_ONLY=false
+   ```
+5. В Caddyfile раскомментировать/добавить `connect-src` для Sentry и Telegram,
+   если их origin'ы отличаются от `self`.

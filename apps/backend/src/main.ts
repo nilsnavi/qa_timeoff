@@ -28,27 +28,40 @@ async function bootstrap() {
 
   const frontendUrl = config.get<string>('FRONTEND_URL') ?? '';
   const apiUrl = `http://localhost:${config.get<number>('API_PORT') ?? 3000}`;
-  const connectSrcUrls = ["'self'", apiUrl, frontendUrl].filter(Boolean);
+  const cspReportOnly = config.get<string>('CSP_REPORT_ONLY') !== 'false';
+  const sentryDsn = config.get<string>('SENTRY_DSN') ?? config.get<string>('VITE_SENTRY_DSN');
+  const telegramEnabled = config.get<string>('ENABLE_TELEGRAM_AUTH') === 'true';
+
+  const connectSrcUrls = ["'self'", apiUrl, frontendUrl];
+  if (sentryDsn) {
+    try {
+      const sentryHost = new URL(sentryDsn).origin;
+      connectSrcUrls.push(sentryHost);
+    } catch { /* ignore invalid DSN */ }
+  }
+  if (telegramEnabled) {
+    connectSrcUrls.push('https://api.telegram.org', 'https://web.telegram.org');
+  }
+
+  const cspDirectives = {
+    defaultSrc:     ["'self'"],
+    scriptSrc:      ["'self'"],
+    styleSrc:       ["'self'", "'unsafe-inline'"],
+    imgSrc:         ["'self'", 'data:', 'blob:'],
+    fontSrc:        ["'self'", 'data:'],
+    connectSrc:     connectSrcUrls.filter(Boolean),
+    frameSrc:       ["'none'"],
+    objectSrc:      ["'none'"],
+    baseUri:        ["'self'"],
+    formAction:     ["'self'"],
+    upgradeInsecureRequests: [],
+  };
 
   app.use(
     helmet({
-      // Шаг 1: Report-Only — логируем нарушения, не блокируем.
-      // Когда убедимся что всё работает — заменить на contentSecurityPolicy: { directives: {...} }
       contentSecurityPolicy: {
-        reportOnly: true,
-        directives: {
-          defaultSrc:     ["'self'"],
-          scriptSrc:      ["'self'"],
-          styleSrc:       ["'self'", "'unsafe-inline'"],
-          imgSrc:         ["'self'", 'data:', 'blob:'],
-          fontSrc:        ["'self'", 'data:'],
-          connectSrc:     connectSrcUrls,
-          frameSrc:       ["'none'"],
-          objectSrc:      ["'none'"],
-          baseUri:        ["'self'"],
-          formAction:     ["'self'"],
-          upgradeInsecureRequests: [],
-        },
+        reportOnly: cspReportOnly,
+        directives: cspDirectives,
       },
       crossOriginEmbedderPolicy: false,
     }),
