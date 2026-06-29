@@ -9,12 +9,10 @@ let onUnauthorized: (() => void) | null = null;
 export const setAccessToken = (token?: string) => {
   if (!token) return;
   accessToken = token;
-  localStorage.setItem('qa-timeoff-token', token);
 };
 
 export const clearAccessToken = () => {
   accessToken = null;
-  localStorage.removeItem('qa-timeoff-token');
 };
 
 export const getAccessToken = () => accessToken;
@@ -36,6 +34,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const response = await fetch(`${API_URL}${path}`, {
       ...options,
       signal: controller.signal,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -81,15 +80,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  refreshToken: (refreshToken: string) =>
+  refreshToken: () =>
     request<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken }),
     }),
-  logout: (refreshToken?: string) =>
+  logout: () =>
     request<void>('/auth/logout', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken }),
     }),
   dashboard: () => request<Dashboard>('/dashboard'),
   me: () => request<User>('/auth/me'),

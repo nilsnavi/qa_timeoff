@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NextFunction, Request, Response } from 'express';
+import * as cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { WinstonModule } from 'nest-winston';
@@ -68,6 +69,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-Id'],
   });
 
+  app.use(cookieParser());
   app.use((req: Request, res: Response, next: NextFunction) => new RequestIdMiddleware().use(req, res, next));
 
   app.useGlobalPipes(

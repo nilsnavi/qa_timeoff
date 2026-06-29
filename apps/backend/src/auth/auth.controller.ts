@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Logger, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { User } from '@prisma/client';
 import { IsEmail, IsString, MinLength } from 'class-validator';
+import { Request, Response } from 'express';
 import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -38,29 +39,61 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) { }
 
+  private readonly REFRESH_COOKIE = 'refresh_token';
+  private readonly REFRESH_PATH = '/api/auth';
+
+  private cookieOptions(): {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'lax' | 'strict';
+    path: string;
+    maxAge: number;
+  } {
+    const maxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 days default
+    return {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: this.REFRESH_PATH,
+      maxAge: maxAgeMs,
+    };
+  }
+
   // POST /auth/telegram — вход через Telegram Mini App initData.
   // Включается только при ENABLE_TELEGRAM_AUTH=true в .env.
   @Post('telegram')
-  telegram(@Body() dto: TelegramAuthDto) {
-    this.logger.log(`Telegram auth request received`);
-    this.logger.log(`initData length: ${dto.initData?.length ?? 0}`);
-    return this.authService.telegramLogin(dto.initData);
+  async telegram(@Body() dto: TelegramAuthDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.telegramLogin(dto.initData);
+    res.cookie(this.REFRESH_COOKIE, result.refreshToken, this.cookieOptions());
+    return result;
   }
 
   @Post('login')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(dto.email, dto.password);
+    res.cookie(this.REFRESH_COOKIE, result.refreshToken, this.cookieOptions());
+    return result;
   }
 
   @Post('refresh')
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refreshTokens(dto.refreshToken);
+  async refresh(@Req() req: Request, @Body() dto: RefreshTokenDto, @Res({ passthrough: true }) res: Response) {
+    const token = req.cookies?.[this.REFRESH_COOKIE] ?? dto.refreshToken;
+    if (!token) {
+      throw new UnauthorizedException('Refresh token missing');
+    }
+    const result = await this.authService.refreshTokens(token);
+    res.cookie(this.REFRESH_COOKIE, result.refreshToken, this.cookieOptions());
+    return result;
   }
 
   @Post('logout')
-  logout(@Body() dto: LogoutDto) {
-    return this.authService.logout(dto.refreshToken);
+  async logout(@Req() req: Request, @Body() dto: LogoutDto, @Res({ passthrough: true }) res: Response) {
+    const token = req.cookies?.[this.REFRESH_COOKIE] ?? dto.refreshToken;
+    if (token) {
+      await this.authService.logout(token);
+    }
+    res.clearCookie(this.REFRESH_COOKIE, { path: this.REFRESH_PATH });
   }
 
   @Get('me')
