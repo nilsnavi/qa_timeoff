@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
-  AlertTriangle, BarChart3, Bell, Calendar, ChevronDown, ChevronLeft, ChevronRight,
-  Clock, Crown, Download, FileSpreadsheet, Loader2, LogOut, Menu, TrendingUp, TriangleAlert, Users, X,
+  BarChart3, Bell, Calendar, ChevronLeft, ChevronRight,
+  Clock, Crown, Download, FileSpreadsheet, Loader2, Menu, TrendingUp, TriangleAlert, Users, X,
 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   BarChart, Bar as ReBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   LineChart, Line, Cell, ReferenceLine,
@@ -93,11 +93,6 @@ export function AnalyticsPage() {
   const teams = teamsQuery.data ?? [];
   const teamOptions = [{ id: '', name: 'Все команды' }, ...teams.map((t: any) => ({ id: t.id, name: t.name }))];
 
-  const employeeOptions = useMemo(() => {
-    const names = new Set(dashboard.requests?.map((r: any) => r.user?.fullName).filter(Boolean) ?? []);
-    return [{ id: '', name: 'Все сотрудники' }, ...Array.from(names).map(n => ({ id: n, name: n }))];
-  }, [dashboard.requests]);
-
   const analyticsQuery = useQuery({
     queryKey: ['analytics', 'workload', appliedFilters],
     queryFn: () => api.getWorkloadAnalytics({
@@ -174,17 +169,17 @@ export function AnalyticsPage() {
     setDetailUserId(null);
   }, []);
 
-  if (!canView) return <Navigate to="/" replace />;
-
-  const s = data?.summary;
-  const isLoading = analyticsQuery.isLoading;
-
   const riskStats = useMemo(() => {
     const r = { NORMAL: 0, WARNING: 0, HIGH: 0, CRITICAL: 0 };
     if (!data?.employeeLoad) return r;
     for (const e of data.employeeLoad) r[e.riskLevel]++;
     return r;
   }, [data?.employeeLoad]);
+
+  if (!canView) return <Navigate to="/" replace />;
+
+  const s = data?.summary;
+  const isLoading = analyticsQuery.isLoading;
 
   const CustomDayTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.[0]) return null;
