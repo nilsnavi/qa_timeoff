@@ -104,16 +104,21 @@ cp apps/backend/.env.example .env
 
 Открыть .env и заполнить обязательные переменные:
 
-| Переменная          | Описание                          | Как получить                   |
-|---------------------|-----------------------------------|-------------------------------|
-| `JWT_SECRET`        | Секрет подписи JWT токенов        | `openssl rand -hex 32`        |
-| `POSTGRES_PASSWORD` | Пароль базы данных                | `openssl rand -base64 24`     |
-| `SMTP_HOST`         | SMTP-сервер для email             | У вашего провайдера           |
-| `SMTP_USER`         | Логин SMTP                        | У вашего провайдера           |
-| `SMTP_PASS`         | Пароль SMTP                       | У вашего провайдера           |
-| `EMAIL_FROM`        | Адрес отправителя                 | Пример: `noreply@domain.ru`   |
-| `FRONTEND_URL`      | Публичный URL приложения          | Пример: `https://domain.ru`   |
-| `CORS_ORIGIN`       | Разрешённый origin для CORS       | То же что `FRONTEND_URL`      |
+| Переменная          | Описание                          | Как получить                         |
+|---------------------|-----------------------------------|--------------------------------------|
+| `JWT_SECRET`        | Секрет подписи JWT токенов        | `openssl rand -hex 32`              |
+| `POSTGRES_PASSWORD` | Пароль базы данных                | `openssl rand -base64 24`           |
+| `SMTP_HOST`         | SMTP-сервер для email             | У вашего провайдера                  |
+| `SMTP_PORT`         | Порт SMTP                         | `465` (SSL) или `587` (STARTTLS)    |
+| `SMTP_SECURE`       | Использовать SSL                  | `true` для 465, `false` для 587     |
+| `SMTP_USER`         | Логин SMTP                        | У вашего провайдера                  |
+| `SMTP_PASS`         | Пароль SMTP                       | У вашего провайдера                  |
+| `EMAIL_FROM`        | Адрес отправителя                 | Пример: `QA TimeOff <noreply@domain.ru>` |
+| `FRONTEND_URL`      | Публичный URL приложения          | Пример: `https://domain.ru`         |
+| `CORS_ORIGIN`       | Разрешённый origin для CORS       | То же что `FRONTEND_URL`            |
+
+> **SMTP обязателен в production.** Без настроенного SMTP backend не стартует при `NODE_ENV=production`. 
+> При локальном запуске (`docker compose up` без `.env`) можно оставить SMTP_* пустыми.
 
 ### 3. Запустить
 
@@ -169,8 +174,14 @@ docker compose up -d --build
 | `BACKEND_PORT`              | `3000`                   | Прямой порт backend на хосте                     |
 | `POSTGRES_PORT`             | `5432`                   | Порт PostgreSQL на хосте                         |
 | `REDIS_PORT`                | `6379`                   | Порт Redis на хосте                              |
-| `POSTGRES_DB/USER/PASSWORD` | `qa_timeoff`             | Учётные данные БД                                |
-| `JWT_SECRET`                | —                        | **Обязательная** длинная случайная строка        |
+| `POSTGRES_DB/USER`          | `qa_timeoff`             | Имя БД и пользователь                            |
+| `POSTGRES_PASSWORD`         | **обязателен**           | Пароль БД — `openssl rand -base64 24`            |
+| `JWT_SECRET`                | **обязателен**           | Длинная случайная строка — `openssl rand -hex 32`|
+| `SMTP_HOST`                 | —                        | SMTP-сервер; обязателен в production             |
+| `SMTP_PORT`                 | `465`                    | Порт SMTP                                        |
+| `SMTP_SECURE`               | `true`                   | SSL-подключение                                  |
+| `SMTP_USER`/`SMTP_PASS`     | **обязательны в prod**   | Учётные данные SMTP                              |
+| `EMAIL_FROM`                | **обязателен в prod**    | Адрес отправителя писем                          |
 | `TELEGRAM_BOT_TOKEN`        | —                        | **Обязателен** для реальной Telegram-авторизации |
 | `RUN_SEED`                  | `false`                  | Сидирование демо-данных при старте backend       |
 | `VITE_API_URL`              | `/api`                   | Базовый URL API, инлайнится во фронтенд при сборке|
@@ -178,6 +189,8 @@ docker compose up -d --build
 | `RATE_LIMIT_TTL`/`MAX`      | `60` / `100`             | Лимиты запросов                                  |
 | `LOG_LEVEL`/`LOG_DIR`       | `info` / `logs`          | Логирование                                      |
 | `CACHE_TTL`/`REDIS_URL`     | `300` / `redis://redis:6379` | Кэширование через Redis                      |
+| `UPTIME_KUMA_PORT`          | `3001`                   | Порт мониторинга Uptime Kuma                     |
+| `VITE_SENTRY_DSN`           | —                        | Sentry DSN для frontend (опционально)            |
 
 ## Команды Prisma
 
