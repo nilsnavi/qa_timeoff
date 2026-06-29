@@ -6,7 +6,7 @@ import { Badge, Button, CustomSelect, EmptyState, ErrorState, Field, Loader, Mod
 import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
-import type { PositionHistory, Role, Team, User } from '../shared/types';
+import type { ImportUserResult, PositionHistory, Role, Team, User } from '../shared/types';
 import { getRoleLabel, showAppToast } from '../shared/utils';
 import { DataTable, type Column, type SortDirection } from '../components/dashboard-v2/DataTable';
 import { clsx } from 'clsx';
@@ -217,6 +217,38 @@ export function AdminPage() {
 
   const closeBalanceModal = () => { setBalanceModalOpen(false); setBalanceUserId(''); setBalanceUserName(''); setBalanceHours(0); setBalanceReason(''); };
 
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<string[][]>([]);
+  const [importResults, setImportResults] = useState<ImportUserResult[] | null>(null);
+  const [importStep, setImportStep] = useState<'select' | 'preview' | 'result'>('select');
+
+  const importMutation = useMutation({
+    mutationFn: (file: File) => api.importUsers(file),
+    onSuccess: (data) => {
+      setImportResults(data);
+      setImportStep('result');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      const created = data.filter(r => r.status === 'created').length;
+      if (created > 0) showAppToast(`Импортировано ${created} пользователей`);
+    },
+    onError: (err: any) => showAppToast(err.message ?? 'Ошибка импорта', undefined, 'error'),
+  });
+
+  function parsePreview(file: File): void {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = text
+        .split('\n')
+        .slice(0, 6)
+        .map(row => row.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      setImportPreview(rows);
+      setImportStep('preview');
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
   const [resetTarget, setResetTarget] = useState<User | null>(null);
   const [resetPassword, setResetPassword] = useState<string | null>(null);
 
@@ -277,7 +309,7 @@ export function AdminPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm"><Download size={14} className="mr-1" />Экспорт</Button>
-          <Button variant="secondary" size="sm"><FileSpreadsheet size={14} className="mr-1" />Импорт</Button>
+          <Button variant="secondary" size="sm" onClick={() => { setImportStep('select'); setImportFile(null); setImportPreview([]); setImportResults(null); setImportOpen(true); }}><FileSpreadsheet size={14} className="mr-1" />Импорт</Button>
           <Button onClick={() => setCreateOpen(true)}><UserPlus size={14} className="mr-1" />Добавить</Button>
         </div>
       </div>
@@ -585,6 +617,203 @@ export function AdminPage() {
                 </button>
               </div>
               <p className="text-[12px] text-white/30">{resetTarget.email ? 'Письмо уже отправлено на email пользователя.' : 'Передайте пароль пользователю лично — email не задан.'}</p>
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {importOpen && (
+        <Modal
+          open
+          title={importStep === 'select' ? 'Импорт пользователей' : importStep === 'preview' ? 'Предпросмотр' : 'Результат импорта'}
+          onClose={() => setImportOpen(false)}
+          footer={
+            importStep === 'select' ? (
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setImportOpen(false)}>Отмена</Button>
+                <Button disabled={!importFile} onClick={() => importFile && parsePreview(importFile)}>
+                  Далее
+                </Button>
+              </div>
+            ) : importStep === 'preview' ? (
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setImportStep('select')}>Назад</Button>
+                <Button
+                  disabled={importMutation.isPending}
+                  onClick={() => importFile && importMutation.mutate(importFile)}
+                >
+                  {importMutation.isPending ? 'Импортируем...' : `Импортировать ${importPreview.length - 1} строк`}
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => setImportOpen(false)}>Закрыть</Button>
+            )
+          }
+        >
+          {importStep === 'select' && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-dashed border-white/20 p-6 text-center">
+                <FileSpreadsheet size={32} className="mx-auto mb-3 text-white/25" />
+                <p className="text-[14px] font-medium text-white/60 mb-3">
+                  Выберите CSV-файл
+                </p>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  id="csv-upload"
+                  onChange={e => setImportFile(e.target.files?.[0] ?? null)}
+                />
+                <label
+                  htmlFor="csv-upload"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl
+                             bg-[#4C7DFF]/15 border border-[#4C7DFF]/25
+                             px-4 py-2.5 text-[14px] font-semibold text-[#6B96FF]
+                             hover:bg-[#4C7DFF]/25 transition-colors"
+                >
+                  <FileSpreadsheet size={15} />
+                  {importFile ? importFile.name : 'Выбрать файл'}
+                </label>
+              </div>
+              <div className="rounded-xl bg-white/[0.04] p-4 space-y-1.5">
+                <p className="text-[13px] font-semibold text-white/60">Формат CSV (разделитель — запятая):</p>
+                <code className="block text-[12px] text-[#4C7DFF]/80 bg-white/[0.03] rounded-lg px-3 py-2">
+                  fullName,email,role,teamName,position
+                </code>
+                <p className="text-[12px] text-white/35">
+                  role: ADMIN / MANAGER / LEAD / EMPLOYEE (или на русском)<br/>
+                  teamName и position — необязательны
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const csv = 'fullName,email,role,teamName,position\nИванов Иван,ivanov@company.ru,EMPLOYEE,QA-команда,Тестировщик';
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'import_template.csv'; a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="text-[13px] text-[#4C7DFF] hover:text-[#6B96FF] transition-colors"
+                >
+                  Скачать шаблон →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {importStep === 'preview' && importPreview.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-[13px] text-white/50">
+                Первые {importPreview.length - 1} строк (не считая заголовка):
+              </p>
+              <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-white/[0.07] bg-white/[0.03]">
+                      {importPreview[0]?.map((col, i) => (
+                        <th key={i} className="px-3 py-2 text-left text-[12px] font-semibold text-white/45">
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importPreview.slice(1).map((row, i) => (
+                      <tr key={i} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                        {row.map((cell, j) => (
+                          <td key={j} className="px-3 py-2 text-white/70">{cell || '—'}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {importStep === 'result' && importResults && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                {(['created', 'skipped', 'error'] as const).map(s => ({
+                  ...({
+                    created: { label: 'Создано', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                    skipped: { label: 'Пропущено', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                    error:   { label: 'Ошибки', color: 'text-rose-400', bg: 'bg-rose-500/10' },
+                  } as const)[s]),
+                }).map(({ label, color, bg }, i) => (
+                  <div key={i} className={`rounded-xl ${bg} p-3 text-center`}>
+                    <p className={`text-[22px] font-bold ${color}`}>
+                      {importResults.filter(r => r.status === s).length}
+                    </p>
+                    <p className="text-[12px] text-white/40">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="max-h-[280px] overflow-y-auto space-y-1.5">
+                {importResults.map((r, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                      r.status === 'created' ? 'bg-emerald-500/8'
+                      : r.status === 'skipped' ? 'bg-amber-500/8'
+                      : 'bg-rose-500/8'
+                    }`}
+                  >
+                    <div className={`h-2 w-2 shrink-0 rounded-full ${
+                      r.status === 'created' ? 'bg-emerald-500'
+                      : r.status === 'skipped' ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                    }`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold text-white/80 truncate">{r.fullName}</p>
+                      <p className="text-[12px] text-white/40">{r.email}</p>
+                      {r.reason && <p className="text-[12px] text-white/30 italic">{r.reason}</p>}
+                    </div>
+                    {r.status === 'created' && r.tempPassword && (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <code className="text-[13px] font-bold tracking-widest text-[#4C7DFF]">
+                          {r.tempPassword}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => { navigator.clipboard.writeText(r.tempPassword!); showAppToast('Скопировано'); }}
+                          className="text-white/30 hover:text-white/60 transition-colors"
+                        >
+                          <Copy size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {importResults.some(r => r.status === 'created') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const csv = [
+                      'fullName,email,tempPassword,status',
+                      ...importResults
+                        .filter(r => r.status === 'created')
+                        .map(r => `"${r.fullName}","${r.email}","${r.tempPassword}","${r.status}"`),
+                    ].join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'import_result.csv'; a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl
+                             bg-white/[0.04] border border-white/[0.07]
+                             px-4 py-2.5 text-[14px] font-semibold text-white/60
+                             hover:bg-white/[0.08] transition-colors"
+                >
+                  <Download size={15} />
+                  Скачать результаты с паролями
+                </button>
+              )}
             </div>
           )}
         </Modal>

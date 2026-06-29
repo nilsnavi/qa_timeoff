@@ -309,3 +309,11 @@ export interface AuditLogResponse {
   items: AuditLogEntry[];
   total: number;
 }
+
+export interface ImportUserResult {
+  fullName: string;
+  email: string;
+  tempPassword: string | null;
+  status: 'created' | 'skipped' | 'error';
+  reason?: string;
+}

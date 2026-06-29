@@ -37,6 +37,12 @@ export function useSseNotifications(token: string | null) {
             queryClient.invalidateQueries({ queryKey: ['calendar'] });
           }
 
+          if (data.type === 'TIMEOFF_CREATED' || data.type === 'VACATION_CREATED') {
+            queryClient.invalidateQueries({ queryKey: ['timeoff', 'pending'] });
+            queryClient.invalidateQueries({ queryKey: ['vacation', 'pending'] });
+            return;
+          }
+
           if (data.message) {
             const tone = data.type?.includes('REJECTED') ? 'error' : 'success';
             showAppToast(data.message, undefined, tone);

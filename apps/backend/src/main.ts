@@ -25,9 +25,30 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true, logger });
   const config = app.get(ConfigService);
 
+  const frontendUrl = config.get<string>('FRONTEND_URL') ?? '';
+  const apiUrl = `http://localhost:${config.get<number>('API_PORT') ?? 3000}`;
+  const connectSrcUrls = ["'self'", apiUrl, frontendUrl].filter(Boolean);
+
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      // Шаг 1: Report-Only — логируем нарушения, не блокируем.
+      // Когда убедимся что всё работает — заменить на contentSecurityPolicy: { directives: {...} }
+      contentSecurityPolicy: {
+        reportOnly: true,
+        directives: {
+          defaultSrc:     ["'self'"],
+          scriptSrc:      ["'self'"],
+          styleSrc:       ["'self'", "'unsafe-inline'"],
+          imgSrc:         ["'self'", 'data:', 'blob:'],
+          fontSrc:        ["'self'", 'data:'],
+          connectSrc:     connectSrcUrls,
+          frameSrc:       ["'none'"],
+          objectSrc:      ["'none'"],
+          baseUri:        ["'self'"],
+          formAction:     ["'self'"],
+          upgradeInsecureRequests: [],
+        },
+      },
       crossOriginEmbedderPolicy: false,
     }),
   );
@@ -58,14 +79,17 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('QA TimeOff API')
-    .setDescription('API for time off and vacation management')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  const nodeEnv = config.get<string>('NODE_ENV');
+  if (nodeEnv !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('QA TimeOff API')
+      .setDescription('API for time off and vacation management')
+      .setVersion('0.1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   await app.listen(config.getOrThrow<number>('API_PORT'), '0.0.0.0');
 }

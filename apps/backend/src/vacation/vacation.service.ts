@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RequestStatus, Role, User } from '@prisma/client';
+import { Prisma, RequestStatus, Role, User, VacationType } from '@prisma/client';
 import { EventBusService } from '../events/event-bus.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { NotificationType } from '../notifications/notification-types';
@@ -39,7 +39,7 @@ export class VacationService {
     const endDate = this.parseDate(dto.endDate);
     const daysCount = this.calculateDaysCount(startDate, endDate);
 
-    return this.prisma.$transaction(async (tx) => {
+    const request = await this.prisma.$transaction(async (tx) => {
       const request = await tx.vacationRequest.create({
         data: {
           userId: currentUser.id,
@@ -75,13 +75,44 @@ export class VacationService {
 
       return request;
     });
+
+    this.eventBus.emit('leave-request.created', {
+      requestId: request.id,
+      userId:    currentUser.id,
+      teamId:    currentUser.teamId ?? null,
+      type:      'VACATION_CREATED',
+      message:   `${currentUser.fullName} создал заявку на отпуск`,
+    });
+
+    return request;
   }
 
-  getMyRequests(userId: string) {
+  getMyRequests(userId: string, params: {
+    status?: string;
+    vacationType?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    cursor?: string;
+  } = {}) {
+    const { status, vacationType, from, to, limit = 20, cursor } = params;
+
     return this.prisma.vacationRequest.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(status && status !== 'ALL' ? { status: status as RequestStatus } : {}),
+        ...(vacationType && vacationType !== 'ALL' ? { vacationType: vacationType as VacationType } : {}),
+        ...(from || to ? {
+          startDate: {
+            ...(from ? { gte: new Date(from) } : {}),
+            ...(to   ? { lte: new Date(to)   } : {}),
+          },
+        } : {}),
+      },
       include: vacationInclude,
       orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 

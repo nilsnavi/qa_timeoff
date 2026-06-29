@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-qa_timeoff}
       POSTGRES_USER: ${POSTGRES_USER:-qa_timeoff}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qa_timeoff}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set. Run: openssl rand -base64 24}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -44,7 +44,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 3000
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-qa_timeoff}:${POSTGRES_PASSWORD:-qa_timeoff}@postgres:5432/${POSTGRES_DB:-qa_timeoff}?schema=public"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-qa_timeoff}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qa_timeoff}?schema=public"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       AUTH_MODE: ${AUTH_MODE:-web}
       ENABLE_TELEGRAM_AUTH: ${ENABLE_TELEGRAM_AUTH:-false}
@@ -69,6 +69,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - backend-logs:/app/logs
     expose:
       - "3000"
     healthcheck:
@@ -82,6 +84,20 @@ services:
     networks:
       - qa-timeoff-net
 
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: qa-timeoff-uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - uptime-kuma-data:/app/data
+    ports:
+      - "${UPTIME_KUMA_PORT:-3001}:3001"
+    networks:
+      - qa-timeoff-net
+    depends_on:
+      backend:
+        condition: service_healthy
+
   db-backup:
     image: postgres:16-alpine
     container_name: qa-timeoff-db-backup
@@ -92,7 +108,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-qa_timeoff}
       POSTGRES_USER: ${POSTGRES_USER:-qa_timeoff}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qa_timeoff}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set}
       BACKUP_DIR: /backups
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 3 * * *}
@@ -113,6 +129,8 @@ services:
       dockerfile: apps/frontend/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${VITE_SENTRY_ENVIRONMENT:-production}
     container_name: qa-timeoff-frontend
     restart: unless-stopped
     depends_on:
@@ -146,6 +164,8 @@ volumes:
   redis-data:
   caddy-data:
   db-backups:
+  uptime-kuma-data:
+  backend-logs:
 
 networks:
   qa-timeoff-net:

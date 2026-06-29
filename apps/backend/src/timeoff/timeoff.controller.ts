@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -29,8 +29,21 @@ export class TimeOffController {
   }
 
   @Get('my')
-  getMyRequests(@CurrentUser() currentUser: User) {
-    return this.timeOffService.getMyRequests(currentUser.id);
+  getMyRequests(
+    @CurrentUser() currentUser: User,
+    @Query('status')  status?: string,
+    @Query('from')    from?: string,
+    @Query('to')      to?: string,
+    @Query('limit')   limit?: string,
+    @Query('cursor')  cursor?: string,
+  ) {
+    return this.timeOffService.getMyRequests(currentUser.id, {
+      status,
+      from,
+      to,
+      limit: limit ? Number(limit) : 20,
+      cursor,
+    });
   }
 
   @Get('pending')

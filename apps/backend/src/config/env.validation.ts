@@ -19,6 +19,12 @@ interface ValidatedEnv {
   LOG_DIR?: string;
   CACHE_TTL: number;
   REDIS_URL?: string;
+  SMTP_HOST?: string;
+  SMTP_PORT?: number;
+  SMTP_SECURE?: boolean;
+  SMTP_USER?: string;
+  SMTP_PASS?: string;
+  EMAIL_FROM?: string;
   ADMIN_TELEGRAM_ID?: string;
 }
 
@@ -128,6 +134,12 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
   const LOG_DIR = optionalString(config, 'LOG_DIR');
   const CACHE_TTL = parsePositiveInt(config.CACHE_TTL, 'CACHE_TTL', 300);
   const REDIS_URL = optionalString(config, 'REDIS_URL');
+  const SMTP_HOST    = optionalString(config, 'SMTP_HOST');
+  const SMTP_USER    = optionalString(config, 'SMTP_USER');
+  const SMTP_PASS    = optionalString(config, 'SMTP_PASS');
+  const EMAIL_FROM   = optionalString(config, 'EMAIL_FROM');
+  const SMTP_PORT    = config['SMTP_PORT'] ? Number(config['SMTP_PORT']) : undefined;
+  const SMTP_SECURE  = config['SMTP_SECURE'] === 'true' || config['SMTP_SECURE'] === true;
   const ADMIN_TELEGRAM_ID = optionalString(config, 'ADMIN_TELEGRAM_ID');
 
   if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
@@ -136,6 +148,21 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
 
   if (ENABLE_TELEGRAM_AUTH && !TELEGRAM_BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN is required when ENABLE_TELEGRAM_AUTH=true');
+  }
+
+  // В продакшне SMTP обязателен — без него временные пароли не доходят
+  if (NODE_ENV === 'production') {
+    const smtpMissing: string[] = [];
+    if (!SMTP_HOST)  smtpMissing.push('SMTP_HOST');
+    if (!SMTP_USER)  smtpMissing.push('SMTP_USER');
+    if (!SMTP_PASS)  smtpMissing.push('SMTP_PASS');
+    if (!EMAIL_FROM) smtpMissing.push('EMAIL_FROM');
+    if (smtpMissing.length > 0) {
+      throw new Error(
+        `Missing required SMTP configuration in production: ${smtpMissing.join(', ')}. ` +
+        'Email notifications are required for user management (temp passwords, approvals).'
+      );
+    }
   }
 
   return {
@@ -157,6 +184,12 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
     LOG_DIR,
     CACHE_TTL,
     REDIS_URL,
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_SECURE,
+    SMTP_USER,
+    SMTP_PASS,
+    EMAIL_FROM,
     ADMIN_TELEGRAM_ID,
   };
 }

@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock3, Edit3, Plane, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Calendar, ChevronDown, Clock3, Edit3, Plane, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, Modal, SkeletonCard, StatusBadge } from '../components/ui';
+import { CustomSelect } from '../components/ui/CustomSelect';
+import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { RequestStatus, TimeOffRequest, VacationRequest } from '../shared/types';
@@ -36,41 +38,152 @@ const defaultFilterLabels: Record<string, string> = {
   REJECTED: 'Отклонены',
 };
 
+function getPeriodRange(period: string): { from: string; to: string } | undefined {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+  if (period === 'month') {
+    return {
+      from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)),
+      to:   fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+    };
+  }
+  if (period === 'quarter') {
+    const q = Math.floor(now.getMonth() / 3);
+    return {
+      from: fmt(new Date(now.getFullYear(), q * 3, 1)),
+      to:   fmt(new Date(now.getFullYear(), q * 3 + 3, 0)),
+    };
+  }
+  if (period === 'year') {
+    return {
+      from: fmt(new Date(now.getFullYear(), 0, 1)),
+      to:   fmt(new Date(now.getFullYear(), 11, 31)),
+    };
+  }
+  return undefined;
+}
+
 export function MyRequestsPage() {
   const { dashboard } = useDashboard();
   const queryClient = useQueryClient();
   const hasToken = !!localStorage.getItem('qa-timeoff-token');
   const [filter, setFilter] = useState<FilterValue>('ALL');
+  const [period, setPeriod] = useState<string>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [showCustom, setShowCustom] = useState(false);
+  const [kindFilter, setKindFilter] = useState<'ALL'|'timeoff'|'vacation'>('ALL');
+  const [cursorTimeOff, setCursorTimeOff] = useState<string | undefined>(undefined);
+  const [cursorVacation, setCursorVacation] = useState<string | undefined>(undefined);
+  const [hasMoreTimeOff, setHasMoreTimeOff] = useState(true);
+  const [hasMoreVacation, setHasMoreVacation] = useState(true);
+  const [accTimeOff, setAccTimeOff] = useState<TimeOffRequest[]>([]);
+  const [accVacations, setAccVacations] = useState<VacationRequest[]>([]);
   const [editTarget, setEditTarget] = useState<MyRequestCard | null>(null);
   const [editDate, setEditDate] = useState('');
   const [editHours, setEditHours] = useState(0);
   const [editReason, setEditReason] = useState('');
 
+  const PAGE_LIMIT = 15;
+
+  const dateRange = useMemo(() => {
+    if (period === 'custom') return { from: customFrom || undefined, to: customTo || undefined };
+    return getPeriodRange(period);
+  }, [period, customFrom, customTo]);
+
   const timeOffQuery = useQuery({
-    queryKey: ['timeoff', 'my'],
-    queryFn: api.myTimeOff,
-    enabled: hasToken,
+    queryKey: ['timeoff', 'my', filter, period, customFrom, customTo],
+    queryFn: () => api.myTimeOff({
+      status: filter !== 'ALL' ? filter : undefined,
+      from: dateRange?.from,
+      to:   dateRange?.to,
+      limit: PAGE_LIMIT,
+    }),
+    enabled: hasToken && (kindFilter === 'ALL' || kindFilter === 'timeoff'),
   });
+
   const vacationsQuery = useQuery({
-    queryKey: ['vacation', 'my'],
-    queryFn: api.myVacations,
-    enabled: hasToken,
+    queryKey: ['vacation', 'my', filter, period, customFrom, customTo],
+    queryFn: () => api.myVacations({
+      status: filter !== 'ALL' ? filter : undefined,
+      from: dateRange?.from,
+      to:   dateRange?.to,
+      limit: PAGE_LIMIT,
+    }),
+    enabled: hasToken && (kindFilter === 'ALL' || kindFilter === 'vacation'),
   });
+
+  useEffect(() => {
+    if (timeOffQuery.data) {
+      setAccTimeOff(timeOffQuery.data.slice(0, PAGE_LIMIT));
+      setHasMoreTimeOff(timeOffQuery.data.length > PAGE_LIMIT);
+      setCursorTimeOff(timeOffQuery.data[PAGE_LIMIT - 1]?.id);
+    }
+  }, [timeOffQuery.data]);
+
+  useEffect(() => {
+    if (vacationsQuery.data) {
+      setAccVacations(vacationsQuery.data.slice(0, PAGE_LIMIT));
+      setHasMoreVacation(vacationsQuery.data.length > PAGE_LIMIT);
+      setCursorVacation(vacationsQuery.data[PAGE_LIMIT - 1]?.id);
+    }
+  }, [vacationsQuery.data]);
+
+  useEffect(() => {
+    setAccTimeOff([]);
+    setAccVacations([]);
+    setCursorTimeOff(undefined);
+    setCursorVacation(undefined);
+    setHasMoreTimeOff(true);
+    setHasMoreVacation(true);
+  }, [filter, period, customFrom, customTo, kindFilter]);
+
+  const loadMoreTimeOff = async () => {
+    if (!cursorTimeOff) return;
+    const more = await api.myTimeOff({
+      status: filter !== 'ALL' ? filter : undefined,
+      from: dateRange?.from,
+      to:   dateRange?.to,
+      limit: PAGE_LIMIT,
+      cursor: cursorTimeOff,
+    });
+    const items = more.slice(0, PAGE_LIMIT);
+    setAccTimeOff(prev => [...prev, ...items]);
+    setHasMoreTimeOff(more.length > PAGE_LIMIT);
+    setCursorTimeOff(items[items.length - 1]?.id);
+  };
+
+  const loadMoreVacations = async () => {
+    if (!cursorVacation) return;
+    const more = await api.myVacations({
+      status: filter !== 'ALL' ? filter : undefined,
+      from: dateRange?.from,
+      to:   dateRange?.to,
+      limit: PAGE_LIMIT,
+      cursor: cursorVacation,
+    });
+    const items = more.slice(0, PAGE_LIMIT);
+    setAccVacations(prev => [...prev, ...items]);
+    setHasMoreVacation(more.length > PAGE_LIMIT);
+    setCursorVacation(items[items.length - 1]?.id);
+  };
 
   const fallbackTimeOff = dashboard.requests.filter((request) => request.userId === dashboard.user.id);
   const fallbackVacations = (dashboard.vacations ?? []).filter((request) => request.userId === dashboard.user.id);
   const allRequests = useMemo(
     () =>
       [
-        ...(timeOffQuery.data ?? fallbackTimeOff).map(mapTimeOffRequest),
-        ...(vacationsQuery.data ?? fallbackVacations).map(mapVacationRequest),
-      ].sort((a, b) => b.comparableDate.localeCompare(a.comparableDate)),
-    [fallbackTimeOff, fallbackVacations, timeOffQuery.data, vacationsQuery.data],
+        ...accTimeOff.length > 0 ? accTimeOff.map(mapTimeOffRequest) : [],
+        ...accVacations.length > 0 ? accVacations.map(mapVacationRequest) : [],
+      ]
+        .filter(r => kindFilter === 'ALL' || r.kind === kindFilter)
+        .sort((a, b) => b.comparableDate.localeCompare(a.comparableDate)),
+    [accTimeOff, accVacations, kindFilter],
   );
-  const requests = useMemo(
-    () => allRequests.filter((request) => filter === 'ALL' || request.status === filter),
-    [allRequests, filter],
-  );
+
+  const requests = allRequests;
 
   const counts = useMemo(() => ({
     ALL: allRequests.length,
@@ -118,6 +231,12 @@ export function MyRequestsPage() {
     vacationsQuery.refetch();
   };
 
+  const hasMore = hasMoreTimeOff || hasMoreVacation;
+  const loadMore = () => {
+    if (hasMoreTimeOff)  loadMoreTimeOff();
+    if (hasMoreVacation) loadMoreVacations();
+  };
+
   if (hasError) {
     return <ErrorState title="Заявки не загрузились" description="Не удалось получить список ваших заявок." onRetry={retry} />;
   }
@@ -137,7 +256,7 @@ export function MyRequestsPage() {
           <Badge tone="info">{requests.length}</Badge>
         </div>
 
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {filters.map((item) => (
             <button
               key={item.value}
@@ -146,13 +265,62 @@ export function MyRequestsPage() {
               className={`min-h-10 shrink-0 rounded-[18px] px-4 text-sm font-black transition ${
                 filter === item.value
                   ? 'app-gradient text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/[0.10] bg-[#111A2E]/70 text-[#7A8599] ring-white/[0.06]'
+                  : 'bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/[0.06]'
               }`}
             >
               {item.label}
             </button>
           ))}
         </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <div className="w-40">
+            <CustomSelect
+              value={kindFilter}
+              onChange={v => setKindFilter(v as 'ALL'|'timeoff'|'vacation')}
+              options={[
+                { value: 'ALL',      label: 'Все типы' },
+                { value: 'timeoff',  label: 'Отгулы'   },
+                { value: 'vacation', label: 'Отпуска'  },
+              ]}
+              small
+            />
+          </div>
+
+          <div className="w-52">
+            <CustomSelect
+              value={period}
+              onChange={v => { setPeriod(v); setShowCustom(v === 'custom'); }}
+              options={[
+                { value: 'all',     label: 'Любой период'     },
+                { value: 'month',   label: 'Текущий месяц'    },
+                { value: 'quarter', label: 'Текущий квартал'  },
+                { value: 'year',    label: 'Текущий год'      },
+                { value: 'custom',  label: 'Произвольный...'  },
+              ]}
+              small
+            />
+          </div>
+        </div>
+
+        {showCustom && (
+          <div className="mt-2 flex gap-2 items-center">
+            <Calendar size={14} className="text-white/30 shrink-0" />
+            <input
+              type="date"
+              value={customFrom}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="field-input text-[13px] py-1.5 flex-1"
+            />
+            <span className="text-white/30 text-[13px]">—</span>
+            <input
+              type="date"
+              value={customTo}
+              onChange={e => setCustomTo(e.target.value)}
+              className="field-input text-[13px] py-1.5 flex-1"
+            />
+          </div>
+        )}
       </Card>
 
       {requests.length === 0 ? (
@@ -179,6 +347,19 @@ export function MyRequestsPage() {
             />
           ))}
         </div>
+      )}
+
+      {hasMore && requests.length > 0 && (
+        <button
+          type="button"
+          onClick={loadMore}
+          className="flex w-full items-center justify-center gap-2 rounded-[18px]
+                     bg-[#111A2E]/70 text-[#7A8599] ring-1 ring-white/[0.06]
+                     py-3 text-sm font-bold transition hover:text-white/70"
+        >
+          <ChevronDown size={16} />
+          Показать ещё
+        </button>
       )}
 
       {editTarget && (

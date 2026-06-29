@@ -84,6 +84,83 @@ docker compose exec backend sh
 docker compose exec backend node apps/backend/dist/prisma/seed.js
 ```
 
+## Деплой в продакшн
+
+### 1. Сгенерировать секреты
+
+```bash
+# JWT_SECRET (минимум 32 символа)
+echo "JWT_SECRET=$(openssl rand -hex 32)"
+
+# Пароль базы данных
+echo "POSTGRES_PASSWORD=$(openssl rand -base64 24)"
+```
+
+### 2. Создать .env файл
+
+```bash
+cp apps/backend/.env.example .env
+```
+
+Открыть .env и заполнить обязательные переменные:
+
+| Переменная          | Описание                          | Как получить                   |
+|---------------------|-----------------------------------|-------------------------------|
+| `JWT_SECRET`        | Секрет подписи JWT токенов        | `openssl rand -hex 32`        |
+| `POSTGRES_PASSWORD` | Пароль базы данных                | `openssl rand -base64 24`     |
+| `SMTP_HOST`         | SMTP-сервер для email             | У вашего провайдера           |
+| `SMTP_USER`         | Логин SMTP                        | У вашего провайдера           |
+| `SMTP_PASS`         | Пароль SMTP                       | У вашего провайдера           |
+| `EMAIL_FROM`        | Адрес отправителя                 | Пример: `noreply@domain.ru`   |
+| `FRONTEND_URL`      | Публичный URL приложения          | Пример: `https://domain.ru`   |
+| `CORS_ORIGIN`       | Разрешённый origin для CORS       | То же что `FRONTEND_URL`      |
+
+### 3. Запустить
+
+```bash
+docker compose up -d --build
+```
+
+### 4. Проверить
+
+```bash
+# Все сервисы запущены
+docker compose ps
+
+# Health check
+curl http://localhost:8080/health | jq .
+
+# Логи бэкенда
+docker compose logs backend --tail=50
+```
+
+### Сброс пароля администратора
+
+Если забыт пароль admin-пользователя:
+
+```bash
+# Зайти в бэкенд контейнер
+docker exec -it qa-timeoff-backend sh
+
+# Сгенерировать новый хеш (заменить YOUR_NEW_PASSWORD)
+node -e "
+const bcrypt = require('bcrypt');
+bcrypt.hash('YOUR_NEW_PASSWORD', 10).then(h => console.log(h));
+"
+
+# Обновить в БД (заменить HASH и EMAIL)
+docker exec -it qa-timeoff-postgres psql -U qa_timeoff -d qa_timeoff -c \
+  "UPDATE \"User\" SET \"passwordHash\"='HASH', \"mustChangePassword\"=true WHERE email='EMAIL';"
+```
+
+### Обновление приложения
+
+```bash
+git pull
+docker compose up -d --build
+# Миграции применяются автоматически при старте бэкенда
+```
+
 ### Переменные окружения (`.env`)
 
 | Переменная                  | По умолчанию             | Назначение                                       |
@@ -339,3 +416,151 @@ sudo FORCE=1 BACKUP_FILE=/path/to/dump.sql.gz ./scripts/restore-db.sh
 | Хост-скрипты         | `/opt/backups/qa_timeoff/`                        | `sudo rm -rf /opt/backups` |
 
 Backup-файлы **не хранятся в Git** — они исключены через [`.gitignore`](.gitignore).
+
+---
+
+## Обновление приложения
+
+### Обновление до новой версии
+
+```bash
+# 1. Зайти в директорию проекта
+cd /path/to/qa_timeoff
+
+# 2. Получить новый код
+git pull
+
+# 3. Пересобрать и перезапустить
+docker compose up -d --build
+```
+
+Миграции БД применяются автоматически при старте backend-контейнера.
+Downtime при обновлении: ~30 секунд (пока пересобираются контейнеры).
+
+### Откат к предыдущей версии
+
+```bash
+# Посмотреть историю коммитов
+git log --oneline -10
+
+# Откатиться к конкретному коммиту
+git checkout <commit-hash>
+
+# Пересобрать
+docker compose up -d --build
+```
+
+> ⚠️ Если между версиями были миграции БД — откат может сломать схему.
+> Перед обновлением всегда делай ручной бэкап:
+> ```bash
+> docker compose exec db-backup /usr/local/bin/backup.sh
+> ```
+
+---
+
+## Сброс пароля администратора
+
+Если пароль администратора утерян:
+
+### Способ 1 — Через другого администратора (рекомендуется)
+
+Если в системе есть другой пользователь с ролью ADMIN:
+1. Войти как этот администратор
+2. Перейти в Администрирование → Пользователи
+3. Найти нужного пользователя → кнопка 🔑 «Сбросить пароль»
+4. Новый временный пароль будет отправлен на email пользователя
+5. При следующем входе система попросит сменить пароль
+
+### Способ 2 — Напрямую в базе данных
+
+Если доступа к интерфейсу нет совсем:
+
+```bash
+# 1. Сгенерировать хеш нового временного пароля
+docker compose exec backend node -e "
+const bcrypt = require('bcrypt');
+bcrypt.hash('NewTempPass123!', 10).then(h => {
+  console.log('HASH:', h);
+}).catch(console.error);
+"
+```
+
+Скопируй строку после `HASH:` (начинается с `$2b$`).
+
+```bash
+# 2. Обновить пароль в БД (замени HASH и EMAIL)
+docker compose exec postgres psql -U qa_timeoff -d qa_timeoff -c "
+UPDATE \"User\"
+SET \"passwordHash\" = 'HASH_FROM_STEP_1',
+    \"mustChangePassword\" = true
+WHERE email = 'admin@yourdomain.ru';
+"
+```
+
+```bash
+# 3. Проверить что пользователь найден (должна вернуться 1 строка)
+docker compose exec postgres psql -U qa_timeoff -d qa_timeoff -c "
+SELECT id, \"fullName\", email, \"mustChangePassword\"
+FROM \"User\"
+WHERE email = 'admin@yourdomain.ru';
+"
+```
+
+После входа с временным паролем система автоматически попросит задать постоянный.
+
+### Способ 3 — Если нет доступа к серверу
+
+Обратись к системному администратору с доступом к серверу.
+Он выполнит Способ 2.
+
+---
+
+## Диагностика проблем
+
+### Приложение не запускается
+
+```bash
+# Посмотреть статус всех контейнеров
+docker compose ps
+
+# Логи конкретного сервиса
+docker compose logs backend --tail=50
+docker compose logs postgres --tail=20
+
+# Частая причина: не задан JWT_SECRET или POSTGRES_PASSWORD
+docker compose exec backend env | grep JWT
+docker compose exec backend env | grep POSTGRES
+```
+
+### Email не отправляется
+
+```bash
+# Проверить статус SMTP через API (нужен токен администратора)
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/api/admin/smtp/status
+
+# Отправить тестовое письмо
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"email":"your@email.com"}' \
+     http://localhost:8080/api/admin/smtp/test
+```
+
+### Высокое потребление памяти
+
+```bash
+# Посмотреть потребление ресурсов
+docker stats
+
+# Перезапустить конкретный сервис
+docker compose restart backend
+```
+
+### Ошибки в логах
+
+```bash
+# Только ошибки из backend (последние 100 строк)
+docker compose logs backend --tail=100 | grep -i "error\|warn\|fail"
+
+# Логи в файлах (если настроен LOG_DIR)
+docker compose exec backend tail -f /app/logs/error-$(date +%Y-%m-%d).log
+```

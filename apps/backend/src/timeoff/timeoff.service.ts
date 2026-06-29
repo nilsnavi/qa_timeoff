@@ -36,7 +36,7 @@ export class TimeOffService {
   ) {}
 
   async create(currentUser: User, dto: CreateTimeOffRequestDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const request = await this.prisma.$transaction(async (tx) => {
       const request = await tx.timeOffRequest.create({
         data: {
           userId: currentUser.id,
@@ -71,13 +71,43 @@ export class TimeOffService {
 
       return request;
     });
+
+    this.eventBus.emit('leave-request.created', {
+      requestId: request.id,
+      userId:    currentUser.id,
+      teamId:    currentUser.teamId ?? null,
+      type:      'TIMEOFF_CREATED',
+      message:   `${currentUser.fullName} создал заявку на отгул`,
+    });
+
+    return request;
   }
 
-  getMyRequests(userId: string) {
+  getMyRequests(userId: string, params: {
+    status?: string;
+    kind?: 'timeoff' | 'vacation';
+    from?: string;
+    to?: string;
+    limit?: number;
+    cursor?: string;
+  } = {}) {
+    const { status, from, to, limit = 20, cursor } = params;
+
     return this.prisma.timeOffRequest.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(status && status !== 'ALL' ? { status: status as RequestStatus } : {}),
+        ...(from || to ? {
+          date: {
+            ...(from ? { gte: new Date(from) } : {}),
+            ...(to   ? { lte: new Date(to)   } : {}),
+          },
+        } : {}),
+      },
       include: timeOffInclude,
       orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
   }
 

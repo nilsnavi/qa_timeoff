@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma, Role, User } from '@prisma/client';
+import { ImportUserResult, ImportUserRow } from './dto/import-users.dto';
 import * as bcrypt from 'bcrypt';
 import { generateTempPassword } from '../auth/temp-password.util';
 import { EmailNotificationService } from '../notifications/email-notification.service';
@@ -160,6 +161,94 @@ export class UsersService {
     });
 
     return { success: true };
+  }
+
+  async importFromCsv(csvText: string): Promise<ImportUserResult[]> {
+    const lines = csvText
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    if (lines.length < 2) {
+      throw new BadRequestException('CSV должен содержать заголовок и хотя бы одну строку данных');
+    }
+
+    // Парсинг заголовка
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''));
+    const colIndex = {
+      fullName: header.indexOf('fullname'),
+      email:    header.indexOf('email'),
+      role:     header.indexOf('role'),
+      teamName: header.indexOf('teamname'),
+      position: header.indexOf('position'),
+    };
+
+    if (colIndex.fullName === -1 || colIndex.email === -1) {
+      throw new BadRequestException('CSV должен содержать колонки: fullName, email');
+    }
+
+    const results: ImportUserResult[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const row: ImportUserRow = {
+        fullName: cols[colIndex.fullName] ?? '',
+        email:    cols[colIndex.email] ?? '',
+        role:     cols[colIndex.role] ?? 'EMPLOYEE',
+        teamName: colIndex.teamName !== -1 ? cols[colIndex.teamName] : undefined,
+        position: colIndex.position !== -1 ? cols[colIndex.position] : undefined,
+      };
+
+      if (!row.fullName || !row.email) {
+        results.push({ fullName: row.fullName, email: row.email, tempPassword: null, status: 'error', reason: 'fullName и email обязательны' });
+        continue;
+      }
+
+      // Проверить валидность email
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+        results.push({ fullName: row.fullName, email: row.email, tempPassword: null, status: 'error', reason: 'Некорректный email' });
+        continue;
+      }
+
+      // Проверить email на дублирование
+      const existing = await this.prisma.user.findUnique({ where: { email: row.email } });
+      if (existing) {
+        results.push({ fullName: row.fullName, email: row.email, tempPassword: null, status: 'skipped', reason: 'Email уже занят' });
+        continue;
+      }
+
+      // Найти команду по имени
+      let teamId: string | null = null;
+      if (row.teamName) {
+        const team = await this.prisma.team.findFirst({ where: { name: { equals: row.teamName, mode: 'insensitive' } } });
+        teamId = team?.id ?? null;
+      }
+
+      // Сопоставить роль
+      const roleMap: Record<string, Role> = {
+        admin: Role.ADMIN, administrator: Role.ADMIN, администратор: Role.ADMIN,
+        manager: Role.MANAGER, руководитель: Role.MANAGER,
+        lead: Role.LEAD, лид: Role.LEAD,
+        employee: Role.EMPLOYEE, сотрудник: Role.EMPLOYEE,
+      };
+      const resolvedRole = roleMap[row.role.toLowerCase()] ?? Role.EMPLOYEE;
+
+      try {
+        const { user, tempPassword } = await this.create({
+          fullName: row.fullName,
+          email:    row.email,
+          role:     resolvedRole,
+          teamId:   teamId ?? undefined,
+          position: row.position,
+        });
+        results.push({ fullName: user.fullName, email: user.email!, tempPassword, status: 'created' });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Неизвестная ошибка';
+        results.push({ fullName: row.fullName, email: row.email, tempPassword: null, status: 'error', reason: message });
+      }
+    }
+
+    return results;
   }
 
   remove(id: string) {

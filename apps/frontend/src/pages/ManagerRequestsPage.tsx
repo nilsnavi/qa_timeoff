@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock3, Plane, UserRound, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorState, Modal, SkeletonCard, Textarea } from '../components/ui';
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
@@ -35,6 +35,7 @@ export function ManagerRequestsPage() {
   const queryClient = useQueryClient();
   const hasToken = !!localStorage.getItem('qa-timeoff-token');
   const [filter, setFilter] = useState<FilterValue>('ALL');
+  const [newRequestsCount, setNewRequestsCount] = useState(0);
   const [rejectTarget, setRejectTarget] = useState<ManagerRequestCard | null>(null);
   const [rejectComment, setRejectComment] = useState('');
 
@@ -63,6 +64,30 @@ export function ManagerRequestsPage() {
     () => allRequests.filter((request) => filter === 'ALL' || (filter === 'TIME_OFF' ? request.kind === 'timeoff' : request.kind === 'vacation')),
     [allRequests, filter],
   );
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (
+        event.type === 'updated' &&
+        event.action.type === 'success' &&
+        Array.isArray(event.query.queryKey) &&
+        event.query.queryKey[0] === 'timeoff' &&
+        event.query.queryKey[1] === 'pending'
+      ) {
+        const freshData = event.action.data as TimeOffRequest[] | undefined;
+        const prevCount = timeOffQuery.data?.length ?? 0;
+        const freshCount = freshData?.length ?? 0;
+        if (freshCount > prevCount) {
+          setNewRequestsCount(prev => prev + (freshCount - prevCount));
+        }
+      }
+    });
+    return unsubscribe;
+  }, [queryClient, timeOffQuery.data?.length]);
+
+  useEffect(() => {
+    setNewRequestsCount(0);
+  }, []);
+
   const isLoading = (timeOffQuery.isLoading || vacationsQuery.isLoading) && allRequests.length === 0;
   const hasError = (timeOffQuery.isError || vacationsQuery.isError) && allRequests.length === 0;
 
@@ -115,7 +140,21 @@ export function ManagerRequestsPage() {
             <p className="text-sm font-bold text-[#7A8599]">Руководитель</p>
             <h2 className="text-xl font-black text-white">Заявки команды</h2>
           </div>
-          <Badge tone="warning">{requests.length}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge tone="warning">{requests.length}</Badge>
+            {newRequestsCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setNewRequestsCount(0)}
+                className="flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/25
+                           px-3 py-1 text-[13px] font-semibold text-amber-400
+                           hover:bg-amber-500/25 transition-colors"
+              >
+                +{newRequestsCount} новых
+                <X size={12} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">

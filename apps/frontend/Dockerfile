@@ -21,6 +21,10 @@ COPY packages/shared packages/shared
 # Default points at nginx-proxied /api path, override at build time if needed.
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_SENTRY_DSN=
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
+ARG VITE_SENTRY_ENVIRONMENT=production
+ENV VITE_SENTRY_ENVIRONMENT=${VITE_SENTRY_ENVIRONMENT}
 
 RUN npm run build --workspace @qa-timeoff/frontend
 

@@ -1,4 +1,5 @@
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
 import { format, transports } from 'winston';
 
 type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';
@@ -30,19 +31,25 @@ export function createWinstonTransports(options: WinstonConfigOptions) {
     const directory = options.logDir ?? 'logs';
 
     baseTransports.push(
-      new transports.File({
-        filename: `${directory}/error.log`,
+      new DailyRotateFile({
+        filename: `${directory}/error-%DATE%.log`,
+        datePattern: 'YYYY-MM-DD',
         level: 'error',
+        maxFiles: '90d',
+        maxSize: '20m',
         format: format.combine(format.timestamp(), format.errors({ stack: true }), format.json()),
-      }),
+      }) as any,
     );
 
     baseTransports.push(
-      new transports.File({
-        filename: `${directory}/combined.log`,
+      new DailyRotateFile({
+        filename: `${directory}/combined-%DATE%.log`,
+        datePattern: 'YYYY-MM-DD',
         level: options.logLevel,
+        maxFiles: '30d',
+        maxSize: '50m',
         format: format.combine(format.timestamp(), format.errors({ stack: true }), format.json()),
-      }),
+      }) as any,
     );
   }
 

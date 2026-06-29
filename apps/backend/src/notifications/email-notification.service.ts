@@ -24,6 +24,45 @@ export class EmailNotificationService {
     });
   }
 
+  /** Возвращает true если SMTP настроен и transporter создан */
+  isConfigured(): boolean {
+    return this.transporter !== null;
+  }
+
+  /** Проверяет реальное соединение с SMTP-сервером */
+  async verifyConnection(): Promise<{ ok: boolean; error?: string }> {
+    if (!this.transporter) {
+      return { ok: false, error: 'SMTP not configured (SMTP_HOST is missing)' };
+    }
+    try {
+      await this.transporter.verify();
+      return { ok: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: message };
+    }
+  }
+
+  /** Отправляет тестовое письмо на указанный адрес */
+  async sendTestEmail(to: string): Promise<{ ok: boolean; error?: string }> {
+    if (!this.transporter) {
+      return { ok: false, error: 'SMTP not configured' };
+    }
+    try {
+      await this.transporter.sendMail({
+        from: this.config.get('EMAIL_FROM'),
+        to,
+        subject: 'QA TimeOff: тест SMTP',
+        text: 'Это тестовое письмо. SMTP работает корректно.',
+        html: '<p>Это тестовое письмо. <b>SMTP работает корректно.</b></p>',
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: message };
+    }
+  }
+
   async sendRequestApproved(email: string, fullName: string, requestType: string, date: string) {
     if (!this.transporter || !email) return;
     try {

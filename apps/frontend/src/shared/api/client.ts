@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, ImportUserResult, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -121,6 +121,24 @@ export const api = {
     managerId?: string;
     isActive?: boolean;
   }) => request<{ user: User; tempPassword: string }>('/users', { method: 'POST', body: JSON.stringify(payload) }),
+  importUsers: async (file: File): Promise<ImportUserResult[]> => {
+    const token = localStorage.getItem('qa-timeoff-token');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/users/import`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message ?? 'Ошибка импорта');
+    }
+
+    return response.json();
+  },
   resetUserPassword: (userId: string) => request<{ tempPassword: string }>(`/users/${userId}/reset-password`, { method: 'POST' }),
   changePassword: (dto: { currentPassword: string; newPassword: string }) =>
     request<{ success: boolean }>('/users/me/password', { method: 'PATCH', body: JSON.stringify(dto) }),
@@ -148,8 +166,41 @@ export const api = {
     request('/timeoff/request', { method: 'POST', body: JSON.stringify(payload) }),
   createVacation: (payload: { startDate: string; endDate: string; vacationType: VacationType; comment?: string }) =>
     request('/vacation/request', { method: 'POST', body: JSON.stringify(payload) }),
-  myTimeOff: () => request<TimeOffRequest[]>('/timeoff/my'),
-  myVacations: () => request<VacationRequest[]>('/vacation/my'),
+  myTimeOff: (params?: {
+    status?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.status  && params.status  !== 'ALL') qs.set('status',  params.status);
+    if (params?.from)   qs.set('from',   params.from);
+    if (params?.to)     qs.set('to',     params.to);
+    if (params?.limit)  qs.set('limit',  String(params.limit));
+    if (params?.cursor) qs.set('cursor', params.cursor);
+    const q = qs.toString();
+    return request<TimeOffRequest[]>(`/timeoff/my${q ? `?${q}` : ''}`);
+  },
+
+  myVacations: (params?: {
+    status?: string;
+    vacationType?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.status       && params.status       !== 'ALL') qs.set('status',       params.status);
+    if (params?.vacationType && params.vacationType !== 'ALL') qs.set('vacationType', params.vacationType);
+    if (params?.from)   qs.set('from',   params.from);
+    if (params?.to)     qs.set('to',     params.to);
+    if (params?.limit)  qs.set('limit',  String(params.limit));
+    if (params?.cursor) qs.set('cursor', params.cursor);
+    const q = qs.toString();
+    return request<VacationRequest[]>(`/vacation/my${q ? `?${q}` : ''}`);
+  },
   pendingTimeOff: () => request<TimeOffRequest[]>('/timeoff/pending'),
   pendingVacations: () => request<VacationRequest[]>('/vacation/pending'),
   approveTimeOff: (id: string) => request(`/timeoff/${id}/approve`, { method: 'PATCH' }),

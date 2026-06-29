@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,6 +26,42 @@ export class UsersController {
   @Get(':id')
   findOne(@CurrentUser() currentUser: User, @Param('id') id: string) {
     return this.usersService.findOne(currentUser, id);
+  }
+
+  @Post('import')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Импорт пользователей из CSV' })
+  @ApiConsumes('multipart/form-data')
+  async importUsers(@Req() req: any) {
+    const chunks: Buffer[] = [];
+    await new Promise<void>((resolve, reject) => {
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+
+    const raw = Buffer.concat(chunks).toString('utf-8');
+
+    let csvText = raw;
+    const boundaryMatch = req.headers['content-type']?.match(/boundary=([^\s;]+)/);
+    if (boundaryMatch) {
+      const boundary = '--' + boundaryMatch[1];
+      const parts = raw.split(boundary);
+      const dataPart = parts.find(p => p.includes('filename=') || (p.includes('\r\n\r\n') && !p.includes('Content-Disposition') === false));
+      if (dataPart) {
+        const bodyStart = dataPart.indexOf('\r\n\r\n');
+        if (bodyStart !== -1) {
+          csvText = dataPart.slice(bodyStart + 4).replace(/\r?\n--$/, '').trim();
+        }
+      }
+    }
+
+    if (!csvText || csvText.length < 5) {
+      throw new BadRequestException('Файл не найден или пустой');
+    }
+
+    return this.usersService.importFromCsv(csvText);
   }
 
   @Post()
