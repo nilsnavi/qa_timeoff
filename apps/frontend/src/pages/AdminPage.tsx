@@ -735,20 +735,19 @@ export function AdminPage() {
           {importStep === 'result' && importResults && (
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                {(['created', 'skipped', 'error'] as const).map(s => ({
-                  ...({
-                    created: { label: 'Создано', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                    skipped: { label: 'Пропущено', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                    error:   { label: 'Ошибки', color: 'text-rose-400', bg: 'bg-rose-500/10' },
-                  } as const)[s]),
-                }).map(({ label, color, bg }, i) => (
-                  <div key={i} className={`rounded-xl ${bg} p-3 text-center`}>
-                    <p className={`text-[22px] font-bold ${color}`}>
-                      {importResults.filter(r => r.status === s).length}
-                    </p>
-                    <p className="text-[12px] text-white/40">{label}</p>
-                  </div>
-                ))}
+                {(['created' as const, 'skipped' as const, 'error' as const]).map((key) => {
+                  const cfg = key === 'created' ? { label: 'Создано', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
+                    : key === 'skipped' ? { label: 'Пропущено', color: 'text-amber-400', bg: 'bg-amber-500/10' }
+                    : { label: 'Ошибки', color: 'text-rose-400', bg: 'bg-rose-500/10' };
+                  return (
+                    <div key={key} className={`rounded-xl ${cfg.bg} p-3 text-center`}>
+                      <p className={`text-[22px] font-bold ${cfg.color}`}>
+                        {importResults.filter(r => r.status === key).length}
+                      </p>
+                      <p className="text-[12px] text-white/40">{cfg.label}</p>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="max-h-[280px] overflow-y-auto space-y-1.5">
