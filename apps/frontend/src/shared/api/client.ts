@@ -160,7 +160,7 @@ export const api = {
   createTimeOff: (payload: { date: string; hours: number; reason: string; comment?: string }) =>
     request('/timeoff/request', { method: 'POST', body: JSON.stringify(payload) }),
   createTimeOffBatch: (payload: { dates: string[]; hours: number; reason: string; comment?: string }) =>
-    request('/timeoff/request', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/timeoff/batch', { method: 'POST', body: JSON.stringify(payload) }),
   createVacation: (payload: { startDate: string; endDate: string; vacationType: VacationType; comment?: string }) =>
     request('/vacation/request', { method: 'POST', body: JSON.stringify(payload) }),
   myTimeOff: (params?: {
