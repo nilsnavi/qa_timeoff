@@ -242,6 +242,40 @@ npm run seed --workspace @qa-timeoff/backend
 prisma migrate deploy
 ```
 
+### Проверка миграций перед production
+
+Перед деплоем убедитесь, что схема Prisma (`schema.prisma`) синхронизирована
+с файлами миграций. Все новые таблицы и enum'ы должны быть описаны в
+`migration.sql` в папке `prisma/migrations/`.
+
+```bash
+# 1. Проверить состояние миграций (требуется работающая БД)
+npx prisma migrate status --schema=apps/backend/prisma/schema.prisma
+
+# Ожидаемый вывод (если всё в порядке):
+#   Database migrations: All migrations have been successfully applied.
+#   Current database: up-to-date
+
+# 2. Если есть drift — создать новую миграцию
+npx prisma migrate dev --schema=apps/backend/prisma/schema.prisma --name description_of_changes
+
+# 3. Симулировать деплой на production (без реального применения)
+npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma --dry-run
+
+# 4. Применить миграции
+npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+```
+
+**Известные расхождения между schema.prisma и миграциями:**
+
+| Элемент | Проблема | Статус |
+|---|---|---|
+| `model LeaveRequest` | Модель присутствует в schema.prisma, но ни одна миграция не создаёт таблицу `LeaveRequest` | Исправлено — добавлена миграция `20260625100100_migrate_leave_requests` |
+| `enum CalendarEventStatus` | В schema.prisma: `CREATED, PENDING, APPROVED, ACTIVE, COMPLETED, CANCELLED`. В миграции `20260625140000`: `PENDING, APPROVED, REJECTED` | Открыто — требуется новая миграция для синхронизации |
+
+Если `prisma migrate status` показывает несоответствия — **не деплойте** до
+создания корректирующей миграции. Сначала исправьте, затем деплойте.
+
 ## Структура проекта
 
 ```text

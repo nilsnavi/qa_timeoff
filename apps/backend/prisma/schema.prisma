@@ -225,9 +225,10 @@ enum LeaveRequestType {
   VACATION
 }
 
-/// DEPRECATED — используйте TimeOffRequest (TIME_OFF) или VacationRequest (VACATION).
-/// Данные перенесены миграцией 20260625100100_migrate_leave_requests.
-/// Модель будет удалена после подтверждения целостности данных.
+/// Модель LeaveRequest используется для унифицированного API заявок
+/// (/leave-requests). Новая заявка дублируется в LeaveRequest + TimeOffRequest
+/// или VacationRequest в зависимости от типа. Миграция добавлена в
+/// 20260625100100_migrate_leave_requests.
 model LeaveRequest {
   id              String           @id @default(cuid())
   userId          String
