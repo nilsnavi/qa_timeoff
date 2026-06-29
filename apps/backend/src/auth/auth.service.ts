@@ -2,7 +2,7 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramAuthService, TelegramUser } from './telegram-auth.service';
 
@@ -93,8 +93,9 @@ export class AuthService {
   }
 
   async refreshTokens(refreshTokenStr: string) {
+    const tokenHash = this.hashToken(refreshTokenStr);
     const stored = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshTokenStr },
+      where: { tokenHash },
       include: {
         user: { include: { timeBalance: true, team: true, manager: true } },
       },
@@ -127,8 +128,9 @@ export class AuthService {
   }
 
   async logout(refreshTokenStr: string) {
+    const tokenHash = this.hashToken(refreshTokenStr);
     await this.prisma.refreshToken.deleteMany({
-      where: { token: refreshTokenStr },
+      where: { tokenHash },
     });
   }
 
@@ -152,12 +154,19 @@ export class AuthService {
   }
 
   private async issueRefreshToken(userId: string) {
-    const token = randomBytes(48).toString('hex');
+    const rawToken = randomBytes(48).toString('hex');
+    const tokenHash = this.hashToken(rawToken);
     const expiresAt = this.parseExpiration(this.refreshExpiration);
 
-    return this.prisma.refreshToken.create({
-      data: { token, userId, expiresAt },
+    await this.prisma.refreshToken.create({
+      data: { tokenHash, userId, expiresAt },
     });
+
+    return { token: rawToken, userId, expiresAt };
+  }
+
+  private hashToken(raw: string): string {
+    return createHash('sha256').update(raw).digest('hex');
   }
 
   private parseExpiration(value: string): Date {

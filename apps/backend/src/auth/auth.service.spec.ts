@@ -2,9 +2,27 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { createHash, randomBytes } from 'crypto';
 import { AuthService } from './auth.service';
 import { TelegramAuthService } from './telegram-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+jest.mock('crypto', () => {
+  const actual = jest.requireActual('crypto');
+  return {
+    ...actual,
+    randomBytes: jest.fn(),
+  };
+});
+
+function hashToken(raw: string): string {
+  return createHash('sha256').update(raw).digest('hex');
+}
+
+const MOCK_RAW_TOKEN = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+const MOCK_TOKEN_HASH = hashToken(MOCK_RAW_TOKEN);
+const EXPIRED_DATE = new Date(Date.now() - 1000);
+const FUTURE_DATE = new Date(Date.now() + 86400000);
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -20,7 +38,10 @@ describe('AuthService', () => {
       create: jest.fn(),
     },
     refreshToken: {
-      create: jest.fn().mockResolvedValue({ token: 'mock-refresh-token' }),
+      create: jest.fn().mockResolvedValue({}),
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
     },
   };
 
@@ -55,6 +76,7 @@ describe('AuthService', () => {
     prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
+    (randomBytes as jest.Mock).mockReturnValue(Buffer.from(MOCK_RAW_TOKEN, 'hex'));
   });
 
   describe('telegramLogin', () => {
@@ -78,7 +100,7 @@ describe('AuthService', () => {
       manager: null,
     };
 
-    it('должен успешно аутентифицировать существующего пользователя', async () => {
+    it('должен успешно аутентифицировать существующего пользователя и вернуть refresh token', async () => {
       mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
       mockPrisma.user.findUnique.mockResolvedValue(existingUser);
 
@@ -94,9 +116,17 @@ describe('AuthService', () => {
         role: 'EMPLOYEE',
         teamId: 'team-1',
       });
+      // Проверить что refresh token создан с хешем
+      expect(mockPrisma.refreshToken.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tokenHash: MOCK_TOKEN_HASH,
+          userId: 'user-1',
+        }),
+      });
+      // В ответе — raw token, не hash
       expect(result).toEqual({
         accessToken: 'mock-jwt-token',
-        refreshToken: 'mock-refresh-token',
+        refreshToken: MOCK_RAW_TOKEN,
         user: expect.objectContaining({
           id: 'user-1',
           fullName: 'Test User',
@@ -147,4 +177,98 @@ describe('AuthService', () => {
       expect(result).toEqual(mockProfile);
     });
   });
+
+  // ─── Refresh token lifecycle ──────────────────────────────────────────
+
+  describe('refreshTokens()', () => {
+
+    const mockStoredToken = {
+      id: 'rt-1',
+      tokenHash: MOCK_TOKEN_HASH,
+      userId: 'user-1',
+      expiresAt: FUTURE_DATE,
+      user: {
+        id: 'user-1',
+        fullName: 'Test User',
+        role: 'EMPLOYEE',
+        teamId: 'team-1',
+        isActive: true,
+        timeBalance: {} as any,
+        team: {} as any,
+        manager: null,
+      },
+    };
+
+    it('ротирует refresh token: старый удаляется, новый выдаётся', async () => {
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(mockStoredToken);
+      mockPrisma.refreshToken.delete.mockResolvedValue({});
+
+      const result = await service.refreshTokens(MOCK_RAW_TOKEN);
+
+      // Поиск по хешу
+      expect(mockPrisma.refreshToken.findUnique).toHaveBeenCalledWith({
+        where: { tokenHash: MOCK_TOKEN_HASH },
+        include: expect.any(Object),
+      });
+      // Старый токен удалён
+      expect(mockPrisma.refreshToken.delete).toHaveBeenCalledWith({ where: { id: 'rt-1' } });
+      // Новый токен создан с новым хешем
+      expect(mockPrisma.refreshToken.create).toHaveBeenCalled();
+      // Вернулся новый raw token
+      expect(result.refreshToken).toBe(MOCK_RAW_TOKEN);
+    });
+
+    it('выбрасывает UnauthorizedException для несуществующего токена', async () => {
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(null);
+
+      await expect(service.refreshTokens('invalid-token')).rejects.toThrow(UnauthorizedException);
+      expect(mockPrisma.refreshToken.findUnique).toHaveBeenCalledWith({
+        where: { tokenHash: hashToken('invalid-token') },
+        include: expect.any(Object),
+      });
+    });
+
+    it('выбрасывает UnauthorizedException для истёкшего токена и удаляет его', async () => {
+      const expiredToken = { ...mockStoredToken, expiresAt: EXPIRED_DATE };
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(expiredToken);
+      mockPrisma.refreshToken.delete.mockResolvedValue({});
+
+      await expect(service.refreshTokens(MOCK_RAW_TOKEN)).rejects.toThrow(UnauthorizedException);
+      expect(mockPrisma.refreshToken.delete).toHaveBeenCalledWith({ where: { id: 'rt-1' } });
+    });
+
+    it('выбрасывает UnauthorizedException для заблокированного пользователя', async () => {
+      const blockedUser = {
+        ...mockStoredToken,
+        user: { ...mockStoredToken.user, isActive: false },
+      };
+      mockPrisma.refreshToken.findUnique.mockResolvedValue(blockedUser);
+      mockPrisma.refreshToken.delete.mockResolvedValue({});
+
+      await expect(service.refreshTokens(MOCK_RAW_TOKEN)).rejects.toThrow(UnauthorizedException);
+      expect(mockPrisma.refreshToken.delete).toHaveBeenCalledWith({ where: { id: 'rt-1' } });
+    });
+
+  });
+
+  describe('logout()', () => {
+
+    it('удаляет refresh token по хешу', async () => {
+      mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 } as any);
+
+      await service.logout(MOCK_RAW_TOKEN);
+
+      expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { tokenHash: MOCK_TOKEN_HASH },
+      });
+    });
+
+    it('не выбрасывает ошибку при удалении несуществующего токена', async () => {
+      mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 0 } as any);
+
+      await expect(service.logout('non-existent')).resolves.not.toThrow();
+    });
+
+  });
+
 });

@@ -292,14 +292,14 @@ model CalendarEvent {
 
 model RefreshToken {
   id        String   @id @default(cuid())
-  token     String   @unique
+  tokenHash String   @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([userId])
-  @@index([token])
+  @@index([tokenHash])
 }
 
 model AuditLog {
