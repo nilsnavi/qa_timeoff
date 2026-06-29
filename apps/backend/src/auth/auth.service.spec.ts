@@ -33,7 +33,11 @@ describe('AuthService', () => {
   };
 
   const mockConfig = {
-    get: jest.fn().mockReturnValue(undefined),
+    get: jest.fn().mockImplementation((key: string) => {
+      if (key === 'ENABLE_TELEGRAM_AUTH') return 'true';
+      if (key === 'JWT_REFRESH_EXPIRATION') return '7d';
+      return undefined;
+    }),
   };
 
   beforeEach(async () => {

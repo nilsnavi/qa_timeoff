@@ -59,6 +59,12 @@ export class AuthService {
   }
 
   async telegramLogin(initData: string) {
+    if (this.config.get<string>('ENABLE_TELEGRAM_AUTH') !== 'true') {
+      throw new UnauthorizedException(
+        'Telegram auth is disabled. Set ENABLE_TELEGRAM_AUTH=true in .env to enable.',
+      );
+    }
+
     this.logger.log(`Telegram auth request received (initData length: ${initData?.length ?? 0})`);
 
     const result = this.telegramAuth.validateInitData(initData);

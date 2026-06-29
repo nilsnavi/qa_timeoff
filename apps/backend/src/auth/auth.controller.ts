@@ -38,8 +38,8 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) { }
 
-  // @deprecated Telegram auth is disabled by default (VITE_ENABLE_TELEGRAM_AUTH=false).
-  // Keep for backwards compatibility; no frontend consumer.
+  // POST /auth/telegram — вход через Telegram Mini App initData.
+  // Включается только при ENABLE_TELEGRAM_AUTH=true в .env.
   @Post('telegram')
   telegram(@Body() dto: TelegramAuthDto) {
     this.logger.log(`Telegram auth request received`);
