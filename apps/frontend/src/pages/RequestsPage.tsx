@@ -76,8 +76,8 @@ export function RequestsPage() {
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL');
   const pageSize = 15;
 
-  const myTimeOffQuery = useQuery({ queryKey: ['timeoff', 'my'], queryFn: api.myTimeOff, enabled: hasToken && !canReview });
-  const myVacationsQuery = useQuery({ queryKey: ['vacation', 'my'], queryFn: api.myVacations, enabled: hasToken && !canReview });
+  const myTimeOffQuery = useQuery({ queryKey: ['timeoff', 'my'], queryFn: () => api.myTimeOff(), enabled: hasToken && !canReview });
+  const myVacationsQuery = useQuery({ queryKey: ['vacation', 'my'], queryFn: () => api.myVacations(), enabled: hasToken && !canReview });
   const pendingTimeOffQuery = useQuery({ queryKey: ['timeoff', 'pending'], queryFn: api.pendingTimeOff, enabled: hasToken && canReview });
   const pendingVacationsQuery = useQuery({ queryKey: ['vacation', 'pending'], queryFn: api.pendingVacations, enabled: hasToken && canReview });
 
