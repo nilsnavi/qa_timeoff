@@ -69,6 +69,7 @@ export const router = createBrowserRouter([
       { path: 'profile', element: withSuspense(<ProfilePage />) },
       { path: 'team', element: withSuspense(<TeamPage />) },
       { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
+      { path: 'reports', element: <Navigate to="/analytics" replace /> },
       { path: 'admin', element: withSuspense(<AdminPage />) },
       { path: 'admin/users/new', element: withSuspense(<CreateUserPage />) },
       { path: '*', element: <Navigate to="/" replace /> },

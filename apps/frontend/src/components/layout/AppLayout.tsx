@@ -72,7 +72,7 @@ const sidebarSections: NavSection[] = [
     label: 'Аналитика',
     icon: BarChart3,
     children: [
-      { label: 'Отчёты', to: '/reports', icon: BarChart3 },
+      { label: 'Отчёты', to: '/analytics', icon: BarChart3 },
     ],
   },
 ];
@@ -86,7 +86,7 @@ const breadcrumbs: Record<string, string> = {
   '/balance': 'Баланс',
   '/teams': 'Команды',
   '/users': 'Пользователи',
-  '/reports': 'Отчёты',
+  '/analytics': 'Отчёты',
   '/admin': 'Админка',
   '/notifications': 'Уведомления',
   '/profile': 'Профиль',
