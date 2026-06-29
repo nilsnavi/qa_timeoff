@@ -174,6 +174,25 @@ curl http://localhost:8080/health | jq .
 docker compose logs backend --tail=50
 ```
 
+### Smoke test после деплоя
+
+```bash
+# 1. Сделать скрипт исполняемым (один раз)
+chmod +x scripts/smoke-test.sh
+
+# 2. Быстрая проверка (без аутентификации)
+SMOKE_BASE_URL=https://qatimeoff.ru ./scripts/smoke-test.sh
+
+# 3. Полная проверка (с логином)
+SMOKE_BASE_URL=https://qatimeoff.ru \
+  SMOKE_EMAIL=admin@yourdomain.ru \
+  SMOKE_PASSWORD=your-password \
+  ./scripts/smoke-test.sh
+```
+
+Ожидаемый результат — `✅ N passed, ❌ 0 failed`.
+При ошибке скрипт завершается с `exit 1` и показывает, что именно упало.
+
 ### Сброс пароля администратора
 
 Если забыт пароль admin-пользователя:
