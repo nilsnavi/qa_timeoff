@@ -319,47 +319,6 @@ export const api = {
     return request<AiForecast>(`/admin/ai/overtime-forecast${qs ? `?${qs}` : ''}`);
   },
 
-  // ── Export ───────────────────────────────────────────────────────
-
-  exportOvertimeCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
-    const search = new URLSearchParams();
-    if (params?.startDate) search.set('startDate', params.startDate);
-    if (params?.endDate) search.set('endDate', params.endDate);
-    if (params?.teamId) search.set('teamId', params.teamId);
-    if (params?.userId) search.set('userId', params.userId);
-    return `${API_URL}/admin/export/overtime.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
-  },
-  exportPayrollCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
-    const search = new URLSearchParams();
-    if (params?.startDate) search.set('startDate', params.startDate);
-    if (params?.endDate) search.set('endDate', params.endDate);
-    if (params?.teamId) search.set('teamId', params.teamId);
-    if (params?.userId) search.set('userId', params.userId);
-    return `${API_URL}/admin/export/payroll.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
-  },
-  exportKpiCsv: (params?: { month?: number; year?: number }) => {
-    const search = new URLSearchParams();
-    if (params?.month) search.set('month', String(params.month));
-    if (params?.year) search.set('year', String(params.year));
-    return `${API_URL}/admin/export/kpi.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
-  },
-  export1cOvertimeCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
-    const search = new URLSearchParams();
-    if (params?.startDate) search.set('startDate', params.startDate);
-    if (params?.endDate) search.set('endDate', params.endDate);
-    if (params?.teamId) search.set('teamId', params.teamId);
-    if (params?.userId) search.set('userId', params.userId);
-    return `${API_URL}/admin/export/1c/overtime.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
-  },
-  export1cPayrollCsv: (params?: { startDate?: string; endDate?: string; teamId?: string; userId?: string }) => {
-    const search = new URLSearchParams();
-    if (params?.startDate) search.set('startDate', params.startDate);
-    if (params?.endDate) search.set('endDate', params.endDate);
-    if (params?.teamId) search.set('teamId', params.teamId);
-    if (params?.userId) search.set('userId', params.userId);
-    return `${API_URL}/admin/export/1c/payroll.csv${search.size > 0 ? `?${search.toString()}` : ''}`;
-  },
-
   // ── Leave Requests ────────────────────────────────────────────────────
 
   leaveRequests: (params?: { status?: string; team_id?: string; user_id?: string; page?: number; limit?: number }) => {

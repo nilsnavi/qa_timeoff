@@ -59,7 +59,7 @@ export function ExportTab() {
       await downloadCsv(path, filename);
       showAppToast('Файл скачан');
     } catch {
-      showAppToast('Ошибка экспорта', undefined, 'error');
+      // downloadCsv already shows error toast
     } finally {
       setDownloading(null);
     }
