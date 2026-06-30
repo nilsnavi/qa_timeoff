@@ -158,6 +158,7 @@ export const api = {
       email: string;
       position: string;
       role: Role;
+      roleId?: string | null;
       teamId: string;
       managerId: string;
       isActive: boolean;

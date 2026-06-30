@@ -127,13 +127,28 @@ export function AdminPage() {
   const [editFullName, setEditFullName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<Role>('EMPLOYEE');
+  const [editRoleId, setEditRoleId] = useState<string | null>(null);
+  const [editPermCodes, setEditPermCodes] = useState<string[]>([]);
   const [editTeamId, setEditTeamId] = useState('');
   const [editPosition, setEditPosition] = useState('');
   const [editHourlyRate, setEditHourlyRate] = useState(0);
 
+  const rolesListQuery = useQuery({ queryKey: ['roles'], queryFn: () => api.roles(), enabled: isAdmin });
+  const permissionsQuery = useQuery({ queryKey: ['permissions'], queryFn: () => api.permissions(), enabled: isAdmin });
+  const allRoles = rolesListQuery.data ?? [];
+  const allPermissions = permissionsQuery.data ?? [];
+
   const updateUserMutation = useMutation({
-    mutationFn: () => api.updateUser(editingUser!.id, { fullName: editFullName, email: editEmail || undefined, role: editRole, teamId: editTeamId || undefined }),
-    onSuccess: () => { queryClient.invalidateQueries(); queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] }); setEditUserOpen(false); },
+    mutationFn: async () => {
+      await api.updateUser(editingUser!.id, {
+        fullName: editFullName, email: editEmail || undefined,
+        role: editRole, roleId: editRoleId, teamId: editTeamId || undefined,
+      });
+      if (editRoleId && editPermCodes.length > 0) {
+        await api.updateRolePermissions(editRoleId, editPermCodes);
+      }
+    },
+    onSuccess: () => { queryClient.invalidateQueries(); queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] }); queryClient.invalidateQueries({ queryKey: ['roles'] }); setEditUserOpen(false); },
   });
 
   const updatePositionMutation = useMutation({
@@ -160,11 +175,14 @@ export function AdminPage() {
 
   const positionHistory = positionHistoryQuery.data ?? [];
 
-  const openEditUser = (u: User) => {
+  const openEditUser = (u: any) => {
     setEditingUser(u);
     setEditFullName(u.fullName);
     setEditEmail(u.email ?? '');
     setEditRole(u.role);
+    const foundRole = allRoles.find((r: any) => r.code === u.role);
+    setEditRoleId(foundRole?.id ?? null);
+    setEditPermCodes(foundRole?.permissions?.map((rp: any) => rp.permission.code) ?? []);
     setEditTeamId(u.teamId ?? '');
     setEditPosition(u.position ?? '');
     setEditHourlyRate(u.hourlyRate ?? 0);
@@ -454,10 +472,34 @@ export function AdminPage() {
               <span className="field-label">Роль</span>
               <CustomSelect
                 value={editRole}
-                onChange={v => setEditRole(v as Role)}
+                onChange={v => {
+                  setEditRole(v as Role);
+                  const found = allRoles.find((r: any) => r.code === v);
+                  setEditRoleId(found?.id ?? null);
+                  setEditPermCodes(found?.permissions?.map((rp: any) => rp.permission.code) ?? []);
+                }}
                 options={roleOptions}
               />
             </div>
+            {allPermissions.length > 0 && (
+              <div className="border-t border-white/[0.06] pt-4 space-y-2">
+                <span className="text-[12px] font-bold text-white/40 uppercase block">Права доступа роли «{getRoleLabel(editRole)}»</span>
+                <div className="grid gap-1.5 max-h-48 overflow-y-auto">
+                  {allPermissions.map((p: any) => (
+                    <label key={p.code} className="flex items-center gap-2 cursor-pointer hover:bg-white/[0.04] rounded px-1 py-1">
+                      <input
+                        type="checkbox"
+                        checked={editPermCodes.includes(p.code)}
+                        onChange={() => setEditPermCodes(prev => prev.includes(p.code) ? prev.filter(c => c !== p.code) : [...prev, p.code])}
+                        className="h-4 w-4 rounded border-white/20 bg-white/[0.04] accent-[#4C7DFF]"
+                      />
+                      <span className="text-[12px] text-white/60">{p.name}</span>
+                      <span className="text-[11px] text-white/20 ml-auto">{p.groupName}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="field-shell">
               <span className="field-label">Команда</span>
               <CustomSelect

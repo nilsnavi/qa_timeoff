@@ -43,6 +43,11 @@ export class CreateUserDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
+  roleId?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
   teamId?: string;
 
   @ApiPropertyOptional()

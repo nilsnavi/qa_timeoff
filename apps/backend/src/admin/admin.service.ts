@@ -741,9 +741,11 @@ export class AdminService {
 
     const oldRole = user.role;
 
+    const rbacRole = await this.prisma.roleModel.findUnique({ where: { code: dto.role } });
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { role: dto.role },
+      data: { role: dto.role, roleId: rbacRole?.id ?? null },
       include: {
         team: { select: { id: true, name: true } },
         timeBalance: true,

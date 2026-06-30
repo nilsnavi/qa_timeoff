@@ -96,6 +96,7 @@ export class UsersService {
         position: dto.position,
         hourlyRate: dto.hourlyRate,
         role: dto.role,
+        roleId: dto.roleId,
         teamId: dto.teamId,
         managerId: dto.managerId,
         isActive: dto.isActive,
