@@ -6,5 +6,6 @@ import { HolidaysService } from './holidays.service';
 @Module({
   controllers: [CalendarController],
   providers: [CalendarService, HolidaysService],
+  exports: [HolidaysService],
 })
 export class CalendarModule {}

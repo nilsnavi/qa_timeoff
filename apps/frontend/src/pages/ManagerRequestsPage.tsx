@@ -92,7 +92,7 @@ export function ManagerRequestsPage() {
   const hasError = (timeOffQuery.isError || vacationsQuery.isError) && allRequests.length === 0;
 
   const invalidateRequests = () => {
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
     queryClient.invalidateQueries({ queryKey: ['timeoff'] });
     queryClient.invalidateQueries({ queryKey: ['vacation'] });
     queryClient.invalidateQueries({ queryKey: ['calendar'] });

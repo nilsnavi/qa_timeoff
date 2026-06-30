@@ -36,7 +36,7 @@ export function CreateTimeOffPage() {
   const singleMutation = useMutation({
     mutationFn: api.createTimeOff,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['timeoff'] });
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
       hapticNotification('success');
@@ -53,7 +53,7 @@ export function CreateTimeOffPage() {
   const batchMutation = useMutation({
     mutationFn: api.createTimeOffBatch,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['timeoff'] });
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
       hapticNotification('success');

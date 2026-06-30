@@ -34,7 +34,7 @@ export function NotificationsPage() {
 
   const invalidateNotifications = () => {
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
   };
 
   const markRead = useMutation({

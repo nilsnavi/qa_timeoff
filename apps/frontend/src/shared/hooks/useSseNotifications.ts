@@ -39,7 +39,7 @@ export function useSseNotifications() {
           if (data.type === 'connected') return;
 
           if (data.type?.includes('TIMEOFF') || data.type?.includes('VACATION')) {
-            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
             queryClient.invalidateQueries({ queryKey: ['timeoff'] });
             queryClient.invalidateQueries({ queryKey: ['vacation'] });
             queryClient.invalidateQueries({ queryKey: ['calendar'] });

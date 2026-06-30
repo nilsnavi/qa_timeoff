@@ -44,7 +44,7 @@ export function CreateVacationPage() {
   const mutation = useMutation({
     mutationFn: api.createVacation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacations'] });
       hapticNotification('success');

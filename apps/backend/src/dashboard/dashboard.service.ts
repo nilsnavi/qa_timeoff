@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role, RequestStatus, LeaveRequestType } from '@prisma/client';
+import { HolidaysService } from '../calendar/holidays.service';
 
 export interface DashboardQuery {
   dateFrom?: string;
@@ -49,7 +50,10 @@ export interface ActivityItem {
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly holidaysService: HolidaysService,
+  ) {}
 
   async getSummary(user: {
     id: string;
@@ -78,6 +82,8 @@ export class DashboardService {
       : isLead && user.teamId
         ? [user.teamId]
         : [];
+
+    const holidays = await this.holidaysService.getHolidays(today.getFullYear());
 
     const [timeBalance, allEmployees, leaveRequests, pendingApprovals, auditLogs, notifications, overtimeRequests] = await Promise.all([
       this.prisma.timeBalance.findUnique({ where: { userId: user.id } }),
@@ -286,13 +292,14 @@ export class DashboardService {
       );
     } else if (user.role === Role.LEAD || user.role === Role.MANAGER) {
       quickActions.push(
+        { label: 'Новый отгул', icon: 'plus', url: '/timeoff/new' },
         { label: 'Согласовать', icon: 'check-circle', url: '/requests/manager' },
         { label: 'Команда', icon: 'users', url: '/team' },
         { label: 'Календарь', icon: 'calendar', url: '/calendar' },
-        { label: 'Аналитика', icon: 'bar-chart', url: '/analytics' },
       );
     } else {
       quickActions.push(
+        { label: 'Новый отгул', icon: 'plus', url: '/timeoff/new' },
         { label: 'Сотрудники', icon: 'users', url: '/team' },
         { label: 'Импорт', icon: 'upload', url: '/admin' },
         { label: 'Настройки', icon: 'settings', url: '/admin' },
@@ -302,8 +309,10 @@ export class DashboardService {
 
     const calendarDays: CalendarDay[] = [];
     const calendarStart = new Date(today);
+    calendarStart.setDate(1); // start from 1st day of current month
     for (let i = 0; i < 35; i++) {
       const dayDate = new Date(calendarStart);
+      dayDate.setDate(dayDate.getDate() + i);
       dayDate.setHours(0, 0, 0, 0);
 
       const dayApproved = approvedLeaveRequests.filter(r =>
@@ -323,13 +332,17 @@ export class DashboardService {
       if (dayAvailabilityPercent < 60) dayStatus = 'CRITICAL';
       else if (dayAvailabilityPercent < 80) dayStatus = 'WARNING';
 
+      const dateStr = dayDate.toISOString().split('T')[0];
+      const isHoliday = holidays.includes(dateStr);
+
       calendarDays.push({
-        date: dayDate.toISOString().split('T')[0],
+        date: dateStr,
         approvedAbsences: dayApproved.length,
         pendingAbsences: dayPending.length,
         availabilityPercent: dayAvailabilityPercent,
-        status: dayStatus,
+        status: isHoliday ? 'NORMAL' : dayStatus,
         events: [
+          ...(isHoliday ? [{ employeeName: 'Праздник', type: 'HOLIDAY', status: 'APPROVED' as const, hours: 0 }] : []),
           ...dayApproved.map(r => ({
             employeeName: r.user.fullName,
             type: r.type,

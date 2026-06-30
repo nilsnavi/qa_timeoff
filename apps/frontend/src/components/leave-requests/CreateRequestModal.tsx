@@ -59,7 +59,7 @@ export function CreateRequestModal({ open, onClose }: { open: boolean; onClose: 
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       onClose();
     },
     onError: (err: Error) => {

@@ -147,7 +147,7 @@ export function CalendarEventsPage() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['calendar-events', params] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
   };
 
   // ── Mutations ──────────────────────────────────────────────────────────

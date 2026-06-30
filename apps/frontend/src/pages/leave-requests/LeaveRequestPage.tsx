@@ -54,7 +54,7 @@ export function LeaveRequestPage() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['leave-requests', params] });
     queryClient.invalidateQueries({ queryKey: ['leave-requests', 'summary'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
   };
 
   const approveMutation = useMutation({
