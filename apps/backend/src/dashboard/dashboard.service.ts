@@ -233,49 +233,39 @@ export class DashboardService {
     const allRequests = [...leaveRequests, ...timeOffNormalized, ...vacationNormalized];
 
     // Normalise pending approvals from old tables
-    const oldPendingNormalized = [
-      ...oldPendingTimeOff.map(r => ({
-        id: r.id,
-        userId: r.userId,
-        user: r.user,
-        teamId: r.user.teamId ?? null,
-        type: 'TIME_OFF' as const,
-        dateFrom: r.date,
-        dateTo: r.date,
-        hours: r.hours,
-        reason: r.reason,
-        comment: r.comment,
-        status: r.status,
-        approverId: r.approverId,
-        approver: r.approver,
-        approverComment: r.approverComment,
-        approvedAt: r.approvedAt,
-        createdAt: r.createdAt,
-      })),
-      ...oldPendingVacations.map(r => ({
-        id: r.id,
-        userId: r.userId,
-        user: r.user,
-        teamId: r.user.teamId ?? null,
-        type: 'VACATION' as const,
-        dateFrom: r.startDate,
-        dateTo: r.endDate,
-        hours: r.daysCount * 8,
-        reason: '',
-        comment: r.comment,
-        status: r.status,
-        approverId: r.approverId,
-        approver: r.approver,
-        approverComment: r.approverComment,
-        approvedAt: r.approvedAt,
-        createdAt: r.createdAt,
-      })),
-    ];
-    const allPendingApprovals = [...pendingApprovals, ...oldPendingNormalized];
-
-    // Use merged arrays for all downstream logic
-    leaveRequests = allRequests as any;
-    pendingApprovals = allPendingApprovals as any;
+    const allPendingApprovals = [...pendingApprovals, ...oldPendingTimeOff.map(r => ({
+      id: r.id,
+      userId: r.userId,
+      user: r.user,
+      teamId: r.user.teamId ?? null,
+      type: 'TIME_OFF' as const,
+      dateFrom: r.date,
+      dateTo: r.date,
+      hours: r.hours,
+      reason: r.reason,
+      comment: r.comment,
+      status: r.status,
+      approverId: r.approverId,
+      approverComment: r.approverComment,
+      approvedAt: r.approvedAt,
+      createdAt: r.createdAt,
+    })), ...oldPendingVacations.map(r => ({
+      id: r.id,
+      userId: r.userId,
+      user: r.user,
+      teamId: r.user.teamId ?? null,
+      type: 'VACATION' as const,
+      dateFrom: r.startDate,
+      dateTo: r.endDate,
+      hours: r.daysCount * 8,
+      reason: '',
+      comment: r.comment,
+      status: r.status,
+      approverId: r.approverId,
+      approverComment: r.approverComment,
+      approvedAt: r.approvedAt,
+      createdAt: r.createdAt,
+    }))];
 
     const activeEmployeesCount = allEmployees.length;
     const balance_ = timeBalance ?? { balanceHours: 0, totalAddedHours: 0, totalUsedHours: 0 };
@@ -283,8 +273,8 @@ export class DashboardService {
     const totalHours = balance_.totalAddedHours;
     const usedPercent = totalHours > 0 ? Math.round((balance_.totalUsedHours / totalHours) * 100) : 0;
 
-    const myPending = leaveRequests.filter(r => r.userId === user.id && r.status === RequestStatus.PENDING).length;
-    const myApprovedThisMonth = leaveRequests.filter(r =>
+    const myPending = allRequests.filter(r => r.userId === user.id && r.status === RequestStatus.PENDING).length;
+    const myApprovedThisMonth = allRequests.filter(r =>
       r.userId === user.id &&
       r.status === RequestStatus.APPROVED &&
       r.approvedAt &&
@@ -292,13 +282,13 @@ export class DashboardService {
       new Date(r.approvedAt) <= endOfMonth,
     ).length;
 
-    const pendingApprovalList = leaveRequests.filter(r =>
+    const pendingApprovalList = allRequests.filter(r =>
       r.status === RequestStatus.PENDING && (canViewTeam ? r.userId !== user.id : r.userId === user.id)
     );
     const pendingApprovalCount = pendingApprovalList.length;
     const pendingApprovalHours = pendingApprovalList.reduce((sum, r) => sum + r.hours, 0);
 
-    const approvedLeaveRequests = leaveRequests.filter(r => r.status === RequestStatus.APPROVED);
+    const approvedLeaveRequests = allRequests.filter(r => r.status === RequestStatus.APPROVED);
     const todayAbsences = approvedLeaveRequests.filter(r =>
       new Date(r.dateFrom) <= today && (r.dateTo ? new Date(r.dateTo) >= today : new Date(r.dateFrom).toDateString() === today.toDateString())
     );
@@ -403,7 +393,7 @@ export class DashboardService {
       });
     }
 
-    const noUpcomingAbsences = leaveRequests.filter(r =>
+    const noUpcomingAbsences = allRequests.filter(r =>
       r.status === RequestStatus.APPROVED &&
       new Date(r.dateFrom) >= today &&
       new Date(r.dateFrom) <= fourteenDaysFromNow,
@@ -494,7 +484,7 @@ export class DashboardService {
       });
     }
 
-    const pendingApprovalsForList = pendingApprovals.map(r => ({
+    const pendingApprovalsForList = allPendingApprovals.map(r => ({
       id: r.id,
       employeeName: r.user.fullName,
       employeeInitials: r.user.fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
@@ -539,7 +529,7 @@ export class DashboardService {
     }
 
     const upcomingEvents = [];
-    for (const req of leaveRequests.filter(r =>
+    for (const req of allRequests.filter(r =>
       (r.status === RequestStatus.APPROVED || r.status === RequestStatus.PENDING) &&
       new Date(r.dateFrom) >= today &&
       new Date(r.dateFrom) <= fourteenDaysFromNow,
@@ -556,11 +546,11 @@ export class DashboardService {
     }
 
     const funnel = {
-      draft: leaveRequests.filter(r => r.status === RequestStatus.DRAFT).length,
-      pending: leaveRequests.filter(r => r.status === RequestStatus.PENDING).length,
-      approved: leaveRequests.filter(r => r.status === RequestStatus.APPROVED).length,
-      rejected: leaveRequests.filter(r => r.status === RequestStatus.REJECTED).length,
-      cancelled: leaveRequests.filter(r => r.status === RequestStatus.CANCELLED).length,
+      draft: allRequests.filter(r => r.status === RequestStatus.DRAFT).length,
+      pending: allRequests.filter(r => r.status === RequestStatus.PENDING).length,
+      approved: allRequests.filter(r => r.status === RequestStatus.APPROVED).length,
+      rejected: allRequests.filter(r => r.status === RequestStatus.REJECTED).length,
+      cancelled: allRequests.filter(r => r.status === RequestStatus.CANCELLED).length,
     };
 
     const prevMonthRequests = await this.prisma.leaveRequest.count({
@@ -572,21 +562,21 @@ export class DashboardService {
         createdAt: { gte: prevMonthStart, lte: prevMonthEnd },
       },
     });
-    const currentMonthRequests = leaveRequests.filter(r =>
+    const currentMonthRequests = allRequests.filter(r =>
       new Date(r.createdAt) >= startOfMonth && new Date(r.createdAt) <= endOfMonth,
     ).length;
     const requestTrend = prevMonthRequests > 0
       ? Math.round(((currentMonthRequests - prevMonthRequests) / prevMonthRequests) * 100)
       : null;
 
-    const processedRequests = leaveRequests.filter(r =>
+    const processedRequests = allRequests.filter(r =>
       r.status === RequestStatus.APPROVED || r.status === RequestStatus.REJECTED
     );
     const approvalRate = processedRequests.length > 0
       ? Math.round((processedRequests.filter(r => r.status === RequestStatus.APPROVED).length / processedRequests.length) * 100)
       : 100;
 
-    const approvedWithTime = leaveRequests.filter(r => r.status === RequestStatus.APPROVED && r.approvedAt);
+    const approvedWithTime = allRequests.filter(r => r.status === RequestStatus.APPROVED && r.approvedAt);
     let averageApprovalTimeHours = 0;
     if (approvedWithTime.length > 0) {
       const totalTime = approvedWithTime.reduce((sum, r) => {
