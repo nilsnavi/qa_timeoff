@@ -1,70 +1,71 @@
 import { ErrorState } from '../components/ui';
-import { useDashboard } from '../shared/hooks/useDashboard';
-import { WorkStatusCard } from '../components/dashboard-v2/WorkStatusCard';
-import { CalendarWidget } from '../components/dashboard-v2/CalendarWidget';
-import { NextEventsWidget } from '../components/dashboard-v2/NextEventsWidget';
-import { QuickActionsWidget } from '../components/dashboard-v2/QuickActionsWidget';
-import { BalanceProgressWidget } from '../components/dashboard-v2/BalanceProgressWidget';
-import { AnalyticsSnapshot } from '../components/dashboard-v2/AnalyticsSnapshot';
-import { WorkFeed } from '../components/dashboard-v2/WorkFeed';
-import { ProcessFunnel } from '../components/dashboard-v2/ProcessFunnel';
-import { TeamWorkload } from '../components/dashboard-v2/TeamWorkload';
-import { useNavigate } from 'react-router-dom';
+import { useDashboardSummary } from '../shared/hooks/useDashboard';
+import { DashboardKpiCards } from '../components/dashboard-v2/DashboardKpiCards';
+import { AttentionPanel } from '../components/dashboard-v2/AttentionPanel';
+import { QuickActionsPanel } from '../components/dashboard-v2/QuickActionsPanel';
+import { TeamCalendarWidget } from '../components/dashboard-v2/TeamCalendarWidget';
+import { PendingApprovalsWidget } from '../components/dashboard-v2/PendingApprovalsWidget';
+import { TeamAvailabilityWidget } from '../components/dashboard-v2/TeamAvailabilityWidget';
+import { UpcomingEventsWidget } from '../components/dashboard-v2/UpcomingEventsWidget';
+import { RequestFunnelWidget } from '../components/dashboard-v2/RequestFunnelWidget';
+import { InsightsWidget } from '../components/dashboard-v2/InsightsWidget';
+import { ActivityFeedWidget } from '../components/dashboard-v2/ActivityFeedWidget';
+import { OnboardingWidget } from '../components/dashboard-v2/OnboardingWidget';
+import { useAuth } from '../shared/auth/AuthContext';
 
 export function HomePage() {
-  const navigate = useNavigate();
-  const { dashboard, data, isError, isLoading, refetch } = useDashboard();
+  const { user } = useAuth();
+  const { dashboard, isError, isLoading, refetch } = useDashboardSummary();
 
-  if (isError && !data) {
+  if (isError && !dashboard) {
     return <ErrorState title="Не удалось загрузить дашборд" description="Не удалось получить данные." onRetry={() => refetch()} />;
   }
 
-  if (isLoading && !data) {
+  if (isLoading && !dashboard) {
     return <DashboardSkeleton />;
   }
 
-  const user = dashboard.user;
-  const isManager = user.role === 'MANAGER' || user.role === 'LEAD' || user.role === 'ADMIN';
+  const d = dashboard!;
+  const isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
+  const isLead = user?.role === 'LEAD';
+  const canViewTeam = isManager || isLead;
 
-  const hasDraftTimeOff = !!localStorage.getItem('draft-timeoff');
-  const hasDraftVacation = !!localStorage.getItem('draft-vacation');
+  if (d.onboarding?.show) {
+    return <OnboardingWidget onboarding={d.onboarding} profile={d.profile} />;
+  }
+
+  const today = new Date();
+  const dateStr = `Сегодня, ${String(today.getDate()).padStart(2, '0')} ${today.toLocaleDateString('ru-RU', { month: 'long' })} ${today.getFullYear()}`;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-[24px] font-bold text-white">Дашборд</h1>
-        <p className="text-[15px] text-white/40 mt-1">
-          С возвращением, {user.fullName}. {isManager ? 'Обзор команды и процессов.' : 'Обзор рабочей активности.'}
-        </p>
+    <div className="space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-[22px] font-bold text-white">
+            Добрый день, {d.profile.shortName} <span className="inline-block">👋</span>
+          </h1>
+          <p className="text-[14px] text-white/40 mt-0.5">{d.greeting}</p>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[14px] font-medium text-white/60">
+          <span>{dateStr}</span>
+        </div>
       </div>
 
-      {hasDraftTimeOff && (
-        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-amber-400">Есть незаконченная заявка на отгул</span>
-          <button onClick={() => navigate('/timeoff/new')} className="text-xs text-amber-400 underline">Продолжить</button>
-        </div>
-      )}
+      <DashboardKpiCards dashboard={d} />
 
-      {hasDraftVacation && (
-        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-amber-400">Есть незаконченная заявка на отпуск</span>
-          <button onClick={() => navigate('/vacation/new')} className="text-xs text-amber-400 underline">Продолжить</button>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <AttentionPanel items={d.attention} />
+          <QuickActionsPanel actions={d.quickActions} />
+          <TeamCalendarWidget days={d.calendar} />
+          <RequestFunnelWidget funnel={d.funnel} />
+          <InsightsWidget insights={d.insights} />
+          <ActivityFeedWidget activity={d.activity} />
         </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <WorkStatusCard dashboard={dashboard} />
-          <CalendarWidget dashboard={dashboard} />
-          {isManager && <ProcessFunnel dashboard={dashboard} />}
-        </div>
-        <div className="space-y-6">
-          <QuickActionsWidget dashboard={dashboard} />
-          <BalanceProgressWidget dashboard={dashboard} />
-          <NextEventsWidget dashboard={dashboard} />
-          <AnalyticsSnapshot dashboard={dashboard} />
-          {isManager && <TeamWorkload dashboard={dashboard} />}
-          <WorkFeed notifications={dashboard.notifications} />
+        <div className="space-y-5">
+          {canViewTeam && <PendingApprovalsWidget approvals={d.pendingApprovals} />}
+          <TeamAvailabilityWidget days={d.teamAvailability} />
+          <UpcomingEventsWidget events={d.upcomingEvents} />
         </div>
       </div>
     </div>
@@ -73,19 +74,29 @@ export function HomePage() {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="h-7 w-36 rounded-lg bg-white/[0.04] animate-pulse" />
-        <div className="h-4 w-64 rounded-lg bg-white/[0.03] animate-pulse mt-2" />
-      </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <div className="h-[280px] rounded-xl bg-white/[0.02] animate-pulse" />
-          <div className="h-[360px] rounded-xl bg-white/[0.02] animate-pulse" />
+    <div className="space-y-5 animate-pulse">
+      <div className="flex justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-60 rounded-lg bg-white/[0.04]" />
+          <div className="h-4 w-80 rounded-lg bg-white/[0.03]" />
         </div>
-        <div className="space-y-6">
-          <div className="h-[200px] rounded-xl bg-white/[0.02] animate-pulse" />
-          <div className="h-[300px] rounded-xl bg-white/[0.02] animate-pulse" />
+        <div className="h-9 w-64 rounded-lg bg-white/[0.04]" />
+      </div>
+      <div className="grid grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-[160px] rounded-xl bg-white/[0.02]" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <div className="h-[200px] rounded-xl bg-white/[0.02]" />
+          <div className="h-[140px] rounded-xl bg-white/[0.02]" />
+          <div className="h-[360px] rounded-xl bg-white/[0.02]" />
+        </div>
+        <div className="space-y-5">
+          <div className="h-[300px] rounded-xl bg-white/[0.02]" />
+          <div className="h-[240px] rounded-xl bg-white/[0.02]" />
+          <div className="h-[280px] rounded-xl bg-white/[0.02]" />
         </div>
       </div>
     </div>

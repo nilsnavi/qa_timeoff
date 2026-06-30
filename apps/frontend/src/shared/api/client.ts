@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, ImportUserResult, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, DashboardSummary, ImportUserResult, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -89,6 +89,14 @@ export const api = {
       method: 'POST',
     }),
   dashboard: () => request<Dashboard>('/dashboard'),
+  dashboardSummary: (params?: { dateFrom?: string; dateTo?: string; teamId?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) search.set('dateTo', params.dateTo);
+    if (params?.teamId) search.set('teamId', params.teamId);
+    const qs = search.toString();
+    return request<DashboardSummary>(`/dashboard/summary${qs ? `?${qs}` : ''}`);
+  },
   me: () => request<User>('/auth/me'),
   balanceMe: () => request<Dashboard['balance']>('/balance/me'),
   getUserBalance: (userId: string) => request<TimeBalance>(`/balance/user/${userId}`),

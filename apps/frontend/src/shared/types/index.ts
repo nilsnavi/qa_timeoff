@@ -396,3 +396,148 @@ export interface ImportUserResult {
   status: 'created' | 'skipped' | 'error';
   reason?: string;
 }
+
+export interface DashboardProfile {
+  id: string;
+  fullName: string;
+  shortName: string;
+  role: Role;
+  position: string;
+  status: string;
+  avatarUrl: string | null;
+}
+
+export interface DashboardBalance {
+  availableHours: number;
+  usedHours: number;
+  totalHours: number;
+  usedPercent: number;
+}
+
+export interface DashboardRequests {
+  myPending: number;
+  myApprovedThisMonth: number;
+  pendingApprovalCount: number;
+  pendingApprovalHours: number;
+  approvalRate: number;
+  averageApprovalTimeHours: number;
+}
+
+export interface DashboardTeam {
+  employeesCount: number;
+  absentToday: number;
+  absenceByType: Record<string, number>;
+  availableToday: number;
+  availabilityPercent: number;
+  overloadedEmployees: number;
+  riskLevel: string;
+}
+
+export interface AttentionItem {
+  type: string;
+  severity: 'SUCCESS' | 'INFO' | 'WARNING' | 'CRITICAL';
+  title: string;
+  description: string;
+  actionLabel?: string;
+  actionUrl?: string;
+}
+
+export interface QuickAction {
+  label: string;
+  icon: string;
+  url: string;
+}
+
+export interface CalendarDay {
+  date: string;
+  approvedAbsences: number;
+  pendingAbsences: number;
+  availabilityPercent: number;
+  status: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  events: Array<{
+    employeeName: string;
+    type: string;
+    status: string;
+    hours: number;
+  }>;
+}
+
+export interface PendingApprovalItem {
+  id: string;
+  employeeName: string;
+  employeeInitials: string;
+  type: string;
+  typeLabel: string;
+  hours: number;
+  dateFrom: string;
+  dateTo: string;
+  createdAt: string;
+}
+
+export interface TeamAvailabilityDay {
+  date: string;
+  label: string;
+  availabilityPercent: number;
+  status: 'NORMAL' | 'WARNING' | 'CRITICAL';
+}
+
+export interface UpcomingEvent {
+  date: string;
+  dateLabel: string;
+  title: string;
+  description: string;
+  type: string;
+  severity: 'INFO' | 'WARNING';
+}
+
+export interface RequestFunnel {
+  draft: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  cancelled: number;
+}
+
+export interface InsightItem {
+  type: string;
+  severity: 'INFO' | 'WARNING' | 'SUCCESS';
+  title: string;
+  description: string;
+}
+
+export interface ActivityItem {
+  type: string;
+  severity: 'SUCCESS' | 'WARNING' | 'ERROR' | 'INFO';
+  title: string;
+  description: string;
+  createdAt: string;
+  timeAgo: string;
+}
+
+export interface OnboardingStep {
+  title: string;
+  action: string;
+}
+
+export interface DashboardOnboarding {
+  show: boolean;
+  steps: OnboardingStep[];
+}
+
+export interface DashboardSummary {
+  profile: DashboardProfile;
+  greeting: string;
+  balance: DashboardBalance;
+  requests: DashboardRequests;
+  team: DashboardTeam;
+  attention: AttentionItem[];
+  quickActions: QuickAction[];
+  calendar: CalendarDay[];
+  pendingApprovals: PendingApprovalItem[];
+  teamAvailability: TeamAvailabilityDay[];
+  upcomingEvents: UpcomingEvent[];
+  funnel: RequestFunnel;
+  insights: InsightItem[];
+  activity: ActivityItem[];
+  onboarding: DashboardOnboarding;
+}

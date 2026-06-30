@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Dashboard } from '../types';
+import type { Dashboard, DashboardSummary } from '../types';
 import { api } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -13,11 +13,6 @@ const EMPTY_DASHBOARD: Dashboard = {
   notifications: [],
 };
 
-/**
- * Returns the shared dashboard query.
- * The query is enabled only when isAuthenticated is true,
- * ensuring no stale-token requests are made.
- */
 export function useDashboard() {
   const { isAuthenticated } = useAuth();
 
@@ -30,5 +25,21 @@ export function useDashboard() {
   return {
     ...query,
     dashboard: query.data ?? EMPTY_DASHBOARD,
+  };
+}
+
+export function useDashboardSummary() {
+  const { isAuthenticated } = useAuth();
+
+  const query = useQuery<DashboardSummary | null>({
+    queryKey: ['dashboard-summary'],
+    queryFn: () => api.dashboardSummary(),
+    enabled: isAuthenticated,
+    refetchInterval: 30_000,
+  });
+
+  return {
+    ...query,
+    dashboard: query.data,
   };
 }

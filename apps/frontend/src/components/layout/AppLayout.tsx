@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  Activity,
   BarChart3,
   Bell,
   CalendarDays,
@@ -12,8 +13,9 @@ import {
   LayoutDashboard,
   LogOut,
   Search,
+  Settings,
   Shield,
-  UserRound,
+  Upload,
   Users,
   WalletCards,
 } from 'lucide-react';
@@ -62,7 +64,7 @@ const sidebarSections: NavSection[] = [
     ],
   },
   {
-    label: 'Организация',
+    label: 'Команда',
     icon: Users,
     children: [
       { label: 'Команда', to: '/team', icon: Users },
@@ -72,6 +74,7 @@ const sidebarSections: NavSection[] = [
     label: 'Аналитика',
     icon: BarChart3,
     children: [
+      { label: 'Нагрузка', to: '/analytics/workload', icon: Activity },
       { label: 'Отчёты', to: '/analytics', icon: BarChart3 },
     ],
   },
@@ -87,12 +90,17 @@ const breadcrumbs: Record<string, string> = {
   '/teams': 'Команды',
   '/users': 'Пользователи',
   '/analytics': 'Отчёты',
-  '/admin': 'Админка',
+  '/analytics/workload': 'Нагрузка',
+  '/admin': 'Администрирование',
+  '/admin/users': 'Сотрудники',
   '/notifications': 'Уведомления',
   '/profile': 'Профиль',
   '/timeoff/new': 'Новый отгул',
   '/vacation/new': 'Новый отпуск',
-
+  '/team': 'Команда',
+  '/settings': 'Настройки',
+  '/import': 'Импорт',
+  '/logs': 'Журналы',
 };
 
 function getBreadcrumb(path: string) {
@@ -107,7 +115,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<{ title: string; message?: string; tone?: 'success' | 'error' | 'info' } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Обзор', 'Заявки']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Обзор', 'Заявки', 'Аналитика']));
   const [searchValue, setSearchValue] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
@@ -292,18 +300,35 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {d.user.role === 'ADMIN' && (
-          <div className="border-t border-white/[0.06] px-2 py-3">
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold transition-colors', collapsed && 'justify-center px-2',
-                  isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04] hover:text-[#B8C0D0]')
-              }
-               title={collapsed ? 'Админка' : undefined}
-             >
-               <Shield size={18} />
-               {!collapsed && 'Админка'}
-            </NavLink>
+          <div className="border-t border-white/[0.06] px-2 py-3 space-y-1">
+            <button
+              type="button"
+              onClick={() => toggleSection('Администрирование')}
+              className={clsx('flex w-full items-center gap-2 px-3 py-1.5 text-[14px] font-bold uppercase tracking-widest text-white/25 hover:text-white/40 transition-colors', collapsed && 'justify-center px-0')}
+            >
+              {collapsed ? <Shield size={14} /> : <><Shield size={12} />Администрирование<ChevronDown size={10} className={clsx('ml-auto transition-transform', expandedSections.has('Администрирование') && 'rotate-180')} /></>}
+            </button>
+            {expandedSections.has('Администрирование') && [
+              { label: 'Сотрудники', to: '/admin/users', icon: Users },
+              { label: 'Команды', to: '/team', icon: Users },
+              { label: 'Настройки', to: '/admin', icon: Settings },
+              { label: 'Импорт', to: '/admin', icon: Upload },
+              { label: 'Журналы', to: '/admin', icon: Activity },
+            ].map((child) => (
+              <NavLink
+                key={child.to + child.label}
+                to={child.to}
+                end={child.to === '/admin' && child.label === 'Настройки'}
+                className={({ isActive }) =>
+                  clsx('flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[15px] font-semibold transition-colors', collapsed && 'mx-1 justify-center px-2',
+                    isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04] hover:text-[#B8C0D0]')
+                }
+                title={collapsed ? child.label : undefined}
+              >
+                <child.icon size={18} />
+                {!collapsed && child.label}
+              </NavLink>
+            ))}
           </div>
         )}
       </aside>
@@ -376,9 +401,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   </div>
                 ))}
                 {d.user.role === 'ADMIN' && (
-                  <NavLink to="/admin" onClick={() => setSidebarOpen(false)} className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold', isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
-                    <Shield size={18} />Admin
-                  </NavLink>
+                  <div key="admin-mobile" className="pt-2 border-t border-white/[0.06]">
+                    <div className="mb-1 px-3 text-[14px] font-bold uppercase tracking-widest text-white/25">Администрирование</div>
+                    {[
+                      { label: 'Сотрудники', to: '/admin/users', icon: Users },
+                      { label: 'Команды', to: '/team', icon: Users },
+                      { label: 'Настройки', to: '/admin', icon: Settings },
+                      { label: 'Импорт', to: '/admin', icon: Upload },
+                      { label: 'Журналы', to: '/admin', icon: Activity },
+                    ].map((child) => (
+                      <NavLink key={child.to + child.label} to={child.to} onClick={() => setSidebarOpen(false)}
+                        className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold',
+                          isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
+                        <child.icon size={18} />{child.label}
+                      </NavLink>
+                    ))}
+                  </div>
                 )}
               </nav>
               <button type="button" onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold text-rose-400 hover:bg-rose-950/300/20">
