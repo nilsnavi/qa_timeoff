@@ -26,6 +26,10 @@ interface ValidatedEnv {
   SMTP_PASS?: string;
   EMAIL_FROM?: string;
   ADMIN_TELEGRAM_ID?: string;
+  ENCRYPTION_KEY: string;
+  JIRA_CLIENT_ID?: string;
+  JIRA_CLIENT_SECRET?: string;
+  JIRA_REDIRECT_URI?: string;
 }
 
 type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';
@@ -141,6 +145,14 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
   const SMTP_PORT    = config['SMTP_PORT'] ? Number(config['SMTP_PORT']) : undefined;
   const SMTP_SECURE  = config['SMTP_SECURE'] === 'true' || config['SMTP_SECURE'] === true;
   const ADMIN_TELEGRAM_ID = optionalString(config, 'ADMIN_TELEGRAM_ID');
+  const ENCRYPTION_KEY = requiredString(config, 'ENCRYPTION_KEY');
+  const JIRA_CLIENT_ID = optionalString(config, 'JIRA_CLIENT_ID');
+  const JIRA_CLIENT_SECRET = optionalString(config, 'JIRA_CLIENT_SECRET');
+  const JIRA_REDIRECT_URI = optionalString(config, 'JIRA_REDIRECT_URI');
+
+  if (ENCRYPTION_KEY.length < 32) {
+    throw new Error('ENCRYPTION_KEY must be at least 32 characters');
+  }
 
   if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
     throw new Error('JWT_SECRET must be at least 32 characters in production');
@@ -191,5 +203,9 @@ export function validateEnv(config: Record<string, unknown>): ValidatedEnv {
     SMTP_PASS,
     EMAIL_FROM,
     ADMIN_TELEGRAM_ID,
+    ENCRYPTION_KEY,
+    JIRA_CLIENT_ID,
+    JIRA_CLIENT_SECRET,
+    JIRA_REDIRECT_URI,
   };
 }

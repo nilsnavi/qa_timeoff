@@ -488,4 +488,40 @@ export const api = {
   },
   runImport: (id: string, importOnlyValidRows: boolean) =>
     request<any>(`/imports/${id}/run`, { method: 'POST', body: JSON.stringify({ importOnlyValidRows }) }),
+
+  // ── Jira ────────────────────────────────────────────────────
+
+  jiraConnection: () => request<any>('/jira/connection'),
+  jiraOAuthStartUrl: () => {
+    const token = localStorage.getItem('qa-timeoff-token');
+    return `${API_URL}/jira/oauth/start?token=${token}`;
+  },
+  jiraDisconnect: () => request('/jira/disconnect', { method: 'POST' }),
+  jiraSetProjects: (projectKeys: string[]) =>
+    request('/jira/projects', { method: 'POST', body: JSON.stringify({ projectKeys }) }),
+  jiraTriggerSync: () => request('/jira/sync', { method: 'POST' }),
+  jiraSearchIssues: (q: string) => request<any[]>(`/jira/issues/search?q=${encodeURIComponent(q)}`),
+  jiraMyIssues: () => request<any[]>('/jira/issues/my'),
+  jiraRetryFailed: () => request('/jira/retry-failed', { method: 'POST' }),
+
+  // ── Worklog ─────────────────────────────────────────────────
+
+  createWorklog: (dto: { jiraIssueId?: string; issueKeyManual?: string; date: string; hours: number; comment?: string }) =>
+    request('/worklog', { method: 'POST', body: JSON.stringify(dto) }),
+  myWorklog: (params?: { startDate?: string; endDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.startDate) qs.set('startDate', params.startDate);
+    if (params?.endDate) qs.set('endDate', params.endDate);
+    const q = qs.toString();
+    return request<any[]>(`/worklog/my${q ? `?${q}` : ''}`);
+  },
+  weeklyWorklog: (weekStart: string) => request<any>(`/worklog/weekly?weekStart=${weekStart}`),
+  teamWorklogReport: (params: { startDate: string; endDate: string; teamId?: string }) => {
+    const qs = new URLSearchParams({ startDate: params.startDate, endDate: params.endDate });
+    if (params.teamId) qs.set('teamId', params.teamId);
+    return request<any>(`/worklog/team-report?${qs}`);
+  },
+  updateWorklog: (id: string, dto: { hours?: number; comment?: string }) =>
+    request(`/worklog/${id}`, { method: 'PATCH', body: JSON.stringify(dto) }),
+  deleteWorklog: (id: string) => request(`/worklog/${id}`, { method: 'DELETE' }),
 };

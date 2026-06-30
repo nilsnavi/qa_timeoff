@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   Shield,
+  Timer,
   Upload,
   Users,
   WalletCards,
@@ -67,6 +68,15 @@ const sidebarSections: NavSection[] = [
     ],
   },
   {
+    label: 'Тайм-трекинг',
+    icon: Timer,
+    children: [
+      { label: 'Таймшит', to: '/timetracking', icon: Timer, roles: ['ALL'] },
+      { label: 'Календарь списаний', to: '/timetracking/calendar', icon: CalendarDays, roles: ['ALL'] },
+      { label: 'Отчёты', to: '/timetracking/reports', icon: BarChart3, roles: ['LEAD', 'MANAGER', 'ADMIN'] },
+    ],
+  },
+  {
     label: 'Аналитика',
     icon: BarChart3,
     roles: ['LEAD', 'MANAGER', 'ADMIN'],
@@ -83,6 +93,7 @@ const sidebarSections: NavSection[] = [
       { label: 'Сотрудники', to: '/employees', icon: Users, roles: ['MANAGER', 'ADMIN'] },
       { label: 'Команды', to: '/teams', icon: Users, roles: ['MANAGER', 'ADMIN'] },
       { label: 'Настройки организации', to: '/settings/organization', icon: Settings, roles: ['MANAGER', 'ADMIN'] },
+      { label: 'Интеграция с Jira', to: '/settings/integrations/jira', icon: Settings, roles: ['ADMIN'] },
     ],
   },
   {

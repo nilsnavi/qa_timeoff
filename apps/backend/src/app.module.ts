@@ -21,6 +21,7 @@ import { EventsModule } from './events/events.module';
 import { ExportModule } from './export/export.module';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
 import { HealthModule } from './health/health.module';
+import { JiraModule } from './jira/jira.module';
 import { KpiModule } from './kpi/kpi.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 import { MetricsModule } from './metrics/metrics.module';
@@ -32,6 +33,7 @@ import { TeamsModule } from './teams/teams.module';
 import { TimeOffModule } from './timeoff/timeoff.module';
 import { UsersModule } from './users/users.module';
 import { VacationModule } from './vacation/vacation.module';
+import { WorklogModule } from './worklog/worklog.module';
 
 @Module({
   imports: [
@@ -72,6 +74,8 @@ import { VacationModule } from './vacation/vacation.module';
     CompanySettingsModule,
     ExportModule,
     AuditModule,
+    JiraModule,
+    WorklogModule,
   ],
   providers: [
     {
