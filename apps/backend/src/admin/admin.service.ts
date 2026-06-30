@@ -856,7 +856,6 @@ export class AdminService {
   async getAuditLog(params?: { entityType?: string; entityId?: string }) {
     return this.auditService.findAll({
       entityType: params?.entityType,
-      entityId: params?.entityId,
       limit: 100,
     });
   }

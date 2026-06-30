@@ -395,6 +395,30 @@ export const api = {
     return request<{ items: AuditLogEntry[]; total: number }>(`/admin/audit${q ? `?${q}` : ''}`);
   },
 
+  auditLogFull: (params?: { search?: string; dateFrom?: string; dateTo?: string; actorId?: string; action?: string; entityType?: string; result?: string; ipAddress?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
+    if (params?.actorId) qs.set('actorId', params.actorId);
+    if (params?.action) qs.set('action', params.action);
+    if (params?.entityType) qs.set('entityType', params.entityType);
+    if (params?.result) qs.set('result', params.result);
+    if (params?.ipAddress) qs.set('ipAddress', params.ipAddress);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const q = qs.toString();
+    return request<{ items: AuditLogEntry[]; total: number; page: number; limit: number }>(`/audit-log${q ? `?${q}` : ''}`);
+  },
+  auditLogKpi: (params?: { dateFrom?: string; dateTo?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
+    const q = qs.toString();
+    return request<{ total: number; todayCount: number; errors: number; criticalActions: number; activeUsers: number }>(`/audit-log/kpi${q ? `?${q}` : ''}`);
+  },
+  auditLogDetail: (id: string) => request<AuditLogEntry>(`/audit-log/${id}`),
+
   adminStats: () => request<{ totalUsers: number; activeUsers: number; blockedUsers: number; teamsCount: number; newUsersThisMonth: number; byRole: { role: string; count: number }[] }>('/admin/stats'),
   adminUsers: (params?: { search?: string; role?: string; teamId?: string }) => {
     const search = new URLSearchParams();

@@ -19,6 +19,7 @@ const RequestsPage = lazy(() => import('../pages/RequestsPage').then((module) =>
 const TeamPage = lazy(() => import('../pages/TeamPage').then((module) => ({ default: module.TeamPage })));
 const SettingsOrganizationPage = lazy(() => import('../pages/SettingsOrganizationPage').then((module) => ({ default: module.SettingsOrganizationPage })));
 const SettingsRolesPage = lazy(() => import('../pages/SettingsRolesPage').then((module) => ({ default: module.SettingsRolesPage })));
+const AuditLogPage = lazy(() => import('../pages/AuditLogPage').then((module) => ({ default: module.AuditLogPage })));
 const InvitesPage = lazy(() => import('../pages/InvitesPage').then((module) => ({ default: module.InvitesPage })));
 const InviteAcceptPage = lazy(() => import('../pages/InviteAcceptPage').then((module) => ({ default: module.InviteAcceptPage })));
 const EmployeesPage = lazy(() => import('../pages/EmployeesPage').then((module) => ({ default: module.EmployeesPage })));
@@ -84,9 +85,9 @@ export const router = createBrowserRouter([
           { path: 'settings', element: <Navigate to="/settings/organization" replace /> },
           { path: 'import', element: <Navigate to="/admin" replace /> },
           { path: 'invites', element: withSuspense(<InvitesPage />) },
-          { path: 'audit-log', element: withSuspense(<AdminPage />) },
+          { path: 'audit-log', element: withSuspense(<AuditLogPage />) },
           { path: 'invites', element: withSuspense(<InvitesPage />) },
-          { path: 'logs', element: withSuspense(<AdminPage />) },
+          { path: 'logs', element: withSuspense(<AuditLogPage />) },
           { path: '*', element: <Navigate to="/" replace /> },
         ],
       },

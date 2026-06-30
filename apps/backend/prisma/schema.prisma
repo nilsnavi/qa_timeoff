@@ -394,9 +394,17 @@ model AuditLog {
   id         String   @id @default(cuid())
   actorId    String
   actor      User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  actorName  String?
+  actorRole  String?
   action     String
   entityType String
   entityId   String?
+  entityName String?
+  result     String   @default("SUCCESS")
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
   payload    Json?
   createdAt  DateTime @default(now())
 }

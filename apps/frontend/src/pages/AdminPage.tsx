@@ -15,7 +15,7 @@ import { OvertimeTab } from './admin-tabs/OvertimeTab';
 import { ExportTab } from './admin-tabs/ExportTab';
 import { AiForecastTab } from './admin-tabs/AiForecastTab';
 
-type AdminTab = 'users' | 'teams' | 'audit' | 'kpi' | 'overtime' | 'analytics' | 'export' | 'ai';
+type AdminTab = 'users' | 'teams' | 'kpi' | 'overtime' | 'analytics' | 'export' | 'ai';
 
 const roles: Role[] = ['EMPLOYEE', 'LEAD', 'MANAGER', 'ADMIN'];
 
@@ -25,11 +25,6 @@ const allRoleOptions: SelectOption[] = [
 ];
 
 const roleOptions: SelectOption[] = roles.map(r => ({ value: r, label: getRoleLabel(r) }));
-
-const auditEntityOptions: SelectOption[] = [
-  { value: '', label: 'Все типы' },
-  ...[...new Set(['USER', 'TIMEOFF', 'VACATION', 'BALANCE', 'TEAM', 'OVERTIME'])].map(t => ({ value: t, label: t })),
-];
 
 export function AdminPage() {
   const { user } = useAuth();
@@ -41,14 +36,7 @@ export function AdminPage() {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [teamFilter, setTeamFilter] = useState('ALL');
 
-  const tabFromPath: Record<string, AdminTab> = {
-    '/admin': 'users',
-    '/admin/users': 'users',
-    '/audit-log': 'audit',
-    '/logs': 'audit',
-  };
-
-  const [activeTab, setActiveTab] = useState<AdminTab>(tabFromPath[location.pathname] ?? 'users');
+  const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [createOpen, setCreateOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
@@ -92,15 +80,6 @@ export function AdminPage() {
     enabled: isAdmin,
   });
   const teamsQuery = useQuery({ queryKey: ['teams'], queryFn: api.teams, enabled: isAdmin });
-  const [auditEntityType, setAuditEntityType] = useState('');
-  const [auditOffset, setAuditOffset] = useState(0);
-  const AUDIT_LIMIT = 30;
-
-  const auditQuery = useQuery({
-    queryKey: ['admin', 'audit', auditEntityType, auditOffset],
-    queryFn: () => api.auditLogs({ entityType: auditEntityType || undefined, limit: AUDIT_LIMIT, offset: auditOffset }),
-    enabled: isAdmin && activeTab === 'audit',
-  });
 
   const stats = statsQuery.data;
   const users = usersQuery.data ?? [];
@@ -115,10 +94,6 @@ export function AdminPage() {
     { value: '', label: '—' },
     ...teams.map(t => ({ value: t.id, label: t.name })),
   ];
-
-  const auditData = auditQuery.data;
-  const auditItems = auditData?.items ?? [];
-  const auditTotal = auditData?.total ?? 0;
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return users;
@@ -335,11 +310,11 @@ export function AdminPage() {
       <div className="flex gap-6">
         <div className="flex-1 min-w-0 space-y-4">
           <div className="flex items-center gap-1 rounded-xl bg-white/[0.03] p-1 w-fit flex-wrap">
-            {(['users', 'teams', 'kpi', 'overtime', 'analytics', 'ai', 'export', 'audit'] as AdminTab[]).map(tab => (
+            {(['users', 'teams', 'kpi', 'overtime', 'analytics', 'ai', 'export'] as AdminTab[]).map(tab => (
               <button key={tab} onClick={() => { setActiveTab(tab); setPage(1); }}
                 className={clsx('rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
                   activeTab === tab ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/30 hover:text-white/50')}>
-                {tab === 'users' ? 'Пользователи' : tab === 'teams' ? 'Команды' : tab === 'kpi' ? 'KPI' : tab === 'overtime' ? 'Овертайм' : tab === 'analytics' ? 'Аналитика' : tab === 'ai' ? 'AI' : tab === 'export' ? 'Экспорт' : 'Аудит'}
+                {tab === 'users' ? 'Пользователи' : tab === 'teams' ? 'Команды' : tab === 'kpi' ? 'KPI' : tab === 'overtime' ? 'Овертайм' : tab === 'analytics' ? 'Аналитика' : tab === 'ai' ? 'AI' : 'Экспорт'}
               </button>
             ))}
           </div>
@@ -399,48 +374,6 @@ export function AdminPage() {
             </div>
           )}
           {activeTab === 'ai' && <AiForecastTab />}
-          {activeTab === 'audit' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-              <div className="field-shell">
-                <span className="field-label">Тип сущности</span>
-                <CustomSelect
-                  value={auditEntityType}
-                  onChange={v => { setAuditEntityType(v); setAuditOffset(0); }}
-                  options={auditEntityOptions}
-                  placeholder="Все типы"
-                />
-              </div>
-                <span className="text-[13px] text-white/30">{auditTotal} записей</span>
-              </div>
-
-              {auditQuery.isLoading && <Loader />}
-              {auditQuery.isError && <ErrorState title="Ошибка загрузки аудита" />}
-
-              {auditItems.length > 0 && (
-                <div className="space-y-2">
-                  {auditItems.map((item: any) => (
-                    <div key={item.id} className="enterprise-card p-3 flex items-center gap-3">
-                      <span className="text-[12px] text-white/30 shrink-0 w-32">{new Date(item.createdAt).toLocaleString('ru-RU')}</span>
-                      <span className="text-[13px] font-semibold text-white/70 shrink-0 w-36 truncate">{item.actor?.fullName || 'Система'}</span>
-                      <span className="text-[12px] font-bold text-white/40 uppercase shrink-0">{item.action}</span>
-                      <span className="text-[12px] text-white/30 truncate">{item.entityType}{item.entityId ? ` #${item.entityId.slice(0, 8)}` : ''}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!auditQuery.isLoading && auditItems.length === 0 && (
-                <EmptyState title="Нет записей" description="Аудит-лог пуст для выбранного фильтра" />
-              )}
-
-              {auditOffset + AUDIT_LIMIT < auditTotal && (
-                <Button variant="secondary" className="w-full" onClick={() => setAuditOffset(o => o + AUDIT_LIMIT)} disabled={auditQuery.isFetching}>
-                  {auditQuery.isFetching ? 'Загрузка...' : `Показать ещё (${auditTotal - auditOffset - AUDIT_LIMIT})`}
-                </Button>
-              )}
-            </div>
-          )}
           {activeTab === 'kpi' && <KpiTab />}
           {activeTab === 'overtime' && <OvertimeTab />}
           {activeTab === 'analytics' && (

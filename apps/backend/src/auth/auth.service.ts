@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramAuthService, TelegramUser } from './telegram-auth.service';
 
@@ -16,6 +17,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly telegramAuth: TelegramAuthService,
+    private readonly auditService: AuditService,
   ) {
     this.refreshExpiration = this.config.get<string>('JWT_REFRESH_EXPIRATION') ?? '7d';
   }
@@ -51,6 +53,17 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
+    });
+
+    await this.auditService.log({
+      actorId: user.id,
+      actorName: user.fullName,
+      actorRole: user.role,
+      action: 'AUTH_LOGIN_SUCCESS',
+      entityType: 'Auth',
+      entityId: user.id,
+      entityName: user.email ?? user.fullName,
+      result: 'SUCCESS',
     });
 
     this.logger.log(`User logged in via web: ${user.fullName} (id=${user.id}, role=${user.role})`);
