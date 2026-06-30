@@ -19,8 +19,13 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<{ user: { id: string; roleId?: string } }>();
+    const request = context.switchToHttp().getRequest<{ user: { id: string; roleId?: string; role?: string } }>();
     const user = request.user;
+
+    if (user?.role === 'ADMIN') {
+      return true;
+    }
+
     if (!user?.roleId) {
       throw new ForbiddenException('Доступ запрещён: роль не назначена');
     }
