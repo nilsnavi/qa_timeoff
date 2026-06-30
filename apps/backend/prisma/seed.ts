@@ -452,6 +452,13 @@ const PERMISSION_DEFS: { code: string; name: string; group: string; description:
   { code: 'audit.view', name: 'Просмотр журналов', group: 'Журналы', description: 'Видеть аудит-лог' },
   { code: 'audit.export', name: 'Экспорт журналов', group: 'Журналы', description: 'Экспортировать аудит-лог' },
 
+  { code: 'imports.view', name: 'Просмотр импортов', group: 'Импорт', description: 'Видеть страницу импорта' },
+  { code: 'imports.template.download', name: 'Скачать шаблон', group: 'Импорт', description: 'Скачивать шаблоны импорта' },
+  { code: 'imports.validate', name: 'Валидация импорта', group: 'Импорт', description: 'Загружать и проверять файлы' },
+  { code: 'imports.run', name: 'Запуск импорта', group: 'Импорт', description: 'Запускать импорт данных' },
+  { code: 'imports.errors.download', name: 'Скачать ошибки', group: 'Импорт', description: 'Скачивать файл ошибок импорта' },
+  { code: 'imports.source.download', name: 'Скачать исходный файл', group: 'Импорт', description: 'Скачивать исходный файл импорта' },
+
   { code: 'notifications.own.view', name: 'Просмотр своих уведомлений', group: 'Уведомления', description: 'Видеть свои уведомления' },
   { code: 'notifications.all.view', name: 'Просмотр всех уведомлений', group: 'Уведомления', description: 'Видеть все уведомления' },
 ];

@@ -92,7 +92,7 @@ const sidebarSections: NavSection[] = [
     children: [
       { label: 'Пользователи', to: '/admin/users', icon: Users, roles: ['ADMIN'] },
       { label: 'Роли', to: '/settings/roles', icon: Shield, roles: ['ADMIN'] },
-      { label: 'Импорт', to: '/admin', icon: Upload, roles: ['ADMIN'] },
+      { label: 'Импорт', to: '/import', icon: Upload, roles: ['ADMIN'] },
       { label: 'Журналы', to: '/audit-log', icon: Activity, roles: ['ADMIN'] },
     ],
   },

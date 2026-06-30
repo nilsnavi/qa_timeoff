@@ -10,6 +10,7 @@ import { AuditModule } from './audit/audit.module';
 import { CompanySettingsModule } from './company-settings/company-settings.module';
 import { AuthModule } from './auth/auth.module';
 import { BalanceModule } from './balance/balance.module';
+import { ImportsModule } from './imports/imports.module';
 import { InvitesModule } from './invites/invites.module';
 import { AppCacheModule } from './cache/cache.module';
 import { CalendarModule } from './calendar/calendar.module';
@@ -54,6 +55,7 @@ import { VacationModule } from './vacation/vacation.module';
     RequestsModule,
     AdminModule,
     RolesModule,
+    ImportsModule,
     UsersModule,
     TeamsModule,
     BalanceModule,

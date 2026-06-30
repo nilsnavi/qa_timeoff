@@ -27,6 +27,8 @@ enum BalanceOperationType {
   WRITE_OFF
   MANUAL_CORRECTION
   EXPIRED
+  IMPORT_INITIAL_BALANCE
+  IMPORT_BALANCE_ADJUSTMENT
 }
 
 enum VacationType {
@@ -63,6 +65,23 @@ enum Plan {
   BASIC
   PRO
   ENTERPRISE
+}
+
+enum ImportType {
+  USERS
+  TEAMS
+  BALANCES
+}
+
+enum ImportStatus {
+  PENDING
+  VALIDATING
+  READY
+  PROCESSING
+  SUCCESS
+  PARTIAL_SUCCESS
+  FAILED
+  CANCELLED
 }
 
 model Organization {
@@ -143,6 +162,7 @@ model User {
   cancelledOvertimes Overtime[]        @relation("OvertimeCanceller")
   kpiPeriods        KpiPeriod[]
   auditLogs         AuditLog[]
+  importJobs        ImportJob[]
   refreshTokens     RefreshToken[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -407,6 +427,40 @@ model AuditLog {
   userAgent  String?
   payload    Json?
   createdAt  DateTime @default(now())
+}
+
+model ImportJob {
+  id                String       @id @default(cuid())
+  type              ImportType
+  status            ImportStatus @default(PENDING)
+  fileName          String
+  originalFilePath  String?
+  errorFilePath     String?
+  createdById       String
+  createdBy         User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  totalRows         Int          @default(0)
+  validRows         Int          @default(0)
+  createdRows       Int          @default(0)
+  updatedRows       Int          @default(0)
+  skippedRows       Int          @default(0)
+  errorRows         Int          @default(0)
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  errors            ImportError[]
+}
+
+model ImportError {
+  id          String    @id @default(cuid())
+  importJobId String
+  importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  rowNumber   Int
+  field       String?
+  message     String
+  rawValue    String?
+  rawData     Json?
+  createdAt   DateTime  @default(now())
 }
 
 model RoleModel {

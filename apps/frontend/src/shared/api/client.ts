@@ -464,4 +464,24 @@ export const api = {
   },
   permissions: () => request<PermissionDto[]>('/roles/permissions'),
   permissionsMatrix: () => request<PermissionMatrix>('/roles/permissions/matrix'),
+
+  getImports: (params?: { type?: string; status?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set('type', params.type);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const q = qs.toString();
+    return request<{ items: any[]; total: number }>(`/imports${q ? `?${q}` : ''}`);
+  },
+  importsKpi: () => request<{ total: number; success: number; failed: number; lastImport: { createdAt: string; status: string } | null }>('/imports/kpi'),
+  getImportById: (id: string) => request<any>(`/imports/${id}`),
+  validateImport: (type: string, file: File) => {
+    const fd = new FormData();
+    fd.append('type', type);
+    fd.append('file', file);
+    return request<any>(`/imports/validate`, { method: 'POST', body: fd });
+  },
+  runImport: (id: string, importOnlyValidRows: boolean) =>
+    request<any>(`/imports/${id}/run`, { method: 'POST', body: JSON.stringify({ importOnlyValidRows }) }),
 };
