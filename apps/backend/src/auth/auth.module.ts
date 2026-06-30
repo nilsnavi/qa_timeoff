@@ -6,6 +6,7 @@ import { ActiveUserGuard } from './active-user.guard';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { PermissionsGuard } from './permissions.guard';
 import { TelegramAuthService } from './telegram-auth.service';
 
 @Module({
@@ -21,7 +22,7 @@ import { TelegramAuthService } from './telegram-auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TelegramAuthService, ActiveUserGuard],
-  exports: [AuthService, JwtModule, JwtStrategy, PassportModule, ActiveUserGuard],
+  providers: [AuthService, JwtStrategy, TelegramAuthService, ActiveUserGuard, PermissionsGuard],
+  exports: [AuthService, JwtModule, JwtStrategy, PassportModule, ActiveUserGuard, PermissionsGuard],
 })
 export class AuthModule {}

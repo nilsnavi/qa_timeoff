@@ -397,6 +397,77 @@ export interface ImportUserResult {
   reason?: string;
 }
 
+// ── RBAC: Roles & Permissions ────────────────────────────────────────
+
+export interface PermissionDto {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  groupName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoleDetail {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  isSystem: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  permissions: Array<{
+    id: string;
+    roleId: string;
+    permissionId: string;
+    permission: PermissionDto;
+  }>;
+  _count: { users: number };
+}
+
+export interface RoleUser {
+  id: string;
+  fullName: string;
+  email: string | null;
+  position: string | null;
+  isActive: boolean;
+  lastLoginAt: string | null;
+  team: { id: string; name: string } | null;
+}
+
+export interface RoleKpi {
+  totalRoles: number;
+  systemRoles: number;
+  customRoles: number;
+  usersWithRoles: number;
+  usersWithoutRoles: number;
+}
+
+export interface PermissionMatrixRow {
+  code: string;
+  name: string;
+  group: string;
+  [roleCode: string]: boolean | string;
+}
+
+export interface PermissionMatrix {
+  roles: Array<{ id: string; code: string; name: string; isSystem: boolean }>;
+  permissions: PermissionMatrixRow[];
+}
+
+export interface RoleAuditEntry {
+  id: string;
+  actorId: string;
+  actor: { id: string; fullName: string };
+  action: string;
+  entityType: string;
+  entityId?: string;
+  payload?: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface DashboardProfile {
   id: string;
   fullName: string;

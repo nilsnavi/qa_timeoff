@@ -26,6 +26,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RequestsModule } from './requests/requests.module';
+import { RolesModule } from './roles/roles.module';
 import { TeamsModule } from './teams/teams.module';
 import { TimeOffModule } from './timeoff/timeoff.module';
 import { UsersModule } from './users/users.module';
@@ -52,6 +53,7 @@ import { VacationModule } from './vacation/vacation.module';
     LeaveRequestsModule,
     RequestsModule,
     AdminModule,
+    RolesModule,
     UsersModule,
     TeamsModule,
     BalanceModule,

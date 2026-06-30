@@ -111,6 +111,8 @@ model User {
   hourlyRate        Int                @default(0)
   currency          String             @default("RUB")
   role              Role               @default(EMPLOYEE)
+  roleId            String?
+  roleRef           RoleModel?         @relation(fields: [roleId], references: [id], onDelete: SetNull)
   teamId            String?
   team             Team?              @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
   teamLead         Team?              @relation("TeamLead")
@@ -397,4 +399,38 @@ model AuditLog {
   entityId   String?
   payload    Json?
   createdAt  DateTime @default(now())
+}
+
+model RoleModel {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  description String           @default("")
+  isSystem    Boolean          @default(false)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       User[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  description String           @default("")
+  groupName   String           @default("")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
 }

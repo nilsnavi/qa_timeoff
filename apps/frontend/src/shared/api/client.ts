@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, CompanySettings, Dashboard, DashboardSummary, ImportUserResult, Invite, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, CompanySettings, Dashboard, DashboardSummary, ImportUserResult, Invite, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PermissionMatrix, PermissionDto, PositionHistory, RequestStatus, Role, RoleAuditEntry, RoleDetail, RoleKpi, RoleUser, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -405,4 +405,39 @@ export const api = {
     return request<User[]>('/admin/users' + (qs ? `?${qs}` : ''));
   },
   disableUser: (id: string) => request<User>(`/admin/users/${id}/disable`, { method: 'PATCH' }),
+
+  // ── Roles & Permissions ────────────────────────────────────────────
+
+  roles: (params?: { search?: string; isSystem?: boolean; isActive?: boolean }) => {
+    const search = new URLSearchParams();
+    if (params?.search) search.set('search', params.search);
+    if (params?.isSystem !== undefined) search.set('isSystem', String(params.isSystem));
+    if (params?.isActive !== undefined) search.set('isActive', String(params.isActive));
+    const qs = search.toString();
+    return request<RoleDetail[]>(`/roles${qs ? `?${qs}` : ''}`);
+  },
+  roleKpi: () => request<RoleKpi>('/roles/kpi'),
+  roleDetail: (id: string) => request<RoleDetail>(`/roles/${id}`),
+  createRole: (dto: { code: string; name: string; description?: string; basedOnRoleCode?: string; isActive?: boolean; permissionCodes?: string[] }) =>
+    request<RoleDetail>('/roles', { method: 'POST', body: JSON.stringify(dto) }),
+  updateRole: (id: string, dto: { name?: string; description?: string; isActive?: boolean }) =>
+    request<RoleDetail>(`/roles/${id}`, { method: 'PATCH', body: JSON.stringify(dto) }),
+  deleteRole: (id: string) => request<{ success: boolean }>(`/roles/${id}`, { method: 'DELETE' }),
+  cloneRole: (id: string, code: string) => request<RoleDetail>(`/roles/${id}/clone`, { method: 'POST', body: JSON.stringify({ code }) }),
+  updateRolePermissions: (id: string, permissionCodes: string[]) =>
+    request<RoleDetail>(`/roles/${id}/permissions`, { method: 'PATCH', body: JSON.stringify({ permissionCodes }) }),
+  roleUsers: (id: string) => request<RoleUser[]>(`/roles/${id}/users`),
+  addRoleUsers: (id: string, userIds: string[]) =>
+    request<RoleUser[]>(`/roles/${id}/users`, { method: 'POST', body: JSON.stringify({ userIds }) }),
+  removeRoleUser: (id: string, userId: string) =>
+    request<RoleUser[]>(`/roles/${id}/users/${userId}`, { method: 'DELETE' }),
+  roleAuditLog: (id: string, params?: { limit?: number; offset?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.limit) search.set('limit', String(params.limit));
+    if (params?.offset) search.set('offset', String(params.offset));
+    const qs = search.toString();
+    return request<RoleAuditEntry[]>(`/roles/${id}/audit-log${qs ? `?${qs}` : ''}`);
+  },
+  permissions: () => request<PermissionDto[]>('/roles/permissions'),
+  permissionsMatrix: () => request<PermissionMatrix>('/roles/permissions/matrix'),
 };
