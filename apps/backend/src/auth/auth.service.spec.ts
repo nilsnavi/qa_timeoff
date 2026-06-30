@@ -6,6 +6,7 @@ import { createHash, randomBytes } from 'crypto';
 import { AuthService } from './auth.service';
 import { TelegramAuthService } from './telegram-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 jest.mock('crypto', () => {
   const actual = jest.requireActual('crypto');
@@ -62,6 +63,10 @@ describe('AuthService', () => {
     }),
   };
 
+  const mockAudit = {
+    log: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -70,6 +75,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwt },
         { provide: TelegramAuthService, useValue: mockTelegramAuth },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: AuditService, useValue: mockAudit },
       ],
     }).compile();
 
