@@ -107,7 +107,7 @@ export class AnalyticsService {
         fullName: o.user.fullName, teamId: o.user.teamId, role: o.user.role,
         teamName: o.user.team?.name ?? null, position: o.user.position ?? null,
       })),
-      ...timeOffs.filter(t => query.loadType === 'ALL' || query.loadType === 'TIMEOFF' || !query.loadType).map(t => ({
+      ...timeOffs.filter(_t => query.loadType === 'ALL' || query.loadType === 'TIMEOFF' || !query.loadType).map(t => ({
         userId: t.userId, hours: t.hours, date: t.date, status: t.status,
         fullName: t.user?.fullName ?? '', teamId: t.user?.teamId ?? null,
         role: t.user?.role as Role ?? 'EMPLOYEE',
@@ -173,7 +173,7 @@ export class AnalyticsService {
       const key = monday.toISOString().split('T')[0];
       weekMap.set(key, (weekMap.get(key) ?? 0) + item.hours);
     }
-    const weeklyTrend = Array.from(weekMap.entries())
+    const _weeklyTrend = Array.from(weekMap.entries())
       .map(([date, hours]) => ({ date, hours }))
       .sort((a, b) => a.date.localeCompare(b.date));
 

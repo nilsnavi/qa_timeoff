@@ -15,11 +15,11 @@ import {
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock, Edit3, Plane, Plus, Stethoscope, Sun, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Input, Skeleton, Textarea } from '../../components/ui';
 import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
-import { hapticSelection, showAppToast } from '../../shared/utils';
+import { showAppToast } from '../../shared/utils';
 import type { CalendarEventEntry, CalendarEventType, Team } from '../../shared/types';
 import { useDashboard } from '../../shared/hooks/useDashboard';
 
@@ -50,7 +50,6 @@ const TYPE_ICONS: Record<string, typeof Plane> = {
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 export function CalendarEventsPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { dashboard } = useDashboard();

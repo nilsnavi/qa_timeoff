@@ -1,8 +1,7 @@
 import { BarChart3, Download, FileText } from 'lucide-react';
 import { useState } from 'react';
-import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
-import { Card, Button } from '../components/ui';
+import { Card } from '../components/ui';
 import { showAppToast } from '../shared/utils';
 import { getAccessToken } from '../shared/api/client';
 
@@ -20,8 +19,8 @@ export function ReportsPage() {
     const d = new Date(); d.setDate(1); return d.toISOString().split('T')[0];
   });
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
-  const isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
-  const [teamId, setTeamId] = useState('');
+  const _isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
+  const [teamId, _setTeamId] = useState('');
 
   const downloadCsv = async (type: string) => {
     const params = new URLSearchParams({ dateFrom, dateTo, unit: 'HOURS' });

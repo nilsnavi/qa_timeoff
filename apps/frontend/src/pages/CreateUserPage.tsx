@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, ChevronRight, Copy, Info, Mail, Shield, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Copy, Info, Shield, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CustomSelect, ErrorState, Field } from '../components/ui';
 import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
-import type { Role, Team } from '../shared/types';
+import type { Role } from '../shared/types';
 import { getRoleLabel, showAppToast } from '../shared/utils';
 import { clsx } from 'clsx';
 

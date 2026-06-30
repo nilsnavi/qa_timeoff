@@ -141,7 +141,7 @@ export class JiraOAuthService {
         where: { organizationId },
         data: { status: 'TOKEN_EXPIRED' },
       });
-      throw new Error('Сессия Jira истекла. Переподключите интеграцию в настройках.');
+      throw new Error('Сессия Jira истекла. Переподключите интеграцию в настройках.', { cause: err });
     }
   }
 

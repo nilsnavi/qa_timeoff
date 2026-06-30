@@ -144,8 +144,6 @@ export function Select({
     }
   }
 
-  const displayOptions = options.filter((o) => o.value !== '');
-
   const strValue = String(value ?? '');
   const selectedIndex = options.findIndex((o) => o.value === strValue);
 

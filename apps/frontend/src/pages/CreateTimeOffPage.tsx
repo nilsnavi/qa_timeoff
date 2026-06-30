@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarPlus, CheckCircle2, Clock3, Plus, X } from 'lucide-react';
+import { CheckCircle2, Clock3, Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, DatePicker, EmptyState, Input, Select, Textarea } from '../components/ui';

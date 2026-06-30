@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, ChevronDown, Clock3, Edit3, Plane, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, Modal, SkeletonCard, StatusBadge } from '../components/ui';
-import { CustomSelect } from '../components/ui/CustomSelect';
-import type { SelectOption } from '../components/ui/CustomSelect';
+
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
 import type { RequestStatus, TimeOffRequest, VacationRequest } from '../shared/types';
@@ -170,8 +169,8 @@ export function MyRequestsPage() {
     setCursorVacation(items[items.length - 1]?.id);
   };
 
-  const fallbackTimeOff = dashboard.requests.filter((request) => request.userId === dashboard.user.id);
-  const fallbackVacations = (dashboard.vacations ?? []).filter((request) => request.userId === dashboard.user.id);
+  const _fallbackTimeOff = dashboard.requests.filter((request) => request.userId === dashboard.user.id);
+  const _fallbackVacations = (dashboard.vacations ?? []).filter((request) => request.userId === dashboard.user.id);
   const allRequests = useMemo(
     () =>
       [
