@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RequestStatus, Role, User, VacationType } from '@prisma/client';
+import { BalanceOperationType, Prisma, RequestStatus, Role, User, VacationType } from '@prisma/client';
 import { EventBusService } from '../events/event-bus.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { NotificationType } from '../notifications/notification-types';
@@ -128,13 +128,47 @@ export class VacationService {
   }
 
   async approve(currentUser: User, id: string) {
-    await this.getPendingRequestForReview(currentUser, id);
+    const request = await this.getPendingRequestForReview(currentUser, id);
+
+    const HOURS_PER_DAY = 8;
+    const hoursToDeduct = request.daysCount * HOURS_PER_DAY;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      return await tx.vacationRequest.update({
+      const balance = await tx.timeBalance.upsert({
+        where: { userId: request.userId },
+        create: { userId: request.userId },
+        update: {},
+      });
+
+      if (balance.balanceHours < hoursToDeduct) {
+        throw new BadRequestException(
+          `Недостаточно баланса для одобрения отпуска: требуется ${hoursToDeduct} ч ` +
+          `(${request.daysCount} дн. × ${HOURS_PER_DAY} ч), доступно ${balance.balanceHours} ч`,
+        );
+      }
+
+      await tx.timeBalance.update({
+        where: { userId: request.userId },
+        data: {
+          balanceHours:   { decrement: hoursToDeduct },
+          totalUsedHours: { increment: hoursToDeduct },
+        },
+      });
+
+      await tx.balanceOperation.create({
+        data: {
+          userId:        request.userId,
+          operationType: BalanceOperationType.WRITE_OFF,
+          hours:         -hoursToDeduct,
+          reason:        `Отпуск ${this.formatDate(request.startDate)} — ${this.formatDate(request.endDate)} (${request.daysCount} дн.)`,
+          createdById:   currentUser.id,
+        },
+      });
+
+      return tx.vacationRequest.update({
         where: { id },
         data: {
-          status: RequestStatus.APPROVED,
+          status:     RequestStatus.APPROVED,
           approverId: currentUser.id,
           approvedAt: new Date(),
         },
@@ -146,7 +180,7 @@ export class VacationService {
       data: {
         userId: updated.userId,
         title: 'Отпуск согласован',
-        message: `Отпуск с ${this.formatDate(updated.startDate)} по ${this.formatDate(updated.endDate)} согласован`,
+        message: `Отпуск с ${this.formatDate(updated.startDate)} по ${this.formatDate(updated.endDate)} согласован. Списано ${hoursToDeduct} ч.`,
         type: NotificationType.REQUEST_APPROVED,
       },
     });

@@ -76,6 +76,13 @@ describe('VacationService', () => {
               approverId: mockManager.id,
             }),
           },
+          timeBalance: {
+            upsert: jest.fn().mockResolvedValue({ balanceHours: 160 }),
+            update: jest.fn().mockResolvedValue({}),
+          },
+          balanceOperation: {
+            create: jest.fn().mockResolvedValue({}),
+          },
         };
         return fn(txMock);
       });
