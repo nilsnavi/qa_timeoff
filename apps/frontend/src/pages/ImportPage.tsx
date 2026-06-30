@@ -83,10 +83,10 @@ export function ImportPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Всего импортов" value={kpi?.total ?? 0} color="blue" loading={kpiQuery.isLoading} />
-        <KpiCard label="Успешных" value={kpi?.success ?? 0} color="emerald" loading={kpiQuery.isLoading} />
-        <KpiCard label="С ошибками" value={kpi?.failed ?? 0} color="rose" loading={kpiQuery.isLoading} />
-        <KpiCard label="Последний импорт" value={kpi?.lastImport ? `${new Date(kpi.lastImport.createdAt).toLocaleDateString('ru-RU')}, ${statusLabels[kpi.lastImport.status]}` : '—'} color="violet" loading={kpiQuery.isLoading} stringValue />
+        <KpiCard label="Всего импортов" value={kpi?.total ?? 0} loading={kpiQuery.isLoading} />
+        <KpiCard label="Успешных" value={kpi?.success ?? 0} loading={kpiQuery.isLoading} />
+        <KpiCard label="С ошибками" value={kpi?.failed ?? 0} loading={kpiQuery.isLoading} />
+        <KpiCard label="Последний импорт" value={kpi?.lastImport ? `${new Date(kpi.lastImport.createdAt).toLocaleDateString('ru-RU')}, ${statusLabels[kpi.lastImport.status]}` : '—'} loading={kpiQuery.isLoading} stringValue />
       </div>
 
       {step === 'select' && (
@@ -119,9 +119,9 @@ export function ImportPage() {
       {step === 'validate' && preview && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <KpiCard label="Всего строк" value={preview.totalRows} color="blue" />
-            <KpiCard label="Готово к импорту" value={preview.validRows} color="emerald" />
-            <KpiCard label="Ошибок" value={preview.errorCount} color="rose" />
+            <KpiCard label="Всего строк" value={preview.totalRows} />
+            <KpiCard label="Готово к импорту" value={preview.validRows} />
+            <KpiCard label="Ошибок" value={preview.errorCount} />
           </div>
 
           {preview.errors.length > 0 && (
