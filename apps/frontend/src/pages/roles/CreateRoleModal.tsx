@@ -4,7 +4,6 @@ import { Button, Field, Modal } from '../../components/ui';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import type { SelectOption } from '../../components/ui/CustomSelect';
 import { api } from '../../shared/api';
-import type { RoleDetail } from '../../shared/types';
 
 type Props = {
   open: boolean;

@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { Button, CustomSelect, EmptyState, Loader, Modal } from '../../components/ui';
-import type { SelectOption } from '../../components/ui/CustomSelect';
+import { useState } from 'react';
+import { Button, EmptyState, Loader, Modal } from '../../components/ui';
 import { api } from '../../shared/api';
-import type { RoleDetail, User } from '../../shared/types';
+import type { RoleDetail } from '../../shared/types';
 
 type Props = {
   role: RoleDetail;
@@ -42,10 +41,6 @@ export function UsersTab({ role }: Props) {
       setSelectedUsers([]);
     },
   });
-
-  const userOptions: SelectOption[] = useMemo(() =>
-    availableUsers.map(u => ({ value: u.id, label: `${u.fullName} (${u.email || '—'})` })),
-    [availableUsers]);
 
   if (usersQuery.isLoading) return <Loader />;
 

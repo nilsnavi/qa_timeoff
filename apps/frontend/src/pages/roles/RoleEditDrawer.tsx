@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, History, Info, Shield, Users, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { History, Info, Shield, Users, X } from 'lucide-react';
+import { useState } from 'react';
 import { Button, Field, Loader, Modal } from '../../components/ui';
 import { api } from '../../shared/api';
-import type { RoleDetail } from '../../shared/types';
 import { HistoryTab } from './HistoryTab';
 import { PermissionsTab } from './PermissionsTab';
 import { UsersTab } from './UsersTab';
@@ -84,7 +83,7 @@ export function RoleEditDrawer({ roleId, onClose }: Props) {
             <div className="flex items-center gap-1">
               {!isSystem && (
                 <>
-                  <Button size="sm" variant="ghost" onClick={() => { setCloneCode(`${role?.code}_COPY` || ''); setCloneOpen(true); }} className="!min-h-0 h-7 !px-2 text-[12px] text-white/40 hover:text-white">
+                  <Button size="sm" variant="ghost" onClick={() => { setCloneCode(role?.code ? `${role.code}_COPY` : ''); setCloneOpen(true); }} className="!min-h-0 h-7 !px-2 text-[12px] text-white/40 hover:text-white">
                     Копировать
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(true)} className="!min-h-0 h-7 w-7 !p-0 text-rose-400">

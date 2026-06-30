@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Grid3X3, History, Plus, RefreshCw, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, ErrorState, Header } from '../components/ui';
@@ -39,15 +39,15 @@ export function SettingsRolesPage() {
     }),
   });
 
-  const roles = rolesQuery.data ?? [];
+  const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data]);
   const isLoading = rolesQuery.isLoading;
   const isError = rolesQuery.isError;
 
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return roles;
     return [...roles].sort((a, b) => {
-      const av = String((a as any)[sortKey] ?? '');
-      const bv = String((b as any)[sortKey] ?? '');
+      const av = String((a as Record<string, unknown>)[sortKey] ?? '');
+      const bv = String((b as Record<string, unknown>)[sortKey] ?? '');
       const cmp = av.localeCompare(bv);
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -62,18 +62,6 @@ export function SettingsRolesPage() {
   };
 
   const [deleteTarget, setDeleteTarget] = useState<RoleDetail | null>(null);
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.deleteRole(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['roles'] });
-      queryClient.invalidateQueries({ queryKey: ['roles', 'kpi'] });
-      setDeleteTarget(null);
-    },
-    onError: (err: any) => {
-      alert(err?.message ?? 'Ошибка удаления');
-    },
-  });
 
   if (isError) return <ErrorState title="Ошибка загрузки" description="Не удалось загрузить роли" onRetry={() => rolesQuery.refetch()} />;
 

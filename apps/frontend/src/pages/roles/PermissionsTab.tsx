@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Button, Loader, Skeleton } from '../../components/ui';
+import { Button, Loader } from '../../components/ui';
 import { api } from '../../shared/api';
 import type { PermissionDto, RoleDetail } from '../../shared/types';
 
