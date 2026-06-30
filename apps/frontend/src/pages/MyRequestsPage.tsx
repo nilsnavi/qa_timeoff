@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, ChevronDown, Clock3, Edit3, Plane, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Modal, SkeletonCard, StatusBadge } from '../components/ui';
+import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Field, Modal, SkeletonCard, StatusBadge } from '../components/ui';
 
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
