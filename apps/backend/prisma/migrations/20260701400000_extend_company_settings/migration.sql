@@ -1,0 +1,23 @@
+ALTER TABLE "CompanySettings" ADD COLUMN "dateFormat" TEXT NOT NULL DEFAULT 'DD.MM.YYYY';
+ALTER TABLE "CompanySettings" ADD COLUMN "workingDaysPerWeek" INTEGER NOT NULL DEFAULT 5;
+ALTER TABLE "CompanySettings" ADD COLUMN "minimumBalanceHours" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "CompanySettings" ADD COLUMN "requireRejectComment" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "blockApprovalOnCoverageRisk" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "CompanySettings" ADD COLUMN "countPendingAsCoverageRisk" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "inAppNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "notifyNewRequest" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "notifyApproval" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "notifyRejection" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "notifyLowBalance" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "CompanySettings" ADD COLUMN "notifyCoverageRisk" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "notifyOverdueRequests" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "CompanySettings" ADD COLUMN "smtpHost" TEXT;
+ALTER TABLE "CompanySettings" ADD COLUMN "smtpPort" INTEGER;
+ALTER TABLE "CompanySettings" ADD COLUMN "smtpUser" TEXT;
+ALTER TABLE "CompanySettings" ADD COLUMN "smtpFrom" TEXT;
+ALTER TABLE "CompanySettings" ADD COLUMN "smtpPassword" TEXT;
+ALTER TABLE "CompanySettings" ADD COLUMN "telegramBotToken" TEXT;
+ALTER TABLE "CompanySettings" ADD COLUMN "telegramBotEnabled" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "CompanySettings" ADD COLUMN "updatedById" TEXT;
+
+ALTER TABLE "CompanySettings" ADD CONSTRAINT "CompanySettings_updatedById_fkey" FOREIGN KEY ("updatedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

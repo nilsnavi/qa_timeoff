@@ -340,9 +340,10 @@ export const api = {
   },
 
   // ── Company Settings ──────────────────────────────────────────────
-
   getCompanySettings: () => request<CompanySettings>('/settings/company'),
-  updateCompanySettings: (dto: Record<string, unknown>) => request<CompanySettings>('/settings/company', { method: 'PATCH', body: JSON.stringify(dto) }),
+  updateCompanySettings: (dto: Record<string, unknown>) =>
+    request<CompanySettings>('/settings/company', { method: 'PATCH', body: JSON.stringify(dto) }),
+  getCompanySettingsAudit: () => request<any[]>('/settings/company/audit'),
 
   // ── Invites ───────────────────────────────────────────────────────
 

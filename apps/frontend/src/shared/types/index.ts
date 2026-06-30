@@ -615,19 +615,40 @@ export interface DashboardOnboarding {
 export interface CompanySettings {
   id: string;
   companyName: string;
-  logoUrl: string | null;
+  logoUrl?: string;
   timezone: string;
   locale: string;
+  dateFormat: string;
   workWeekDays: number;
   workingHoursPerDay: number;
+  workingDaysPerWeek: number;
   defaultAnnualHours: number;
   minimumTeamCoveragePercent: number;
+  minimumBalanceHours: number;
   approvalPolicy: string;
+  requireRejectComment: boolean;
+  blockApprovalOnCoverageRisk: boolean;
+  countPendingAsCoverageRisk: boolean;
   allowNegativeBalance: boolean;
   emailNotificationsEnabled: boolean;
   telegramNotificationsEnabled: boolean;
-  createdAt: string;
+  inAppNotificationsEnabled: boolean;
+  notifyNewRequest: boolean;
+  notifyApproval: boolean;
+  notifyRejection: boolean;
+  notifyLowBalance: boolean;
+  notifyCoverageRisk: boolean;
+  notifyOverdueRequests: boolean;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpFrom?: string;
+  smtpPassword?: string;
+  telegramBotToken?: string;
+  telegramBotEnabled: boolean;
+  updatedBy?: { id: string; fullName: string };
   updatedAt: string;
+  createdAt: string;
 }
 
 export interface Invite {

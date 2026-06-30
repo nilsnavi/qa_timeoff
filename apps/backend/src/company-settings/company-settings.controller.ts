@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -16,14 +16,35 @@ export class CompanySettingsController {
   constructor(private readonly companySettingsService: CompanySettingsService) {}
 
   @Get('company')
-  get(@CurrentUser() _user: User) {
+  get() {
     return this.companySettingsService.get();
   }
 
   @Patch('company')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  update(@Body() dto: UpdateCompanySettingsDto) {
-    return this.companySettingsService.update(dto);
+  update(@CurrentUser() user: User, @Body() dto: UpdateCompanySettingsDto) {
+    return this.companySettingsService.update(user, dto);
+  }
+
+  @Post('company/test-email')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  testEmail() {
+    return { success: false, message: 'SMTP не настроен или не доступен' };
+  }
+
+  @Post('company/test-telegram')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  testTelegram() {
+    return { success: false, message: 'Telegram бот не настроен' };
+  }
+
+  @Get('company/audit')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  getAudit() {
+    return this.companySettingsService.getAudit();
   }
 }

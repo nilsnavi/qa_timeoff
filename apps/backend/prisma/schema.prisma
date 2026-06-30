@@ -104,16 +104,38 @@ model CompanySettings {
   logoUrl                   String?
   timezone                  String   @default("Europe/Moscow")
   locale                    String   @default("ru")
+  dateFormat                String   @default("DD.MM.YYYY")
   workWeekDays              Int      @default(5)
   workingHoursPerDay        Int      @default(8)
+  workingDaysPerWeek        Int      @default(5)
   defaultAnnualHours        Int      @default(1760)
-  minimumTeamCoveragePercent Int     @default(70)
+  minimumTeamCoveragePercent    Int  @default(70)
+  minimumBalanceHours       Int      @default(0)
   approvalPolicy            String   @default("MANAGER_OR_ADMIN")
+  requireRejectComment      Boolean  @default(true)
+  blockApprovalOnCoverageRisk Boolean @default(false)
+  countPendingAsCoverageRisk   Boolean @default(true)
   allowNegativeBalance      Boolean  @default(false)
   emailNotificationsEnabled Boolean  @default(true)
   telegramNotificationsEnabled Boolean @default(false)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  inAppNotificationsEnabled Boolean  @default(true)
+  notifyNewRequest           Boolean @default(true)
+  notifyApproval             Boolean @default(true)
+  notifyRejection            Boolean @default(true)
+  notifyLowBalance           Boolean @default(false)
+  notifyCoverageRisk         Boolean @default(true)
+  notifyOverdueRequests      Boolean @default(true)
+  smtpHost                   String?
+  smtpPort                   Int?
+  smtpUser                   String?
+  smtpFrom                   String?
+  smtpPassword               String?
+  telegramBotToken           String?
+  telegramBotEnabled         Boolean  @default(false)
+  updatedById                String?
+  updatedBy                  User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
 
 model User {
@@ -163,6 +185,7 @@ model User {
   kpiPeriods        KpiPeriod[]
   auditLogs         AuditLog[]
   importJobs        ImportJob[]
+  updatedCompanySettings CompanySettings[]
   refreshTokens     RefreshToken[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
