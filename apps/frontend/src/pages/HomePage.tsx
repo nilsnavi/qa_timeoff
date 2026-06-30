@@ -17,7 +17,6 @@ import { useAuth } from '../shared/auth/AuthContext';
 
 export function HomePage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { dashboard, isError, isLoading, refetch } = useDashboardSummary();
 
   if (isError && !dashboard) {
@@ -43,13 +42,18 @@ export function HomePage() {
   return (
     <>
       <div className="space-y-5">
-        <div className="flex items-start justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-[22px] font-bold text-white">
-              Добрый день, {d.profile.shortName} <span className="inline-block">👋</span>
-            </h1>
-            <p className="text-[14px] text-white/40 mt-0.5">{d.greeting}</p>
-          </div>
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[22px] font-bold text-white">
+                  Добрый день, {d.profile.shortName} <span className="inline-block">👋</span>
+                </h1>
+                {d.profile.teamName && (
+                  <span className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-2.5 py-0.5 text-[12px] font-medium text-white/50">{d.profile.teamName}</span>
+                )}
+              </div>
+              <p className="text-[14px] text-white/40 mt-0.5">{d.greeting}</p>
+            </div>
           <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[14px] font-medium text-white/60">
             <span>{dateStr}</span>
           </div>

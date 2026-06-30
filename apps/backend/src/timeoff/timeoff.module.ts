@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { BalanceModule } from '../balance/balance.module';
 import { EventsModule } from '../events/events.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -6,7 +7,7 @@ import { TimeOffController } from './timeoff.controller';
 import { TimeOffService } from './timeoff.service';
 
 @Module({
-  imports: [BalanceModule, NotificationsModule, EventsModule],
+  imports: [BalanceModule, NotificationsModule, EventsModule, AuditModule],
   controllers: [TimeOffController],
   providers: [TimeOffService],
 })

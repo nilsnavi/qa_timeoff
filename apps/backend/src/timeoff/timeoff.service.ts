@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { BalanceOperationType, Prisma, RequestStatus, Role, User } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { EventBusService } from '../events/event-bus.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { NotificationType } from '../notifications/notification-types';
@@ -33,6 +34,7 @@ export class TimeOffService {
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
     private readonly emailNotification: EmailNotificationService,
+    private readonly audit: AuditService,
   ) {}
 
   async create(currentUser: User, dto: CreateTimeOffRequestDto) {
@@ -205,6 +207,14 @@ export class TimeOffService {
       message: 'Ваш отгул одобрен',
     });
 
+    this.audit.log({
+      actorId: currentUser.id,
+      action: 'REQUEST_APPROVED',
+      entityType: 'timeoff',
+      entityId: id,
+      payload: { hours: request.hours, userId: request.userId },
+    });
+
     this.prisma.user.findUnique({ where: { id: request.userId }, select: { email: true, fullName: true } }).then(user => {
       if (user?.email) {
         this.emailNotification.sendRequestApproved(user.email, user.fullName, 'отгул', request.date.toISOString().slice(0, 10));
@@ -247,6 +257,14 @@ export class TimeOffService {
       approverComment,
     });
 
+    this.audit.log({
+      actorId: currentUser.id,
+      action: 'REQUEST_REJECTED',
+      entityType: 'timeoff',
+      entityId: id,
+      payload: { userId: updated.userId },
+    });
+
     this.prisma.user.findUnique({ where: { id: updated.userId }, select: { email: true, fullName: true } }).then(user => {
       if (user?.email) {
         this.emailNotification.sendRequestRejected(user.email, user.fullName, 'отгул', (updated as any).date?.toISOString().slice(0, 10) ?? new Date().toISOString().slice(0, 10), approverComment);
@@ -282,12 +300,14 @@ export class TimeOffService {
     if (!request) {
       throw new NotFoundException('Time off request not found');
     }
-    if (request.status !== RequestStatus.PENDING) {
-      throw new BadRequestException('Only pending requests can be cancelled');
+    if (request.status !== RequestStatus.PENDING && request.status !== RequestStatus.APPROVED) {
+      throw new BadRequestException('Only pending or approved requests can be cancelled');
     }
     if (!this.canCancel(currentUser, request)) {
       throw new ForbiddenException('You cannot cancel this request');
     }
+
+    const wasApproved = request.status === RequestStatus.APPROVED;
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.timeOffRequest.update({
@@ -296,13 +316,42 @@ export class TimeOffService {
         include: timeOffInclude,
       });
 
+      if (wasApproved) {
+        await tx.timeBalance.update({
+          where: { userId: request.userId },
+          data: {
+            balanceHours: { increment: request.hours },
+            totalUsedHours: { decrement: request.hours },
+          },
+        });
+        await tx.balanceOperation.create({
+          data: {
+            userId: request.userId,
+            operationType: 'CANCEL_REFUND' as any,
+            hours: request.hours,
+            reason: `Refund for cancelled approved request ${request.id}`,
+            createdById: currentUser.id,
+          },
+        });
+      }
+
       await tx.notification.create({
         data: {
           userId: request.userId,
-          title: 'Отгул отменён',
-          message: 'Заявка на отгул была отменена',
+          title: 'Заявка отменена',
+          message: wasApproved
+            ? `Заявка на отгул отменена, ${request.hours} ч возвращены на баланс`
+            : 'Заявка на отгул была отменена',
           type: NotificationType.REQUEST_REJECTED,
         },
+      });
+
+      this.audit.log({
+        actorId: currentUser.id,
+        action: 'REQUEST_CANCELLED',
+        entityType: 'timeoff',
+        entityId: id,
+        payload: { wasApproved, refund: wasApproved ? request.hours : 0 },
       });
 
       return updated;

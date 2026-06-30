@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role, RequestStatus, LeaveRequestType } from '@prisma/client';
 import { HolidaysService } from '../calendar/holidays.service';
+import { CompanySettingsService } from '../company-settings/company-settings.service';
 
 export interface DashboardQuery {
   dateFrom?: string;
@@ -53,6 +54,7 @@ export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly holidaysService: HolidaysService,
+    private readonly companySettingsService: CompanySettingsService,
   ) {}
 
   async getSummary(user: {
@@ -84,6 +86,7 @@ export class DashboardService {
         : [];
 
     const holidays = await this.holidaysService.getHolidays(today.getFullYear());
+    const company = await this.companySettingsService.get();
 
     const [timeBalance, allEmployees, leaveRequests, pendingApprovals, auditLogs, notifications, overtimeRequests] = await Promise.all([
       this.prisma.timeBalance.findUnique({ where: { userId: user.id } }),
@@ -539,12 +542,17 @@ export class DashboardService {
 
     const onboardingShow = activeEmployeesCount === 0 || (teamIds.length === 0 && canViewTeam);
 
+    const userTeam = allEmployees.find(e => e.id === user.id)?.teamId
+      ? await this.prisma.team.findUnique({ where: { id: user.teamId ?? undefined }, select: { name: true } })
+      : null;
+
     const greetingProfile = {
       id: user.id,
       fullName: user.fullName,
       shortName: user.fullName.split(' ')[1] || user.fullName.split(' ')[0],
       role: user.role,
       teamId: user.teamId,
+      teamName: userTeam?.name ?? null,
       position: user.position ?? 'Сотрудник',
       status: 'ACTIVE',
       avatarUrl: null,
@@ -560,6 +568,12 @@ export class DashboardService {
     return {
       profile: greetingProfile,
       greeting: greetingText,
+      company: {
+        name: company.companyName,
+        timezone: company.timezone,
+        workingHoursPerDay: company.workingHoursPerDay,
+        minimumTeamCoveragePercent: company.minimumTeamCoveragePercent,
+      },
       balance: {
         availableHours,
         usedHours: balance_.totalUsedHours,

@@ -43,6 +43,13 @@ enum RiskLevel {
   HIGH
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
 enum SubscriptionStatus {
   TRIAL
   ACTIVE
@@ -72,6 +79,24 @@ model Organization {
   teams              Team[]
 }
 
+model CompanySettings {
+  id                        String   @id @default(cuid())
+  companyName               String   @default("QA TimeOff")
+  logoUrl                   String?
+  timezone                  String   @default("Europe/Moscow")
+  locale                    String   @default("ru")
+  workWeekDays              Int      @default(5)
+  workingHoursPerDay        Int      @default(8)
+  defaultAnnualHours        Int      @default(1760)
+  minimumTeamCoveragePercent Int     @default(70)
+  approvalPolicy            String   @default("MANAGER_OR_ADMIN")
+  allowNegativeBalance      Boolean  @default(false)
+  emailNotificationsEnabled Boolean  @default(true)
+  telegramNotificationsEnabled Boolean @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
 model User {
   id                String             @id @default(cuid())
   organizationId    String
@@ -87,9 +112,10 @@ model User {
   currency          String             @default("RUB")
   role              Role               @default(EMPLOYEE)
   teamId            String?
-  team              Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  managerId         String?
-  manager           User?              @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
+  team             Team?              @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
+  teamLead         Team?              @relation("TeamLead")
+  managerId        String?
+  manager          User?              @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
   directReports     User[]             @relation("UserManager")
   isActive              Boolean  @default(true)
   notifyRequestUpdates  Boolean  @default(true)
@@ -105,6 +131,7 @@ model User {
   timeOffRequests   TimeOffRequest[]   @relation("TimeOffRequestUser")
   timeOffApprovals  TimeOffRequest[]   @relation("TimeOffRequestApprover")
   vacationRequests  VacationRequest[]  @relation("VacationRequestUser")
+  invitesSent       Invite[]           @relation("InvitedBy")
   vacationApprovals VacationRequest[]  @relation("VacationRequestApprover")
   notifications     Notification[]
   positionHistory   PositionHistory[]  @relation("PositionHistoryUser")
@@ -161,7 +188,11 @@ model Team {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   name           String
   description    String?
-  users          User[]
+  leadId         String?   @unique
+  lead           User?     @relation("TeamLead", fields: [leadId], references: [id], onDelete: SetNull)
+  isActive       Boolean      @default(true)
+  users          User[]       @relation("TeamMembers")
+  invites        Invite[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -336,9 +367,25 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
 
-  @@index([userId])
-  @@index([tokenHash])
+model Invite {
+  id         String       @id @default(cuid())
+  email      String
+  role       Role         @default(EMPLOYEE)
+  teamId     String?
+  team       Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  tokenHash  String       @unique
+  status     InviteStatus @default(PENDING)
+  expiresAt  DateTime
+  invitedById String
+  invitedBy  User         @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  acceptedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([email])
+  @@index([status])
+  @@index([expiresAt])
 }
 
 model AuditLog {

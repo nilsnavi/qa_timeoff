@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, Dashboard, DashboardSummary, ImportUserResult, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, CompanySettings, Dashboard, DashboardSummary, ImportUserResult, Invite, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PositionHistory, RequestStatus, Role, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -338,6 +338,18 @@ export const api = {
     const qs = search.toString();
     return request<AiForecast>(`/admin/ai/overtime-forecast${qs ? `?${qs}` : ''}`);
   },
+
+  // ── Company Settings ──────────────────────────────────────────────
+
+  getCompanySettings: () => request<CompanySettings>('/settings/company'),
+  updateCompanySettings: (dto: Record<string, unknown>) => request<CompanySettings>('/settings/company', { method: 'PATCH', body: JSON.stringify(dto) }),
+
+  // ── Invites ───────────────────────────────────────────────────────
+
+  invites: () => request<Invite[]>('/invites'),
+  createInvite: (dto: { email: string; role?: string; teamId?: string }) => request<Invite>('/invites', { method: 'POST', body: JSON.stringify(dto) }),
+  acceptInvite: (token: string, dto: { fullName: string; password: string }) => request<{ success: boolean }>(`/invites/accept?token=${encodeURIComponent(token)}`, { method: 'POST', body: JSON.stringify(dto) }),
+  cancelInvite: (id: string) => request<{ success: boolean }>(`/invites/${id}`, { method: 'DELETE' }),
 
   // ── Leave Requests ────────────────────────────────────────────────────
 

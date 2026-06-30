@@ -5,6 +5,7 @@ import { TimeOffService } from './timeoff.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventBusService } from '../events/event-bus.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
+import { AuditService } from '../audit/audit.service';
 
 describe('TimeOffService', () => {
   let service: TimeOffService;
@@ -60,6 +61,7 @@ describe('TimeOffService', () => {
         { provide: PrismaService,              useValue: mockPrisma    },
         { provide: EventBusService,            useValue: mockEventBus  },
         { provide: EmailNotificationService,   useValue: mockEmailSvc  },
+        { provide: AuditService,               useValue: { log: jest.fn() } },
       ],
     }).compile();
 

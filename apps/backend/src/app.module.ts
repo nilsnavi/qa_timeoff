@@ -7,8 +7,10 @@ import { AdminModule } from './admin/admin.module';
 import { AiModule } from './ai/ai-forecast.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuditModule } from './audit/audit.module';
+import { CompanySettingsModule } from './company-settings/company-settings.module';
 import { AuthModule } from './auth/auth.module';
 import { BalanceModule } from './balance/balance.module';
+import { InvitesModule } from './invites/invites.module';
 import { AppCacheModule } from './cache/cache.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { CalendarEventsModule } from './calendar-events/calendar-events.module';
@@ -42,6 +44,7 @@ import { VacationModule } from './vacation/vacation.module';
       ],
     }),
     AppCacheModule,
+    InvitesModule,
     PrismaModule,
     AuthModule,
     DashboardModule,
@@ -62,6 +65,7 @@ import { VacationModule } from './vacation/vacation.module';
     KpiModule,
     AnalyticsModule,
     AiModule,
+    CompanySettingsModule,
     ExportModule,
     AuditModule,
   ],

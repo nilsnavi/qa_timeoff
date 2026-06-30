@@ -26,80 +26,106 @@ import { useAuth } from '../../shared/auth/AuthContext';
 import { useSseNotifications } from '../../shared/hooks/useSseNotifications';
 import { useDashboard } from '../../shared/hooks/useDashboard';
 
+type NavChild = {
+  label: string;
+  to: string;
+  icon: React.ElementType;
+  roles?: string[];
+};
+
 type NavSection = {
   label: string;
   icon: React.ElementType;
   to?: string;
   children?: NavChild[];
-};
-
-type NavChild = {
-  label: string;
-  to: string;
-  icon: React.ElementType;
-  badge?: string;
+  roles?: string[];
 };
 
 const sidebarSections: NavSection[] = [
   {
     label: 'Обзор',
     icon: LayoutDashboard,
-    children: [{ label: 'Дашборд', to: '/', icon: LayoutDashboard }],
+    children: [
+      { label: 'Дашборд', to: '/', icon: LayoutDashboard, roles: ['ALL'] },
+    ],
   },
   {
     label: 'Заявки',
     icon: ClipboardList,
     children: [
-      { label: 'Мои заявки', to: '/requests/my', icon: FileText },
-      { label: 'Команда', to: '/requests/manager', icon: Users },
-      { label: 'Календарь', to: '/calendar', icon: CalendarDays },
+      { label: 'Мои заявки', to: '/requests/my', icon: FileText, roles: ['ALL'] },
+      { label: 'Заявки команды', to: '/requests/manager', icon: Users, roles: ['LEAD', 'MANAGER', 'ADMIN'] },
+      { label: 'Календарь', to: '/calendar', icon: CalendarDays, roles: ['ALL'] },
     ],
   },
   {
     label: 'Баланс',
     icon: Clock,
     children: [
-      { label: 'Баланс', to: '/balance', icon: WalletCards },
-    ],
-  },
-  {
-    label: 'Команда',
-    icon: Users,
-    children: [
-      { label: 'Команда', to: '/team', icon: Users },
+      { label: 'Мой баланс', to: '/balance', icon: WalletCards, roles: ['ALL'] },
+      { label: 'Балансы сотрудников', to: '/balance/employees', icon: Users, roles: ['MANAGER', 'ADMIN'] },
     ],
   },
   {
     label: 'Аналитика',
     icon: BarChart3,
+    roles: ['LEAD', 'MANAGER', 'ADMIN'],
     children: [
-      { label: 'Нагрузка', to: '/analytics/workload', icon: Activity },
-      { label: 'Отчёты', to: '/analytics', icon: BarChart3 },
+      { label: 'Нагрузка', to: '/analytics/workload', icon: Activity, roles: ['LEAD', 'MANAGER', 'ADMIN'] },
+      { label: 'Отчёты', to: '/analytics', icon: BarChart3, roles: ['LEAD', 'MANAGER', 'ADMIN'] },
+    ],
+  },
+  {
+    label: 'Организация',
+    icon: Users,
+    roles: ['MANAGER', 'ADMIN'],
+    children: [
+      { label: 'Сотрудники', to: '/employees', icon: Users, roles: ['MANAGER', 'ADMIN'] },
+      { label: 'Команды', to: '/teams', icon: Users, roles: ['MANAGER', 'ADMIN'] },
+      { label: 'Настройки организации', to: '/settings/organization', icon: Settings, roles: ['MANAGER', 'ADMIN'] },
+    ],
+  },
+  {
+    label: 'Администрирование',
+    icon: Shield,
+    roles: ['ADMIN'],
+    children: [
+      { label: 'Пользователи', to: '/admin/users', icon: Users, roles: ['ADMIN'] },
+      { label: 'Роли', to: '/settings/roles', icon: Shield, roles: ['ADMIN'] },
+      { label: 'Импорт', to: '/admin', icon: Upload, roles: ['ADMIN'] },
+      { label: 'Журналы', to: '/audit-log', icon: Activity, roles: ['ADMIN'] },
     ],
   },
 ];
 
 const breadcrumbs: Record<string, string> = {
   '/': 'Дашборд',
+  '/dashboard': 'Дашборд',
   '/requests': 'Заявки',
   '/requests/my': 'Мои заявки',
-  '/requests/manager': 'Команда',
+  '/requests/manager': 'Заявки команды',
+  '/requests/approvals': 'Согласование',
   '/calendar': 'Календарь',
-  '/balance': 'Баланс',
+  '/balance': 'Мой баланс',
+  '/balance/employees': 'Балансы сотрудников',
   '/teams': 'Команды',
+  '/employees': 'Сотрудники',
   '/users': 'Пользователи',
   '/analytics': 'Отчёты',
   '/analytics/workload': 'Нагрузка',
   '/admin': 'Администрирование',
-  '/admin/users': 'Сотрудники',
+  '/admin/users': 'Пользователи',
   '/notifications': 'Уведомления',
   '/profile': 'Профиль',
   '/timeoff/new': 'Новый отгул',
   '/vacation/new': 'Новый отпуск',
   '/team': 'Команда',
+  '/settings/organization': 'Настройки организации',
+  '/settings/roles': 'Управление ролями',
   '/settings': 'Настройки',
   '/import': 'Импорт',
-  '/logs': 'Журналы',
+  '/audit-log': 'Журналы',
+  '/invites': 'Приглашения',
 };
 
 function getBreadcrumb(path: string) {
@@ -114,7 +140,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<{ title: string; message?: string; tone?: 'success' | 'error' | 'info' } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Обзор', 'Заявки', 'Аналитика']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Обзор', 'Заявки']));
   const [searchValue, setSearchValue] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
@@ -245,7 +271,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3">
-          {sidebarSections.map((section) => (
+          {sidebarSections
+            .filter(section => {
+              if (!section.roles) return true;
+              return section.roles.includes('ALL') || section.roles.includes(d.user.role);
+            })
+            .map((section) => (
             <div key={section.label} className="mb-1">
               {section.children ? (
                 <>
@@ -256,7 +287,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   >
                     {collapsed ? <section.icon size={14} /> : <><section.icon size={12} />{section.label}<ChevronDown size={10} className={clsx('ml-auto transition-transform', expandedSections.has(section.label) && 'rotate-180')} /></>}
                   </button>
-                  {expandedSections.has(section.label) && section.children.map((child) => (
+                  {expandedSections.has(section.label) && section.children
+                    .filter(child => {
+                      if (!child.roles) return true;
+                      return child.roles.includes('ALL') || child.roles.includes(d.user.role);
+                    })
+                    .map((child) => (
                     <NavLink
                       key={child.to}
                       to={child.to}
@@ -292,38 +328,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {d.user.role === 'ADMIN' && (
-          <div className="border-t border-white/[0.06] px-2 py-3 space-y-1">
-            <button
-              type="button"
-              onClick={() => toggleSection('Администрирование')}
-              className={clsx('flex w-full items-center gap-2 px-3 py-1.5 text-[14px] font-bold uppercase tracking-widest text-white/25 hover:text-white/40 transition-colors', collapsed && 'justify-center px-0')}
-            >
-              {collapsed ? <Shield size={14} /> : <><Shield size={12} />Администрирование<ChevronDown size={10} className={clsx('ml-auto transition-transform', expandedSections.has('Администрирование') && 'rotate-180')} /></>}
-            </button>
-            {expandedSections.has('Администрирование') && [
-              { label: 'Сотрудники', to: '/admin/users', icon: Users },
-              { label: 'Команды', to: '/team', icon: Users },
-              { label: 'Настройки', to: '/admin', icon: Settings },
-              { label: 'Импорт', to: '/admin', icon: Upload },
-              { label: 'Журналы', to: '/admin', icon: Activity },
-            ].map((child) => (
-              <NavLink
-                key={child.to + child.label}
-                to={child.to}
-                end={child.to === '/admin' && child.label === 'Настройки'}
-                className={({ isActive }) =>
-                  clsx('flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[15px] font-semibold transition-colors', collapsed && 'mx-1 justify-center px-2',
-                    isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04] hover:text-[#B8C0D0]')
-                }
-                title={collapsed ? child.label : undefined}
-              >
-                <child.icon size={18} />
-                {!collapsed && child.label}
-              </NavLink>
-            ))}
-          </div>
-        )}
+        <span className="px-3 py-3 text-[12px] text-white/15">QA TimeOff v1</span>
       </aside>
 
       {/* Main Area */}
@@ -381,10 +386,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)}>
             <div className="flex h-full w-60 flex-col bg-[#0B1220] p-4" onClick={(e) => e.stopPropagation()}>
               <nav className="flex-1 space-y-3">
-                {sidebarSections.map((section) => (
+                {sidebarSections
+                  .filter(section => {
+                    if (!section.roles) return true;
+                    return section.roles.includes('ALL') || section.roles.includes(d.user.role);
+                  })
+                  .map((section) => (
                   <div key={section.label}>
                     <div className="mb-1 px-3 text-[14px] font-bold uppercase tracking-widest text-white/25">{section.label}</div>
-                    {section.children?.map((child) => (
+                    {section.children?.filter(child => {
+                      if (!child.roles) return true;
+                      return child.roles.includes('ALL') || child.roles.includes(d.user.role);
+                    }).map((child) => (
                       <NavLink key={child.to} to={child.to} end={child.to === '/'} onClick={() => setSidebarOpen(false)}
                         className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold',
                           isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
@@ -393,24 +406,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     ))}
                   </div>
                 ))}
-        {d.user.role === 'ADMIN' && (
-                  <div key="admin-mobile" className="pt-2 border-t border-white/[0.06]">
-                    <div className="mb-1 px-3 text-[14px] font-bold uppercase tracking-widest text-white/25">Администрирование</div>
-                    {[
-                      { label: 'Сотрудники', to: '/admin/users', icon: Users },
-                      { label: 'Команды', to: '/team', icon: Users },
-                      { label: 'Настройки', to: '/admin', icon: Settings },
-                      { label: 'Импорт', to: '/admin', icon: Upload },
-                      { label: 'Журналы', to: '/admin', icon: Activity },
-                    ].map((child) => (
-                      <NavLink key={child.to + child.label} to={child.to} onClick={() => setSidebarOpen(false)}
-                        className={({ isActive }) => clsx('flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold',
-                          isActive ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-[#7A8599] hover:bg-white/[0.04]')}>
-                        <child.icon size={18} />{child.label}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
               </nav>
               <button type="button" onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold text-rose-400 hover:bg-rose-950/300/20">
                 <LogOut size={18} />Выйти

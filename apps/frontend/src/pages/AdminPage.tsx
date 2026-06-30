@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart3, Clock, Database, Copy, Download, Edit3, FileSpreadsheet, KeyRound, Plus, Search, ShieldAlert, Trash2, UserPlus, Wallet, Minus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge, Button, CustomSelect, EmptyState, ErrorState, Field, Loader, Modal } from '../components/ui';
 import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
@@ -35,11 +35,20 @@ export function AdminPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const isAdmin = user?.role === 'ADMIN';
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [teamFilter, setTeamFilter] = useState('ALL');
-  const [activeTab, setActiveTab] = useState<AdminTab>('users');
+
+  const tabFromPath: Record<string, AdminTab> = {
+    '/admin': 'users',
+    '/admin/users': 'users',
+    '/audit-log': 'audit',
+    '/logs': 'audit',
+  };
+
+  const [activeTab, setActiveTab] = useState<AdminTab>(tabFromPath[location.pathname] ?? 'users');
   const [createOpen, setCreateOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);

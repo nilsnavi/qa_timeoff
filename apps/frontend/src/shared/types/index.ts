@@ -403,9 +403,17 @@ export interface DashboardProfile {
   shortName: string;
   role: Role;
   teamId: string | null;
+  teamName: string | null;
   position: string;
   status: string;
   avatarUrl: string | null;
+}
+
+export interface DashboardCompany {
+  name: string;
+  timezone: string;
+  workingHoursPerDay: number;
+  minimumTeamCoveragePercent: number;
 }
 
 export interface DashboardBalance {
@@ -525,9 +533,43 @@ export interface DashboardOnboarding {
   steps: OnboardingStep[];
 }
 
+export interface CompanySettings {
+  id: string;
+  companyName: string;
+  logoUrl: string | null;
+  timezone: string;
+  locale: string;
+  workWeekDays: number;
+  workingHoursPerDay: number;
+  defaultAnnualHours: number;
+  minimumTeamCoveragePercent: number;
+  approvalPolicy: string;
+  allowNegativeBalance: boolean;
+  emailNotificationsEnabled: boolean;
+  telegramNotificationsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Invite {
+  id: string;
+  email: string;
+  role: Role;
+  teamId: string | null;
+  team?: { id: string; name: string } | null;
+  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt: string;
+  invitedById: string;
+  invitedBy?: { id: string; fullName: string };
+  acceptedAt: string | null;
+  createdAt: string;
+  link?: string;
+}
+
 export interface DashboardSummary {
   profile: DashboardProfile;
   greeting: string;
+  company: DashboardCompany;
   balance: DashboardBalance;
   requests: DashboardRequests;
   team: DashboardTeam;
