@@ -88,7 +88,7 @@ export class DashboardService {
     const holidays = await this.holidaysService.getHolidays(today.getFullYear());
     const company = await this.companySettingsService.get();
 
-    const [timeBalance, allEmployees, leaveRequests, pendingApprovals, auditLogs, notifications, overtimeRequests] = await Promise.all([
+    const [timeBalance, allEmployees, leaveRequests, oldTimeOff, oldVacations, pendingApprovals, oldPendingTimeOff, oldPendingVacations, auditLogs, notifications, overtimeRequests] = await Promise.all([
       this.prisma.timeBalance.findUnique({ where: { userId: user.id } }),
       this.prisma.user.findMany({
         where: {
@@ -107,11 +107,55 @@ export class DashboardService {
         },
         include: { user: { select: { id: true, fullName: true, teamId: true } } },
       }),
+      // Old TimeOffRequest table (data created before leave-requests migration)
+      this.prisma.timeOffRequest.findMany({
+        where: {
+          ...(canViewTeam && teamIds.length
+            ? { user: { teamId: { in: teamIds } } }
+            : { userId: user.id }),
+          status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED, RequestStatus.CANCELLED] },
+        },
+        include: { user: { select: { id: true, fullName: true, teamId: true } } },
+      }),
+      // Old VacationRequest table
+      this.prisma.vacationRequest.findMany({
+        where: {
+          ...(canViewTeam && teamIds.length
+            ? { user: { teamId: { in: teamIds } } }
+            : { userId: user.id }),
+          status: { in: [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED, RequestStatus.CANCELLED] },
+        },
+        include: { user: { select: { id: true, fullName: true, teamId: true } } },
+      }),
       this.prisma.leaveRequest.findMany({
         where: {
           status: RequestStatus.PENDING,
           ...(canViewTeam && teamIds.length
             ? { teamId: { in: teamIds }, userId: { not: user.id } }
+            : { userId: user.id }),
+        },
+        include: { user: { select: { id: true, fullName: true, teamId: true } } },
+        orderBy: { createdAt: 'asc' },
+        take: 5,
+      }),
+      // Old pending timeoff
+      this.prisma.timeOffRequest.findMany({
+        where: {
+          status: RequestStatus.PENDING,
+          ...(canViewTeam && teamIds.length
+            ? { user: { teamId: { in: teamIds } }, userId: { not: user.id } }
+            : { userId: user.id }),
+        },
+        include: { user: { select: { id: true, fullName: true, teamId: true } } },
+        orderBy: { createdAt: 'asc' },
+        take: 5,
+      }),
+      // Old pending vacations
+      this.prisma.vacationRequest.findMany({
+        where: {
+          status: RequestStatus.PENDING,
+          ...(canViewTeam && teamIds.length
+            ? { user: { teamId: { in: teamIds } }, userId: { not: user.id } }
             : { userId: user.id }),
         },
         include: { user: { select: { id: true, fullName: true, teamId: true } } },
@@ -144,6 +188,94 @@ export class DashboardService {
         include: { user: { select: { id: true, fullName: true } } },
       }),
     ]);
+
+    // Normalise old TimeOffRequest -> unified format
+    const timeOffNormalized = oldTimeOff.map(r => ({
+      id: r.id,
+      userId: r.userId,
+      user: r.user,
+      teamId: r.user.teamId ?? null,
+      type: 'TIME_OFF' as const,
+      dateFrom: r.date,
+      dateTo: r.date,
+      hours: r.hours,
+      reason: r.reason,
+      comment: r.comment,
+      status: r.status,
+      approverId: r.approverId,
+      approver: r.approver,
+      approverComment: r.approverComment,
+      approvedAt: r.approvedAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+    // Normalise old VacationRequest -> unified format
+    const vacationNormalized = oldVacations.map(r => ({
+      id: r.id,
+      userId: r.userId,
+      user: r.user,
+      teamId: r.user.teamId ?? null,
+      type: 'VACATION' as const,
+      dateFrom: r.startDate,
+      dateTo: r.endDate,
+      hours: r.daysCount * 8,
+      reason: '',
+      comment: r.comment,
+      status: r.status,
+      approverId: r.approverId,
+      approver: r.approver,
+      approverComment: r.approverComment,
+      approvedAt: r.approvedAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+    // Merge all requests together
+    const allRequests = [...leaveRequests, ...timeOffNormalized, ...vacationNormalized];
+
+    // Normalise pending approvals from old tables
+    const oldPendingNormalized = [
+      ...oldPendingTimeOff.map(r => ({
+        id: r.id,
+        userId: r.userId,
+        user: r.user,
+        teamId: r.user.teamId ?? null,
+        type: 'TIME_OFF' as const,
+        dateFrom: r.date,
+        dateTo: r.date,
+        hours: r.hours,
+        reason: r.reason,
+        comment: r.comment,
+        status: r.status,
+        approverId: r.approverId,
+        approver: r.approver,
+        approverComment: r.approverComment,
+        approvedAt: r.approvedAt,
+        createdAt: r.createdAt,
+      })),
+      ...oldPendingVacations.map(r => ({
+        id: r.id,
+        userId: r.userId,
+        user: r.user,
+        teamId: r.user.teamId ?? null,
+        type: 'VACATION' as const,
+        dateFrom: r.startDate,
+        dateTo: r.endDate,
+        hours: r.daysCount * 8,
+        reason: '',
+        comment: r.comment,
+        status: r.status,
+        approverId: r.approverId,
+        approver: r.approver,
+        approverComment: r.approverComment,
+        approvedAt: r.approvedAt,
+        createdAt: r.createdAt,
+      })),
+    ];
+    const allPendingApprovals = [...pendingApprovals, ...oldPendingNormalized];
+
+    // Use merged arrays for all downstream logic
+    leaveRequests = allRequests as any;
+    pendingApprovals = allPendingApprovals as any;
 
     const activeEmployeesCount = allEmployees.length;
     const balance_ = timeBalance ?? { balanceHours: 0, totalAddedHours: 0, totalUsedHours: 0 };

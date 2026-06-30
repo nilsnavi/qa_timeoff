@@ -67,8 +67,11 @@ export function TeamCalendarWidget({ days }: { days: CalendarDay[] }) {
               </span>
               {hasEvents && (
                 <div className="flex justify-center gap-0.5 mt-0.5">
-                  {day.events.filter(e => e.status === 'APPROVED').length > 0 && (
+                  {day.events.filter(e => e.type === 'VACATION' && e.status === 'APPROVED').length > 0 && (
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  )}
+                  {day.events.filter(e => e.type === 'TIME_OFF' && e.status === 'APPROVED').length > 0 && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
                   )}
                   {day.events.filter(e => e.status === 'PENDING').length > 0 && (
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
