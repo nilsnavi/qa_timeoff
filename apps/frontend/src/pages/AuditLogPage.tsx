@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, AlertTriangle, Calendar, Clock, Download, Eye, RefreshCw, Search, Shield, Users } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, Download, Eye, RefreshCw, Search, Shield, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, CustomSelect, EmptyState, ErrorState, Loader, Modal } from '../components/ui';
 import type { SelectOption } from '../components/ui/CustomSelect';
