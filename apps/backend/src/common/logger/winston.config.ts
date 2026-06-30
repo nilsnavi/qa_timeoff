@@ -1,5 +1,5 @@
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
-import DailyRotateFile from 'winston-daily-rotate-file';
+import * as DailyRotateFile from 'winston-daily-rotate-file';
 import { format, transports } from 'winston';
 
 type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';

@@ -22,9 +22,14 @@ export function useDashboard() {
     enabled: isAuthenticated,
   });
 
+  const data = query.data;
+  const dashboard = data && Array.isArray((data as any).requests)
+    ? (data as Dashboard)
+    : EMPTY_DASHBOARD;
+
   return {
     ...query,
-    dashboard: query.data ?? EMPTY_DASHBOARD,
+    dashboard,
   };
 }
 
