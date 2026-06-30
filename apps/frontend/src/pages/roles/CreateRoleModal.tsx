@@ -68,7 +68,7 @@ export function CreateRoleModal({ open, onClose, onCreated }: Props) {
     >
       <div className="space-y-4">
         <Field label="Название" value={name} onChange={e => setName(e.target.value)} placeholder="Координатор QA" />
-        <Field label="Код роли" value={code} onChange={e => setCode(e.target.value)} placeholder="QA_COORDINATOR" />
+        <Field label="Код роли" value={code} onChange={e => setCode(e.target.value)} placeholder="КООРДИНАТОР_QA" />
         <Field label="Описание" value={description} onChange={e => setDescription(e.target.value)} placeholder="Описание роли" />
         <div className="field-shell">
           <span className="field-label">Основана на роли</span>

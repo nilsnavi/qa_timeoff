@@ -181,7 +181,7 @@ export function RoleEditDrawer({ roleId, onClose }: Props) {
         >
           <div className="space-y-4">
             <p className="text-[14px] text-white/60">Будет создана новая пользовательская роль с правами роли «{role?.name}».</p>
-            <Field label="Код новой роли" value={cloneCode} onChange={e => setCloneCode(e.target.value)} placeholder="ROLE_COPY" />
+            <Field label="Код новой роли" value={cloneCode} onChange={e => setCloneCode(e.target.value)} placeholder="КОПИЯ_РОЛИ" />
           </div>
         </Modal>
       )}
