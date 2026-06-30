@@ -46,8 +46,8 @@ export function SettingsRolesPage() {
   const sorted = useMemo(() => {
     if (!sortKey || !sortDir) return roles;
     return [...roles].sort((a, b) => {
-      const av = String((a as unknown as Record<string, unknown>)[sortKey] ?? '');
-      const bv = String((b as unknown as Record<string, unknown>)[sortKey] ?? '');
+      const av = String((a as any)[sortKey] ?? '');
+      const bv = String((b as any)[sortKey] ?? '');
       const cmp = av.localeCompare(bv);
       return sortDir === 'asc' ? cmp : -cmp;
     });
