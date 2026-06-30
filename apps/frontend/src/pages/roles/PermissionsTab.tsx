@@ -47,7 +47,6 @@ export function PermissionsTab({ role, isSystem }: Props) {
   };
 
   const toggle = (code: string) => {
-    if (isSystem) return;
     setChanged(prev => {
       const next = new Set(prev);
       if (next.has(code)) next.delete(code); else next.add(code);
@@ -88,7 +87,7 @@ export function PermissionsTab({ role, isSystem }: Props) {
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-bold text-white/40 uppercase">Права доступа ({permissions.length})</span>
         {changed.size > 0 && (
-          <Button size="sm" onClick={handleSave} disabled={saving || isSystem}>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
             {saving ? 'Сохранение...' : `Сохранить изменения (${changed.size})`}
           </Button>
         )}
@@ -101,13 +100,12 @@ export function PermissionsTab({ role, isSystem }: Props) {
             {perms.map((p) => (
               <label
                 key={p.code}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${isSystem ? 'cursor-default' : 'cursor-pointer hover:bg-white/[0.04]'}`}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors cursor-pointer hover:bg-white/[0.04]"
               >
                 <input
                   type="checkbox"
                   checked={isChecked(p.code)}
                   onChange={() => toggle(p.code)}
-                  disabled={isSystem}
                   className="h-4 w-4 rounded border-white/20 bg-white/[0.04] accent-[#4C7DFF]"
                 />
                 <div className="min-w-0">
