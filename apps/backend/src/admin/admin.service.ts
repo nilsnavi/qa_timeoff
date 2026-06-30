@@ -683,14 +683,14 @@ export class AdminService {
 
   async createUser(admin: User, dto: AdminCreateUserDto) {
     if (dto.telegramId) {
-      const existing = await this.prisma.user.findUnique({
+      const existing = await this.prisma.user.findFirst({
         where: { telegramId: dto.telegramId },
         select: { id: true },
       });
       if (existing) throw new BadRequestException('Пользователь с таким telegramId уже существует');
     }
     if (dto.email) {
-      const existing = await this.prisma.user.findUnique({
+      const existing = await this.prisma.user.findFirst({
         where: { email: dto.email },
         select: { id: true },
       });
@@ -699,6 +699,7 @@ export class AdminService {
 
     const user = await this.prisma.user.create({
       data: {
+        organizationId: admin.organizationId,
         ...(dto.telegramId && { telegramId: dto.telegramId }),
         ...(dto.passwordHash && { passwordHash: dto.passwordHash }),
         fullName: dto.fullName,

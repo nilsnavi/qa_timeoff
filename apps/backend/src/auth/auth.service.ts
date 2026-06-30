@@ -145,11 +145,12 @@ export class AuthService {
     });
   }
 
-  private async issueToken(user: { id: string; role: string; teamId: string | null }) {
+  private async issueToken(user: { id: string; role: string; teamId: string | null; organizationId: string }) {
     return this.jwt.signAsync({
       sub: user.id,
       role: user.role,
       teamId: user.teamId,
+      organizationId: user.organizationId,
     });
   }
 
@@ -189,7 +190,7 @@ export class AuthService {
 
   private async resolveTelegramUser(telegramUser: TelegramUser) {
     const telegramId = String(telegramUser.id);
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findFirst({
       where: { telegramId },
       include: { timeBalance: true, team: true, manager: true },
     });

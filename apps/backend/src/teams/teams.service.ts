@@ -47,9 +47,9 @@ export class TeamsService {
     return team;
   }
 
-  create(dto: CreateTeamDto) {
+  create(dto: CreateTeamDto, organizationId: string) {
     return this.prisma.team.create({
-      data: dto,
+      data: { ...dto, organizationId },
       include: teamInclude,
     });
   }

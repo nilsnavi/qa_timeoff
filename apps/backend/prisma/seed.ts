@@ -5,8 +5,17 @@ const prisma = new PrismaClient();
 
 const seedTelegramIds = ['100000001', '100000002', '100000003', '100000004', '100000005', '100000006'];
 
+const ORG_ID = 'default-org';
+
 async function main() {
   const passwordHash = await bcrypt.hash('password123', 10);
+
+  await prisma.organization.upsert({
+    where: { slug: 'default' },
+    update: {},
+    create: { id: ORG_ID, name: 'QA TimeOff', slug: 'default', plan: 'ENTERPRISE', seatsLimit: 1000, subscriptionStatus: 'ACTIVE' },
+  });
+
   const [qaTeam, sapEwmTeam, automationTeam] = await Promise.all([
     upsertTeam('QA Team', 'Core quality assurance team'),
     upsertTeam('SAP EWM Team', 'Warehouse management testing team'),
@@ -262,13 +271,13 @@ async function main() {
 
 function upsertTeam(name: string, description: string) {
   return prisma.team.upsert({
-    where: { name },
+    where: { organizationId_name: { organizationId: ORG_ID, name } },
     update: { description },
-    create: { name, description },
+    create: { organizationId: ORG_ID, name, description },
   });
 }
 
-function upsertUser({
+async function upsertUser({
   telegramId,
   fullName,
   username,
@@ -292,6 +301,7 @@ function upsertUser({
   passwordHash?: string;
 }) {
   const data = {
+    organizationId: ORG_ID,
     fullName,
     username,
     email,
@@ -306,24 +316,18 @@ function upsertUser({
   };
 
   if (telegramId) {
-    return prisma.user.upsert({
-      where: { telegramId },
-      update: data,
-      create: {
-        ...data,
-        timeBalance: { create: {} },
-      },
-    });
+    const existing = await prisma.user.findFirst({ where: { telegramId, organizationId: ORG_ID } });
+    if (existing) {
+      return prisma.user.update({ where: { id: existing.id }, data });
+    }
+    return prisma.user.create({ data: { ...data, timeBalance: { create: {} } } });
   }
 
-  return prisma.user.upsert({
-    where: { email },
-    update: data,
-    create: {
-      ...data,
-      timeBalance: { create: {} },
-    },
-  });
+  const existing = await prisma.user.findFirst({ where: { email, organizationId: ORG_ID } });
+  if (existing) {
+    return prisma.user.update({ where: { id: existing.id }, data });
+  }
+  return prisma.user.create({ data: { ...data, timeBalance: { create: {} } } });
 }
 
 function upsertBalance(userId: string, balanceHours: number, totalAddedHours: number, totalUsedHours: number) {

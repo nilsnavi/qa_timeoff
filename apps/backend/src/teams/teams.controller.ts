@@ -29,8 +29,8 @@ export class TeamsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  create(@Body() dto: CreateTeamDto) {
-    return this.teamsService.create(dto);
+  create(@CurrentUser() currentUser: User, @Body() dto: CreateTeamDto) {
+    return this.teamsService.create(dto, currentUser.organizationId);
   }
 
   @Patch(':id')

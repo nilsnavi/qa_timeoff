@@ -2,26 +2,44 @@ import { Activity, CheckCircle2, XCircle, Clock, AlertTriangle, Info } from 'luc
 import type { ActivityItem } from '../../shared/types';
 import { clsx } from 'clsx';
 
-const severityIcons: Record<string, React.ElementType> = {
-  SUCCESS: CheckCircle2,
-  ERROR: XCircle,
-  WARNING: AlertTriangle,
-  INFO: Info,
+const actionSeverity: Record<string, string> = {
+  REQUEST_APPROVED: 'SUCCESS',
+  APPROVE: 'SUCCESS',
+  REQUEST_REJECTED: 'WARNING',
+  REJECT: 'WARNING',
+  REQUEST_CREATED: 'INFO',
+  CREATE: 'INFO',
+  BALANCE_CHANGED: 'INFO',
+  USER_UPDATED: 'INFO',
+  USER_DEACTIVATED: 'WARNING',
+  USER_DELETED: 'ERROR',
+  OVERTIME_ADDED: 'WARNING',
+  OVERTIME_CANCELLED: 'INFO',
 };
 
-const severityColors: Record<string, string> = {
-  SUCCESS: 'text-emerald-400',
-  ERROR: 'text-rose-400',
-  WARNING: 'text-amber-400',
-  INFO: 'text-blue-400',
+const severityConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
+  SUCCESS: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  ERROR: { icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10' },
+  WARNING: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  INFO: { icon: Info, color: 'text-white/50', bg: 'bg-white/[0.06]' },
 };
 
 const actionIcons: Record<string, React.ElementType> = {
   REQUEST_APPROVED: CheckCircle2,
   REQUEST_REJECTED: XCircle,
   REQUEST_CREATED: Clock,
+  NOTIFICATION: Info,
+  CREATE: Clock,
+  APPROVE: CheckCircle2,
+  REJECT: XCircle,
+  CANCEL: XCircle,
   BALANCE_CHANGED: Activity,
+  BALANCE_ADDED: Activity,
   USER_UPDATED: Info,
+  USER_DEACTIVATED: AlertTriangle,
+  USER_DELETED: XCircle,
+  OVERTIME_ADDED: Clock,
+  OVERTIME_CANCELLED: XCircle,
 };
 
 export function ActivityFeedWidget({ activity }: { activity: ActivityItem[] }) {
@@ -39,14 +57,15 @@ export function ActivityFeedWidget({ activity }: { activity: ActivityItem[] }) {
       ) : (
         <div className="space-y-2">
           {activity.slice(0, 10).map((item, i) => {
-            const Icon = actionIcons[item.type] ?? severityIcons[item.severity] ?? Info;
-            const color = severityColors[item.severity] ?? 'text-blue-400';
+            const sev = actionSeverity[item.type] ?? item.severity;
+            const cfg = severityConfig[sev] ?? severityConfig.INFO;
+            const Icon = actionIcons[item.type] ?? cfg.icon;
             return (
               <div
                 key={i}
                 className="flex items-start gap-3 rounded-lg bg-white/[0.03] border border-white/[0.04] p-2.5"
               >
-                <span className={clsx('grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/[0.06]', color)}>
+                <span className={clsx('grid h-7 w-7 shrink-0 place-items-center rounded-lg', cfg.bg, cfg.color)}>
                   <Icon size={14} />
                 </span>
                 <div className="flex-1 min-w-0">

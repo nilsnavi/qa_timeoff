@@ -5,29 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Loader } from '../components/ui';
 import type { SelectOption } from '../components/ui/CustomSelect';
 import { api } from '../shared/api';
-import { useDashboard } from '../shared/hooks/useDashboard';
+import { useAuth } from '../shared/auth/AuthContext';
 import type { User } from '../shared/types';
-import { Navigate } from 'react-router-dom';
-
-function isOnLeave(userId: string, dashboard: any): boolean {
-  const today = new Date().toISOString().slice(0, 10);
-  const hasTimeOff = dashboard.requests?.some(
-    (r: any) => r.userId === userId && r.status === 'APPROVED' && r.date?.slice(0, 10) === today,
-  );
-  const hasVacation = (dashboard.vacations ?? []).some(
-    (v: any) =>
-      v.userId === userId &&
-      v.status === 'APPROVED' &&
-      v.startDate?.slice(0, 10) <= today &&
-      v.endDate?.slice(0, 10) >= today,
-  );
-  return hasTimeOff || hasVacation;
-}
-
-function getStatus(userId: string, dashboard: any): { label: string; color: string } {
-  if (isOnLeave(userId, dashboard)) return { label: 'В отпуске', color: 'bg-amber-500/10 text-amber-400' };
-  return { label: 'Доступен', color: 'bg-emerald-500/10 text-emerald-400' };
-}
 
 function getInitials(name: string) {
   return name
@@ -38,10 +17,15 @@ function getInitials(name: string) {
     .join('');
 }
 
+function getStatusLabel(user: User): { label: string; color: string } {
+  if (!user.isActive) return { label: 'Заблокирован', color: 'bg-rose-500/10 text-rose-400' };
+  return { label: 'Доступен', color: 'bg-emerald-500/10 text-emerald-400' };
+}
+
 export function TeamPage() {
   const navigate = useNavigate();
-  const { dashboard } = useDashboard();
-  const canView = ['LEAD', 'MANAGER', 'ADMIN'].includes(dashboard.user.role);
+  const { user } = useAuth();
+  const canView = user ? ['LEAD', 'MANAGER', 'ADMIN'].includes(user.role) : false;
   const [teamFilter, setTeamFilter] = useState('');
 
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: api.users, enabled: canView });
@@ -52,29 +36,31 @@ export function TeamPage() {
 
   const teamOptions: SelectOption[] = [
     { value: '', label: 'Все команды' },
-    ...teams.map((t: any) => ({ value: t.id, label: t.name })),
+    ...teams.map((t) => ({ value: t.id, label: t.name })),
   ];
 
   const visibleUsers = useMemo(() => {
-    let result = allUsers;
-    if (dashboard.user.role === 'LEAD' && dashboard.user.teamId) {
-      result = result.filter((u: User) => u.teamId === dashboard.user.teamId);
+    let result = allUsers.filter((u: User) => u.isActive);
+    if (user && user.role === 'LEAD' && user.teamId) {
+      result = result.filter((u: User) => u.teamId === user.teamId);
     } else if (teamFilter) {
       result = result.filter((u: User) => u.teamId === teamFilter);
     }
     return result;
-  }, [allUsers, dashboard.user.role, dashboard.user.teamId, teamFilter]);
+  }, [allUsers, user, teamFilter]);
 
-  if (!canView) return <Navigate to="/" replace />;
+  if (!canView || !user) return null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[24px] font-bold text-white">Команда</h1>
-          <p className="text-[15px] text-white/40 mt-1">Сотрудники {teamFilter ? teams.find((t: any) => t.id === teamFilter)?.name : ''}</p>
+          <p className="text-[15px] text-white/40 mt-1">
+            Сотрудники{teamFilter ? ` — ${teams.find((t) => t.id === teamFilter)?.name ?? ''}` : ''}
+          </p>
         </div>
-        {(dashboard.user.role === 'ADMIN' || dashboard.user.role === 'MANAGER') && (
+        {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
           <div className="field-shell">
             <span className="field-label">Команда</span>
             <CustomSelect
@@ -88,15 +74,15 @@ export function TeamPage() {
       </div>
 
       {usersQuery.isLoading && <Loader />}
-      {usersQuery.isError && <ErrorState title="Ошибка загрузки" />}
+      {usersQuery.isError && <ErrorState title="Ошибка загрузки" description="Не удалось загрузить список сотрудников" />}
 
-      {visibleUsers.length === 0 && !usersQuery.isLoading && (
+      {visibleUsers.length === 0 && !usersQuery.isLoading && !usersQuery.isError && (
         <EmptyState title="Нет сотрудников" description="В команде пока нет участников" />
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleUsers.map((u: User) => {
-          const status = getStatus(u.id, dashboard);
+        {visibleUsers.map((u) => {
+          const status = getStatusLabel(u);
           return (
             <Card key={u.id}>
               <div className="flex items-start gap-3 mb-3">

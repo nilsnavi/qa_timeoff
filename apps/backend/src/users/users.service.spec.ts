@@ -7,6 +7,8 @@ import { EmailNotificationService } from '../notifications/email-notification.se
 
 jest.mock('bcrypt');
 
+const TEST_ORG = 'test-org';
+
 describe('UsersService', () => {
   let service: UsersService;
 
@@ -38,8 +40,6 @@ describe('UsersService', () => {
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
   });
 
-  // ─── create() ─────────────────────────────────────────────────────────────
-
   describe('create()', () => {
 
     it('создаёт пользователя с временным паролем и флагом mustChangePassword', async () => {
@@ -57,7 +57,7 @@ describe('UsersService', () => {
         fullName: 'Новый Пользователь',
         email: 'new@test.ru',
         role: 'EMPLOYEE',
-      } as any);
+      } as any, TEST_ORG);
 
       expect(result.user.mustChangePassword).toBe(true);
       expect(result.tempPassword).toBeDefined();
@@ -69,13 +69,13 @@ describe('UsersService', () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'existing', email: 'busy@test.ru' });
 
       await expect(
-        service.create({ fullName: 'Другой', email: 'busy@test.ru', role: 'EMPLOYEE' } as any),
+        service.create({ fullName: 'Другой', email: 'busy@test.ru', role: 'EMPLOYEE' } as any, TEST_ORG),
       ).rejects.toThrow(ConflictException);
     });
 
     it('выбрасывает BadRequestException если email не передан', async () => {
       await expect(
-        service.create({ fullName: 'Без почты', role: 'EMPLOYEE' } as any),
+        service.create({ fullName: 'Без почты', role: 'EMPLOYEE' } as any, TEST_ORG),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -86,9 +86,8 @@ describe('UsersService', () => {
         mustChangePassword: true, role: 'EMPLOYEE', timeBalance: {},
       });
 
-      await service.create({ fullName: 'Иван', email: 'ivan@test.ru', role: 'EMPLOYEE' } as any);
+      await service.create({ fullName: 'Иван', email: 'ivan@test.ru', role: 'EMPLOYEE' } as any, TEST_ORG);
 
-      // Email отправляется асинхронно через .catch — проверяем через небольшой таймаут
       await new Promise(r => setTimeout(r, 10));
       expect(mockEmailSvc.sendTempPassword).toHaveBeenCalledWith(
         'ivan@test.ru', 'Иван', expect.any(String), false,
@@ -96,8 +95,6 @@ describe('UsersService', () => {
     });
 
   });
-
-  // ─── resetPassword() ──────────────────────────────────────────────────────
 
   describe('resetPassword()', () => {
 
@@ -132,8 +129,6 @@ describe('UsersService', () => {
     });
 
   });
-
-  // ─── changePassword() ─────────────────────────────────────────────────────
 
   describe('changePassword()', () => {
 

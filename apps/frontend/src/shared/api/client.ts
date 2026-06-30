@@ -88,7 +88,7 @@ export const api = {
     request<void>('/auth/logout', {
       method: 'POST',
     }),
-  dashboard: () => request<Dashboard>('/dashboard'),
+  dashboard: () => request<DashboardSummary>('/dashboard'),
   dashboardSummary: (params?: { dateFrom?: string; dateTo?: string; teamId?: string }) => {
     const search = new URLSearchParams();
     if (params?.dateFrom) search.set('dateFrom', params.dateFrom);

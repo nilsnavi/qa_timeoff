@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
   BarChart3,
@@ -23,10 +22,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { SearchModal, Toast } from '../ui';
-import { api } from '../../shared/api';
 import { useAuth } from '../../shared/auth/AuthContext';
 import { useSseNotifications } from '../../shared/hooks/useSseNotifications';
-import type { DashboardSummary, NotificationItem } from '../../shared/types';
+import { useDashboard } from '../../shared/hooks/useDashboard';
 
 type NavSection = {
   label: string;
@@ -167,19 +165,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   useSseNotifications();
 
-  const dashboardQuery = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: () => api.dashboard() as unknown as Promise<DashboardSummary>,
-    enabled: isAuthenticated,
-    refetchInterval: 30_000,
-  });
-
-  const notificationsQuery = useQuery({
-    queryKey: ['notifications'],
-    queryFn: api.notifications,
-    enabled: isAuthenticated,
-    refetchInterval: 30_000,
-  });
+  const { dashboard: d, isLoading: isDashboardLoading } = useDashboard();
 
   const currentBreadcrumb = useMemo(() => getBreadcrumb(location.pathname), [location.pathname]);
 
@@ -226,7 +212,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!dashboardQuery.data) {
+  if (isDashboardLoading && !d.user.id) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -237,11 +223,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const d = dashboardQuery.data;
-  const allNotifications = notificationsQuery.data as NotificationItem[] | undefined;
-  const unread = (allNotifications ?? []).filter((n) => !n.isRead).length;
-  const pendReq = 0;
-  const currentUser = user ?? d?.profile;
+  const unread = d.notifications.filter((n) => !n.isRead).length;
+  const pendReq = d.requests.filter((r) => r.status === 'PENDING').length + (d.vacations ?? []).filter((v) => v.status === 'PENDING').length;
+  const currentUser = user ?? d.user;
   const initials = currentUser.fullName?.slice(0, 2).toUpperCase() || 'QA';
 
   return (
@@ -308,7 +292,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {d?.profile?.role === 'ADMIN' && (
+        {d.user.role === 'ADMIN' && (
           <div className="border-t border-white/[0.06] px-2 py-3 space-y-1">
             <button
               type="button"
@@ -409,7 +393,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     ))}
                   </div>
                 ))}
-                {d?.profile?.role === 'ADMIN' && (
+        {d.user.role === 'ADMIN' && (
                   <div key="admin-mobile" className="pt-2 border-t border-white/[0.06]">
                     <div className="mb-1 px-3 text-[14px] font-bold uppercase tracking-widest text-white/25">Администрирование</div>
                     {[

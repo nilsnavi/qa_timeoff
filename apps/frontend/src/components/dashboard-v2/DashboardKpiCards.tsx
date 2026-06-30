@@ -1,4 +1,5 @@
-import { Clock3, FileText, Users, UserCheck, AlertTriangle } from 'lucide-react';
+import { Clock3, FileText, Users, UserCheck, AlertTriangle, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { DashboardSummary } from '../../shared/types';
 import { useAuth } from '../../shared/auth/AuthContext';
 
@@ -10,11 +11,14 @@ interface KpiCardProps {
   icon: React.ElementType;
   color: string;
   bgColor: string;
+  to?: string;
 }
 
-function KpiCard({ title, value, subtitle, detail, icon: Icon, color, bgColor }: KpiCardProps) {
-  return (
-    <div className="enterprise-card p-4 hover-lift flex flex-col justify-between min-h-[150px]">
+function KpiCard({ title, value, subtitle, detail, icon: Icon, color, bgColor, to }: KpiCardProps) {
+  const navigate = useNavigate();
+
+  const content = (
+    <div className="enterprise-card p-4 hover-lift flex flex-col justify-between min-h-[150px] group relative">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[13px] font-semibold text-white/50">{title}</span>
         <span className={`grid h-8 w-8 place-items-center rounded-lg ${bgColor}`}>
@@ -26,8 +30,23 @@ function KpiCard({ title, value, subtitle, detail, icon: Icon, color, bgColor }:
         <p className="text-[13px] text-white/40 mt-0.5">{subtitle}</p>
         <p className="text-[12px] text-white/30 mt-1.5">{detail}</p>
       </div>
+      {to && (
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <ExternalLink size={12} className="text-white/30" />
+        </div>
+      )}
     </div>
   );
+
+  if (to) {
+    return (
+      <button type="button" onClick={() => navigate(to)} className="text-left cursor-pointer w-full">
+        {content}
+      </button>
+    );
+  }
+
+  return content;
 }
 
 export function DashboardKpiCards({ dashboard }: { dashboard: DashboardSummary }) {
@@ -56,6 +75,7 @@ export function DashboardKpiCards({ dashboard }: { dashboard: DashboardSummary }
       icon: Clock3,
       color: 'text-blue-400',
       bgColor: 'bg-blue-500/10',
+      to: '/balance',
     },
     {
       title: 'Мои заявки',
@@ -65,6 +85,7 @@ export function DashboardKpiCards({ dashboard }: { dashboard: DashboardSummary }
       icon: FileText,
       color: 'text-violet-400',
       bgColor: 'bg-violet-500/10',
+      to: '/requests/my',
     },
     ...(canViewTeam
       ? [{
@@ -75,6 +96,7 @@ export function DashboardKpiCards({ dashboard }: { dashboard: DashboardSummary }
           icon: Users,
           color: 'text-amber-400' as const,
           bgColor: 'bg-amber-500/10',
+          to: '/requests/manager',
         }]
       : []),
     {
@@ -90,6 +112,7 @@ export function DashboardKpiCards({ dashboard }: { dashboard: DashboardSummary }
       icon: UserCheck,
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/10',
+      to: canViewTeam ? '/calendar' : undefined,
     },
     {
       title: 'Риск перегруза',
@@ -101,6 +124,7 @@ export function DashboardKpiCards({ dashboard }: { dashboard: DashboardSummary }
       icon: AlertTriangle,
       color: riskStyle.color,
       bgColor: riskStyle.bgColor,
+      to: canViewTeam ? '/analytics/workload' : undefined,
     },
   ];
 

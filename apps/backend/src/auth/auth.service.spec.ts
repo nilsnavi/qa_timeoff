@@ -32,6 +32,7 @@ describe('AuthService', () => {
     user: {
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
     timeBalance: {
@@ -102,12 +103,12 @@ describe('AuthService', () => {
 
     it('должен успешно аутентифицировать существующего пользователя и вернуть refresh token', async () => {
       mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
-      mockPrisma.user.findUnique.mockResolvedValue(existingUser);
+      mockPrisma.user.findFirst.mockResolvedValue(existingUser);
 
       const result = await service.telegramLogin('valid-init-data');
 
       expect(mockTelegramAuth.validateInitData).toHaveBeenCalledWith('valid-init-data');
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
         where: { telegramId: '12345' },
         include: { timeBalance: true, team: true, manager: true },
       });
@@ -142,7 +143,7 @@ describe('AuthService', () => {
 
     it('должен выбросить UnauthorizedException если пользователь не найден', async () => {
       mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue(null);
 
       await expect(service.telegramLogin('valid-init-data')).rejects.toThrow(UnauthorizedException);
       await expect(service.telegramLogin('valid-init-data')).rejects.toThrow('Пользователь не найден');
@@ -150,7 +151,7 @@ describe('AuthService', () => {
 
     it('должен выбросить UnauthorizedException если пользователь заблокирован', async () => {
       mockTelegramAuth.validateInitData.mockReturnValue({ valid: true, user: validTelegramUser });
-      mockPrisma.user.findUnique.mockResolvedValue({ ...existingUser, isActive: false });
+      mockPrisma.user.findFirst.mockResolvedValue({ ...existingUser, isActive: false });
 
       await expect(service.telegramLogin('valid-init-data')).rejects.toThrow(UnauthorizedException);
       await expect(service.telegramLogin('valid-init-data')).rejects.toThrow('Доступ заблокирован');

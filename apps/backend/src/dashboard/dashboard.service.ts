@@ -57,6 +57,7 @@ export class DashboardService {
     role: Role;
     teamId: string | null;
     position: string | null;
+    organizationId: string;
   }, query: DashboardQuery) {
     const isManager = user.role === Role.MANAGER || user.role === Role.ADMIN;
     const isLead = user.role === Role.LEAD;
@@ -73,7 +74,7 @@ export class DashboardService {
     const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59);
 
     const teamIds = isManager
-      ? (query.teamId ? [query.teamId] : await this.getAllTeamIds())
+      ? (query.teamId ? [query.teamId] : await this.getAllTeamIds(user.organizationId))
       : isLead && user.teamId
         ? [user.teamId]
         : [];
@@ -82,6 +83,7 @@ export class DashboardService {
       this.prisma.timeBalance.findUnique({ where: { userId: user.id } }),
       this.prisma.user.findMany({
         where: {
+          organizationId: user.organizationId,
           isActive: true,
           ...(teamIds.length ? { teamId: { in: teamIds } } : {}),
         },
@@ -109,6 +111,7 @@ export class DashboardService {
       }),
       this.prisma.auditLog.findMany({
         where: {
+          actor: { organizationId: user.organizationId },
           ...(canViewTeam && teamIds.length
             ? { OR: [{ entityType: 'request' }, { actor: { teamId: { in: teamIds } } }] }
             : { actorId: user.id }),
@@ -125,8 +128,9 @@ export class DashboardService {
       this.prisma.overtime.findMany({
         where: {
           status: 'APPROVED',
+          user: { organizationId: user.organizationId, ...(teamIds.length ? { teamId: { in: teamIds } } : {}) },
           date: { gte: startOfMonth, lte: endOfMonth },
-          ...(teamIds.length ? { user: { teamId: { in: teamIds } } } : { userId: user.id }),
+          ...(teamIds.length ? {} : { userId: user.id }),
         },
         include: { user: { select: { id: true, fullName: true } } },
       }),
@@ -413,6 +417,7 @@ export class DashboardService {
 
     const prevMonthRequests = await this.prisma.leaveRequest.count({
       where: {
+        user: { organizationId: user.organizationId },
         ...(canViewTeam && teamIds.length
           ? { teamId: { in: teamIds } }
           : { userId: user.id }),
@@ -526,6 +531,7 @@ export class DashboardService {
       fullName: user.fullName,
       shortName: user.fullName.split(' ')[1] || user.fullName.split(' ')[0],
       role: user.role,
+      teamId: user.teamId,
       position: user.position ?? 'Сотрудник',
       status: 'ACTIVE',
       avatarUrl: null,
@@ -573,6 +579,14 @@ export class DashboardService {
       funnel,
       insights,
       activity: activityFeed,
+      notifications: notifications.map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        type: n.type,
+        isRead: n.isRead,
+        createdAt: n.createdAt.toISOString(),
+      })),
       onboarding: {
         show: onboardingShow,
         steps: onboardingShow ? [
@@ -585,8 +599,12 @@ export class DashboardService {
     };
   }
 
-  private async getAllTeamIds(): Promise<string[]> {
-    const teams = await this.prisma.team.findMany({ select: { id: true } });
+
+  private async getAllTeamIds(organizationId: string): Promise<string[]> {
+    const teams = await this.prisma.team.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
     return teams.map(t => t.id);
   }
 

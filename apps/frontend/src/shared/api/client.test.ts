@@ -48,11 +48,22 @@ describe('api.dashboard', () => {
       text: () =>
         Promise.resolve(
           JSON.stringify({
-            user: { id: '1', fullName: 'Test' },
-            balance: { balanceHours: 40 },
-            requests: [],
-            operations: [],
+            profile: { id: '1', fullName: 'Test', shortName: 'Test', role: 'EMPLOYEE', teamId: null, position: '', status: 'ACTIVE', avatarUrl: null },
+            greeting: '',
+            balance: { availableHours: 40, usedHours: 0, totalHours: 40, usedPercent: 0 },
+            requests: { myPending: 0, myApprovedThisMonth: 0, pendingApprovalCount: 0, pendingApprovalHours: 0, approvalRate: 100, averageApprovalTimeHours: 0 },
+            team: { employeesCount: 1, absentToday: 0, absenceByType: {}, availableToday: 1, availabilityPercent: 100, overloadedEmployees: 0, riskLevel: 'LOW' },
+            attention: [],
+            quickActions: [],
+            calendar: [],
+            pendingApprovals: [],
+            teamAvailability: [],
+            upcomingEvents: [],
+            funnel: { draft: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0 },
+            insights: [],
+            activity: [],
             notifications: [],
+            onboarding: { show: false, steps: [] },
           }),
         ),
     });
@@ -67,6 +78,6 @@ describe('api.dashboard', () => {
         }),
       }),
     );
-    expect(result.user.fullName).toBe('Test');
+    expect(result.profile.fullName).toBe('Test');
   });
 });

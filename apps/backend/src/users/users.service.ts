@@ -47,7 +47,7 @@ export class UsersService {
     return user;
   }
 
-  async create(dto: CreateUserDto): Promise<{ user: User; tempPassword: string }> {
+  async create(dto: CreateUserDto, organizationId: string): Promise<{ user: User; tempPassword: string }> {
     if (!dto.email) {
       throw new BadRequestException('Email обязателен для создания пользователя');
     }
@@ -62,6 +62,7 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
+        organizationId,
         fullName: dto.fullName,
         email: dto.email,
         username: dto.username,
@@ -163,7 +164,7 @@ export class UsersService {
     return { success: true };
   }
 
-  async importFromCsv(csvText: string): Promise<ImportUserResult[]> {
+  async importFromCsv(csvText: string, organizationId: string): Promise<ImportUserResult[]> {
     const lines = csvText
       .split('\n')
       .map(l => l.trim())
@@ -240,7 +241,7 @@ export class UsersService {
           role:     resolvedRole,
           teamId:   teamId ?? undefined,
           position: row.position,
-        });
+        }, organizationId);
         results.push({ fullName: user.fullName, email: user.email!, tempPassword, status: 'created' });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Неизвестная ошибка';

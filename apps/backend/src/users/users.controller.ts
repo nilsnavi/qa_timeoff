@@ -33,7 +33,7 @@ export class UsersController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Импорт пользователей из CSV' })
   @ApiConsumes('multipart/form-data')
-  async importUsers(@Req() req: any) {
+  async importUsers(@CurrentUser() currentUser: User, @Req() req: any) {
     const chunks: Buffer[] = [];
     await new Promise<void>((resolve, reject) => {
       req.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -61,14 +61,14 @@ export class UsersController {
       throw new BadRequestException('Файл не найден или пустой');
     }
 
-    return this.usersService.importFromCsv(csvText);
+    return this.usersService.importFromCsv(csvText, currentUser.organizationId);
   }
 
   @Post()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@CurrentUser() currentUser: User, @Body() dto: CreateUserDto) {
+    return this.usersService.create(dto, currentUser.organizationId);
   }
 
   @Patch(':id')

@@ -402,6 +402,7 @@ export interface DashboardProfile {
   fullName: string;
   shortName: string;
   role: Role;
+  teamId: string | null;
   position: string;
   status: string;
   avatarUrl: string | null;
@@ -539,5 +540,6 @@ export interface DashboardSummary {
   funnel: RequestFunnel;
   insights: InsightItem[];
   activity: ActivityItem[];
+  notifications: NotificationItem[];
   onboarding: DashboardOnboarding;
 }

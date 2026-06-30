@@ -9,7 +9,19 @@ const severityConfig = {
 };
 
 export function InsightsWidget({ insights }: { insights: InsightItem[] }) {
-  if (!insights.length) return null;
+  if (!insights.length) {
+    return (
+      <div className="enterprise-card p-4">
+        <h3 className="text-[14px] font-bold text-white flex items-center gap-2 mb-3">
+          <Lightbulb size={16} className="text-amber-400" />
+          Инсайты системы
+        </h3>
+        <div className="rounded-lg bg-white/[0.02] p-4 text-center">
+          <p className="text-[13px] text-white/40">Нет системных инсайтов на данный момент</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="enterprise-card p-4">

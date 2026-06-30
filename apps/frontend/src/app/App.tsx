@@ -1,10 +1,13 @@
 import { Outlet } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export function App() {
   return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
+    <ErrorBoundary>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+    </ErrorBoundary>
   );
 }

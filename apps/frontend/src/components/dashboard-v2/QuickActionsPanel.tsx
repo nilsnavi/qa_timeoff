@@ -17,7 +17,16 @@ const iconMap: Record<string, React.ElementType> = {
 export function QuickActionsPanel({ actions }: { actions: QuickAction[] }) {
   const navigate = useNavigate();
 
-  if (!actions.length) return null;
+  if (!actions.length) {
+    return (
+      <div className="enterprise-card p-4">
+        <h3 className="text-[14px] font-bold text-white mb-3">Быстрые действия</h3>
+        <div className="rounded-lg bg-white/[0.02] p-4 text-center">
+          <p className="text-[13px] text-white/40">Нет доступных действий</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="enterprise-card p-4">

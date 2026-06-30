@@ -43,9 +43,40 @@ enum RiskLevel {
   HIGH
 }
 
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+model Organization {
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  plan               Plan               @default(FREE)
+  seatsLimit         Int                @default(10)
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  trialEndsAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  users              User[]
+  teams              Team[]
+}
+
 model User {
   id                String             @id @default(cuid())
-  telegramId        String?            @unique
+  organizationId    String
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  telegramId        String?
   passwordHash      String?
   mustChangePassword Boolean             @default(false)
   fullName          String
@@ -86,6 +117,9 @@ model User {
   refreshTokens     RefreshToken[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 model PositionHistory {
@@ -122,12 +156,17 @@ model Overtime {
 }
 
 model Team {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  users       User[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  name           String
+  description    String?
+  users          User[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 model TimeBalance {
