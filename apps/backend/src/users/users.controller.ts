@@ -88,6 +88,13 @@ export class UsersController {
     return this.usersService.updateNotifications(user.id, dto);
   }
 
+  @Get(':id/schedule')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.LEAD)
+  async getUserSchedule(@Param('id') id: string) {
+    return this.usersService.getSchedule(id);
+  }
+
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)

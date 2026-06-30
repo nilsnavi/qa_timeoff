@@ -60,6 +60,16 @@ enum SubscriptionStatus {
   EXPIRED
 }
 
+enum ScheduleType {
+  STANDARD_5_2
+  SHIFT_2_2
+  SHIFT_3_3
+  SHIFT_4_4
+  NIGHT_SHIFT
+  FLEXIBLE
+  CUSTOM
+}
+
 enum Plan {
   FREE
   BASIC
@@ -71,6 +81,7 @@ enum ImportType {
   USERS
   TEAMS
   BALANCES
+  SCHEDULES
 }
 
 enum ImportStatus {
@@ -96,6 +107,7 @@ model Organization {
   updatedAt          DateTime           @updatedAt
   users              User[]
   teams              Team[]
+  workSchedules      WorkSchedule[]
 }
 
 model CompanySettings {
@@ -185,6 +197,7 @@ model User {
   kpiPeriods        KpiPeriod[]
   auditLogs         AuditLog[]
   importJobs        ImportJob[]
+  workSchedule      WorkSchedule?
   updatedCompanySettings CompanySettings[]
   refreshTokens     RefreshToken[]
   createdAt         DateTime           @default(now())
@@ -253,6 +266,28 @@ model TimeBalance {
   totalAddedHours Int      @default(0)
   totalUsedHours  Int      @default(0)
   updatedAt       DateTime @updatedAt
+}
+
+model WorkSchedule {
+  id               String       @id @default(cuid())
+  userId           String       @unique
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  scheduleType     ScheduleType @default(STANDARD_5_2)
+  workingDays      Int[]        @default([1, 2, 3, 4, 5])
+  hoursPerDay      Int          @default(8)
+  shiftStartTime   String?
+  shiftEndTime     String?
+  cycleStartDate   DateTime?
+  cycleWorkDays    Int?
+  cycleRestDays    Int?
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
 }
 
 model BalanceOperation {

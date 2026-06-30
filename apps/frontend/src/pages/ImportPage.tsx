@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, Download, Eye, History, RefreshCw, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, EmptyState, ErrorState, Loader, Modal } from '../components/ui';
 import { api } from '../shared/api';
 import { useAuth } from '../shared/auth/AuthContext';
 import { clsx } from 'clsx';
 
 type Step = 'select' | 'upload' | 'validate' | 'result';
-type ImportType = 'USERS' | 'TEAMS' | 'BALANCES';
+type ImportType = 'USERS' | 'TEAMS' | 'BALANCES' | 'SCHEDULES';
 
-const typeLabels: Record<ImportType, string> = { USERS: 'Сотрудники', TEAMS: 'Команды', BALANCES: 'Балансы' };
+const typeLabels: Record<ImportType, string> = { USERS: 'Сотрудники', TEAMS: 'Команды', BALANCES: 'Балансы', SCHEDULES: 'Графики работы' };
 const statusLabels: Record<string, string> = {
   PENDING: 'Ожидание', VALIDATING: 'Проверка', READY: 'Готов', PROCESSING: 'Выполнение', SUCCESS: 'Успешно', PARTIAL_SUCCESS: 'Частично', FAILED: 'Ошибка', CANCELLED: 'Отменён',
 };
@@ -19,7 +20,9 @@ export function ImportPage() {
   const queryClient = useQueryClient();
   const isAdmin = user?.role === 'ADMIN';
   const [step, setStep] = useState<Step>('select');
-  const [importType, setImportType] = useState<ImportType>('USERS');
+  const [searchParams] = useSearchParams();
+  const initialType = (searchParams.get('type') as ImportType) ?? 'USERS';
+  const [importType, setImportType] = useState<ImportType>(initialType);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<any>(null);
   const [importJobId, setImportJobId] = useState<string | null>(null);
@@ -92,12 +95,15 @@ export function ImportPage() {
       {step === 'select' && (
         <div className="enterprise-card p-6 space-y-6">
           <h2 className="text-[18px] font-bold text-white">Шаг 1. Выберите тип импорта</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(['USERS', 'TEAMS', 'BALANCES'] as ImportType[]).map(t => (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(['USERS', 'TEAMS', 'BALANCES', 'SCHEDULES'] as ImportType[]).map(t => (
               <button key={t} onClick={() => setImportType(t)} className={clsx('enterprise-card p-4 text-left hover-lift transition-colors', importType === t ? 'ring-2 ring-[#4C7DFF]' : '')}>
                 <span className="text-[15px] font-bold text-white">{typeLabels[t]}</span>
                 <p className="text-[13px] text-white/30 mt-1">
-                  {t === 'USERS' ? 'fullName, email, role, team' : t === 'TEAMS' ? 'name, description, lead' : 'email, balanceHours, comment'}
+                  {t === 'USERS' ? 'fullName, email, role, team'
+                    : t === 'TEAMS' ? 'name, description, lead'
+                    : t === 'BALANCES' ? 'email, balanceHours, comment'
+                    : 'email, scheduleType, workingDays, hoursPerDay, cycleStartDate'}
                 </p>
               </button>
             ))}

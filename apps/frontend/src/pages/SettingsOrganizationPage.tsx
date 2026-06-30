@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Calendar, CheckCircle, Clock, Globe, History, Link2, Save, Users, X } from 'lucide-react';
+import { Bell, Calendar, CheckCircle, Clock, Globe, History, Link2, Save, Upload, Users, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button, CustomSelect, ErrorState, Loader, Modal } from '../components/ui';
 import type { SelectOption } from '../components/ui/CustomSelect';
@@ -47,6 +48,7 @@ const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
 export function SettingsOrganizationPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'ADMIN';
   const [activeTab, setActiveTab] = useState<Tab>('main');
   const [form, setForm] = useState<Record<string, any>>({});
@@ -130,6 +132,15 @@ export function SettingsOrganizationPage() {
             <SelectRow label="Рабочих дней в неделю" value={f('workWeekDays')} onChange={v => set('workWeekDays', Number(v))} options={[1,2,3,4,5,6,7].map(n => ({ value: String(n), label: `${n}` }))} disabled={!isAdmin} />
             <InputRow label="Рабочих дней в неделю" value={f('workingDaysPerWeek')} onChange={e => set('workingDaysPerWeek', Number(e.target.value))} type="number" min={1} max={7} disabled={!isAdmin} />
             <InputRow label="Годовая норма часов" value={f('defaultAnnualHours')} onChange={e => set('defaultAnnualHours', Number(e.target.value))} type="number" disabled={!isAdmin} hint="Минимум 0 часов" />
+            <div className="pt-4 mt-4 border-t border-white/[0.06]">
+              <h3 className="text-[15px] font-bold text-white/60 mb-2">Индивидуальные графики</h3>
+              <p className="text-[13px] text-white/30 mb-3">
+                Настройки выше применяются ко всем сотрудникам по умолчанию.
+                Для сменных графиков (2/2, 3/3, ночные смены) загрузите индивидуальные
+                графики через массовый импорт.
+              </p>
+              {isAdmin && <Button variant="secondary" size="sm" onClick={() => navigate('/import?type=SCHEDULES')}><Upload size={14} className="mr-1" />Импортировать графики</Button>}
+            </div>
           </>
         )}
 

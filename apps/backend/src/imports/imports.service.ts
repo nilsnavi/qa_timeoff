@@ -169,6 +169,8 @@ export class ImportsService {
         return 'name,description,leadEmail,isActive';
       case 'BALANCES':
         return 'email,balanceHours,comment';
+      case 'SCHEDULES':
+        return 'email,scheduleType,workingDays,hoursPerDay,shiftStartTime,shiftEndTime,cycleStartDate,cycleWorkDays,cycleRestDays';
     }
   }
 
@@ -230,6 +232,7 @@ export class ImportsService {
       case 'USERS': return this.validateUserRows(rows);
       case 'TEAMS': return this.validateTeamRows(rows);
       case 'BALANCES': return this.validateBalanceRows(rows);
+      case 'SCHEDULES': return this.validateScheduleRows(rows);
       default: return [];
     }
   }
@@ -293,6 +296,7 @@ export class ImportsService {
       case 'USERS': return this.processUserRows(rows);
       case 'TEAMS': return this.processTeamRows(rows);
       case 'BALANCES': return this.processBalanceRows(rows);
+      case 'SCHEDULES': return this.processScheduleRows(rows);
       default: return { createdRows: 0, updatedRows: 0, skippedRows: 0, errorRows: 0 };
     }
   }
@@ -406,5 +410,86 @@ export class ImportsService {
       } catch { errors++; }
     }
     return { createdRows: created, updatedRows: updated, skippedRows: 0, errorRows: errors };
+  }
+
+  private validateScheduleRows(rows: ParsedRow[]): ValidationError[] {
+    return rows.flatMap(row => {
+      const errors: ValidationError[] = [];
+      const { email, scheduleType, hoursPerDay, cycleStartDate, cycleWorkDays, cycleRestDays } = row.data;
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push({ rowNumber: row.rowNumber, field: 'email', message: 'Некорректный email', value: email ?? '' });
+      }
+
+      const validTypes = ['STANDARD_5_2', 'SHIFT_2_2', 'SHIFT_3_3', 'SHIFT_4_4', 'NIGHT_SHIFT', 'FLEXIBLE', 'CUSTOM'];
+      if (!scheduleType || !validTypes.includes(scheduleType)) {
+        errors.push({ rowNumber: row.rowNumber, field: 'scheduleType', message: `Тип должен быть одним из: ${validTypes.join(', ')}`, value: scheduleType ?? '' });
+      }
+
+      const hours = Number(hoursPerDay);
+      if (!hoursPerDay || Number.isNaN(hours) || hours < 1 || hours > 24) {
+        errors.push({ rowNumber: row.rowNumber, field: 'hoursPerDay', message: 'Часов в день должно быть от 1 до 24', value: hoursPerDay ?? '' });
+      }
+
+      if (scheduleType?.startsWith('SHIFT_') || scheduleType === 'NIGHT_SHIFT') {
+        if (!cycleStartDate || Number.isNaN(new Date(cycleStartDate).getTime())) {
+          errors.push({ rowNumber: row.rowNumber, field: 'cycleStartDate', message: 'Для сменного графика нужна дата начала цикла (YYYY-MM-DD)', value: cycleStartDate ?? '' });
+        }
+        if (!cycleWorkDays || Number(cycleWorkDays) < 1) {
+          errors.push({ rowNumber: row.rowNumber, field: 'cycleWorkDays', message: 'Укажите количество рабочих дней в цикле', value: cycleWorkDays ?? '' });
+        }
+        if (!cycleRestDays || Number(cycleRestDays) < 0) {
+          errors.push({ rowNumber: row.rowNumber, field: 'cycleRestDays', message: 'Укажите количество выходных дней в цикле', value: cycleRestDays ?? '' });
+        }
+      }
+
+      return errors;
+    });
+  }
+
+  private async processScheduleRows(rows: ParsedRow[]): Promise<{
+    createdRows: number; updatedRows: number; skippedRows: number; errorRows: number;
+  }> {
+    let created = 0, updated = 0, skipped = 0, errored = 0;
+
+    for (const row of rows) {
+      const { email, scheduleType, workingDays, hoursPerDay, shiftStartTime, shiftEndTime, cycleStartDate, cycleWorkDays, cycleRestDays } = row.data;
+
+      const user = await this.prisma.user.findUnique({ where: { email } });
+      if (!user) { skipped++; continue; }
+
+      const parsedWorkingDays = workingDays
+        ? workingDays.replace(/^"|"$/g, '').split(',').map(d => Number(d.trim())).filter(d => !Number.isNaN(d))
+        : [1, 2, 3, 4, 5];
+
+      try {
+        const existing = await this.prisma.workSchedule.findUnique({ where: { userId: user.id } });
+
+        const data = {
+          scheduleType: scheduleType as any,
+          workingDays: parsedWorkingDays,
+          hoursPerDay: Number(hoursPerDay),
+          shiftStartTime: shiftStartTime || null,
+          shiftEndTime: shiftEndTime || null,
+          cycleStartDate: cycleStartDate ? new Date(cycleStartDate) : null,
+          cycleWorkDays: cycleWorkDays ? Number(cycleWorkDays) : null,
+          cycleRestDays: cycleRestDays ? Number(cycleRestDays) : null,
+        };
+
+        if (existing) {
+          await this.prisma.workSchedule.update({ where: { userId: user.id }, data });
+          updated++;
+        } else {
+          await this.prisma.workSchedule.create({
+            data: { userId: user.id, organizationId: user.organizationId, ...data },
+          });
+          created++;
+        }
+      } catch {
+        errored++;
+      }
+    }
+
+    return { createdRows: created, updatedRows: updated, skippedRows: skipped, errorRows: errored };
   }
 }

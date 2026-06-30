@@ -283,4 +283,18 @@ export class UsersService {
 
     return currentUser.id === targetUser.id;
   }
+
+  async getSchedule(userId: string) {
+    const schedule = await this.prisma.workSchedule.findUnique({ where: { userId } });
+    if (!schedule) {
+      return {
+        userId,
+        scheduleType: 'STANDARD_5_2',
+        workingDays: [1, 2, 3, 4, 5],
+        hoursPerDay: 8,
+        isDefault: true,
+      };
+    }
+    return { ...schedule, isDefault: false };
+  }
 }
