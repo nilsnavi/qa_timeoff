@@ -84,6 +84,8 @@ export const api = {
     request<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
       method: 'POST',
     }),
+  registerOrganization: (dto: { companyName: string; adminFullName: string; adminEmail: string; adminPassword: string }) =>
+    request<{ accessToken: string; refreshToken: string; user: User; organization: { id: string; name: string; slug: string } }>('/auth/register', { method: 'POST', body: JSON.stringify(dto) }),
   logout: () =>
     request<void>('/auth/logout', {
       method: 'POST',

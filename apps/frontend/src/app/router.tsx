@@ -32,6 +32,7 @@ const LoginPage = lazy(() => import('../pages/LoginPage').then((module) => ({ de
 const ChangePasswordPage = lazy(() => import('../pages/ChangePasswordPage').then((module) => ({ default: module.ChangePasswordPage })));
 const CreateUserPage = lazy(() => import('../pages/CreateUserPage').then((module) => ({ default: module.CreateUserPage })));
 const ReportsPage = lazy(() => import('../pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
+const OnboardingPage = lazy(() => import('../pages/OnboardingPage').then((module) => ({ default: module.OnboardingPage })));
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
   {
     path: '/change-password',
     element: withSuspense(<ChangePasswordPage />),
+  },
+  {
+    path: '/onboarding',
+    element: withSuspense(<OnboardingPage />),
   },
   {
     path: '/invite/accept',

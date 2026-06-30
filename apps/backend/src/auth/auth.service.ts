@@ -1,10 +1,11 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RegisterOrganizationDto } from './dto/register-organization.dto';
 import { TelegramAuthService, TelegramUser } from './telegram-auth.service';
 
 @Injectable()
@@ -156,6 +157,73 @@ export class AuthService {
         timeBalance: true,
       },
     });
+  }
+
+  async registerOrganization(dto: RegisterOrganizationDto) {
+    const baseSlug = dto.companyName
+      .toLowerCase()
+      .replace(/[^a-z0-9а-яё]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'company';
+
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await this.prisma.organization.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+
+    const existingUser = await this.prisma.user.findUnique({ where: { email: dto.adminEmail } });
+    if (existingUser) {
+      throw new ConflictException('Пользователь с таким email уже зарегистрирован');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.adminPassword, 10);
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const organization = await tx.organization.create({
+        data: {
+          name: dto.companyName,
+          slug,
+          plan: 'FREE',
+          seatsLimit: 10,
+          subscriptionStatus: 'TRIAL',
+          trialEndsAt,
+        },
+      });
+
+      const admin = await tx.user.create({
+        data: {
+          organizationId: organization.id,
+          fullName: dto.adminFullName,
+          email: dto.adminEmail,
+          passwordHash,
+          role: 'ADMIN',
+          mustChangePassword: false,
+          timeBalance: { create: {} },
+        },
+      });
+
+      return { organization, admin };
+    });
+
+    const token = await this.jwt.signAsync({
+      sub: result.admin.id,
+      role: result.admin.role,
+      organizationId: result.organization.id,
+    });
+
+    const refreshToken = await this.issueRefreshToken(result.admin.id);
+
+    this.logger.log(`New organization registered: ${result.organization.name} (${result.organization.slug})`);
+
+    return {
+      accessToken: token,
+      refreshToken: refreshToken.token,
+      user: result.admin,
+      organization: result.organization,
+    };
   }
 
   private async issueToken(user: { id: string; role: string; teamId: string | null; organizationId: string }) {

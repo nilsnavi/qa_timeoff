@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { RegisterOrganizationDto } from './dto/register-organization.dto';
 
 class TelegramAuthDto {
   @IsString()
@@ -76,6 +77,15 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto.email, dto.password);
+    res.cookie(this.REFRESH_COOKIE, result.refreshToken, this.cookieOptions());
+    return result;
+  }
+
+  @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 3600000 } })
+  @ApiOperation({ summary: 'Регистрация новой организации с первым администратором' })
+  async register(@Body() dto: RegisterOrganizationDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.registerOrganization(dto);
     res.cookie(this.REFRESH_COOKIE, result.refreshToken, this.cookieOptions());
     return result;
   }

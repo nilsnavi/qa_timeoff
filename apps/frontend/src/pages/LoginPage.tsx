@@ -1,6 +1,6 @@
 import { Loader2, LogIn } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthContext';
 
 export function LoginPage() {
@@ -84,6 +84,13 @@ export function LoginPage() {
             )}
           </button>
         </form>
+
+        <p className="text-center text-[13px] text-white/30 mt-4">
+          Нет аккаунта?{' '}
+          <Link to="/onboarding" className="text-[#4C7DFF] hover:text-[#6B96FF]">
+            Зарегистрировать компанию
+          </Link>
+        </p>
       </div>
     </main>
   );

@@ -16,6 +16,7 @@ export interface AuthContextValue extends AuthState {
   logout: () => void;
   clearAuth: () => void;
   setMustChangePassword: (v: boolean) => void;
+  setAuthFromResponse: (data: { accessToken: string; refreshToken: string; user: User }) => void;
 }
 
 const CTX = createContext<AuthContextValue | null>(null);
@@ -115,6 +116,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.assign('/login');
   }, [performLogout]);
 
+  const setAuthFromResponse = useCallback((data: { accessToken: string; refreshToken: string; user: User }) => {
+    setAccessToken(data.accessToken);
+    setToken(data.accessToken);
+    setUser(data.user);
+    setMustChangePassword((data.user as any).mustChangePassword ?? false);
+  }, []);
+
   const isAuthenticated = !!token && !!user;
 
   return (
@@ -130,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         clearAuth,
         setMustChangePassword,
+        setAuthFromResponse,
       }}
     >
       {children}
