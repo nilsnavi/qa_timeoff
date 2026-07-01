@@ -190,7 +190,7 @@ export function ViewRequestModal({
               {request.status === 'REJECTED' && (
                 <AuditEntry label="Отклонена" date={request.updatedAt} user={request.approver?.fullName} />
               )}
-              {auditQuery.data?.records?.map((log: any) => (
+              {auditQuery.data?.items?.map((log: any) => (
                 <AuditEntry
                   key={log.id}
                   label={log.action === 'REMINDER' ? 'Напоминание' : log.action}
