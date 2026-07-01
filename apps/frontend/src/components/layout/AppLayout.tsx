@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { SearchModal, Toast } from '../ui';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuth } from '../../shared/auth/AuthContext';
 import { useSseNotifications } from '../../shared/hooks/useSseNotifications';
 import { useDashboard } from '../../shared/hooks/useDashboard';
@@ -381,6 +382,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Bell size={17} />
               {!!unread && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-950/300 shadow-lg shadow-rose-500/40" />}
             </button>
+            <ThemeToggle />
             <button type="button" className="grid h-9 w-9 place-items-center rounded-lg text-[#B8C0D0] hover:bg-white/[0.06] hover:text-white">
               <HelpCircle size={17} />
             </button>
