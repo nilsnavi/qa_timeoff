@@ -26,4 +26,8 @@ export class CreateTeamRequestDto {
   @IsOptional()
   @IsString()
   employeeId?: string;
+
+  @IsOptional()
+  @IsString()
+  teamId?: string;
 }

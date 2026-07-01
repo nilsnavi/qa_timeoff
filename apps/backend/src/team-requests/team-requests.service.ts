@@ -107,8 +107,8 @@ export class TeamRequestsService {
     const dateTo = dto.dateTo ? new Date(dto.dateTo) : null;
     const userId = dto.employeeId ?? currentUser.id;
 
-    let teamId = currentUser.teamId;
-    if (dto.employeeId && dto.employeeId !== currentUser.id) {
+    let teamId = dto.teamId || currentUser.teamId;
+    if (!dto.teamId && dto.employeeId && dto.employeeId !== currentUser.id) {
       const targetUser = await this.prisma.user.findUnique({
         where: { id: dto.employeeId },
         select: { teamId: true },
@@ -547,6 +547,56 @@ export class TeamRequestsService {
       loadPercent: maxCapacity > 0 ? Math.round((totalLoadHours / maxCapacity) * 100) : 0,
       byUser: Array.from(byUser.entries()).map(([userId, v]) => ({ userId, ...v })),
     };
+  }
+
+  async approveAll(currentUser: User) {
+    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    if (!isManager) throw new ForbiddenException('Только руководитель может утверждать заявки');
+
+    const teamFilter = this.getTeamFilter(currentUser);
+
+    const pending = await this.prisma.leaveRequest.findMany({
+      where: {
+        status: RequestStatus.PENDING,
+        teamId: teamFilter ?? undefined,
+      },
+      select: { id: true, userId: true },
+    });
+
+    if (pending.length === 0) return { approved: 0 };
+
+    await this.prisma.leaveRequest.updateMany({
+      where: { id: { in: pending.map(r => r.id) } },
+      data: {
+        status: RequestStatus.APPROVED,
+        approverId: currentUser.id,
+        approvedAt: new Date(),
+      },
+    });
+
+    for (const r of pending) {
+      await this.prisma.notification.create({
+        data: {
+          userId: r.userId,
+          title: 'Заявка одобрена',
+          message: 'Ваша заявка одобрена (пакетное утверждение)',
+          type: NotificationType.REQUEST_APPROVED,
+        },
+      });
+
+      await this.audit.log({
+        actorId: currentUser.id,
+        actorName: currentUser.fullName,
+        actorRole: currentUser.role,
+        action: 'APPROVE',
+        entityType: 'LeaveRequest',
+        entityId: r.id,
+        entityName: `Пакетное одобрение #${r.id.slice(0, 8)}`,
+      });
+    }
+
+    this.logger.log(`Batch approved ${pending.length} requests by ${currentUser.fullName}`);
+    return { approved: pending.length };
   }
 
   private getVisibleStatuses(user: User): RequestStatus[] {

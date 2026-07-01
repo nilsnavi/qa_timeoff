@@ -607,6 +607,12 @@ export function TeamRequestsPage() {
                 <Plus size={14} /> Создать заявку
               </button>
               <button
+                onClick={() => {
+                  api.approveAllTeamRequests().then(r => {
+                    showAppToast(`Одобрено заявок: ${r.approved}`);
+                    invalidateAll();
+                  }).catch(() => showAppToast('Ошибка', undefined, 'error'));
+                }}
                 className="flex w-full items-center gap-2.5 rounded-lg bg-white/[0.04] px-3 py-2.5 text-[13px] font-medium text-white/50 hover:bg-white/[0.08] transition-colors">
                 <Check size={14} /> Утвердить все
               </button>

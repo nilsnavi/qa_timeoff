@@ -122,6 +122,7 @@ export function CreateTeamRequestModal({
       reason,
       comment: comment || undefined,
       employeeId: selectedUserId !== currentUser.id ? selectedUserId : undefined,
+      teamId: selectedTeamId || undefined,
     }),
     onSuccess: () => {
       showAppToast('Заявка создана');

@@ -76,6 +76,11 @@ export class TeamRequestsController {
     return this.service.remind(user, id);
   }
 
+  @Post('approve-all')
+  approveAll(@CurrentUser() user: User) {
+    return this.service.approveAll(user);
+  }
+
   @Get('analytics/stats')
   getStats(@CurrentUser() user: User, @Query('teamId') teamId?: string) {
     return this.service.getStats(user, teamId);

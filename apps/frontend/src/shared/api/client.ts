@@ -377,16 +377,6 @@ export const api = {
 
   // ── Team Requests ──────────────────────────────────────────────────
 
-  myTeamRequests: (params?: { status?: string; from?: string; to?: string; limit?: number; page?: number }) => {
-    const qs = new URLSearchParams();
-    if (params?.status  && params.status  !== 'ALL') qs.set('status',  params.status);
-    if (params?.from)   qs.set('dateFrom',  params.from);
-    if (params?.to)     qs.set('dateTo',    params.to);
-    if (params?.limit)  qs.set('limit',  String(params.limit));
-    if (params?.page)   qs.set('page',   String(params.page));
-    const q = qs.toString();
-    return request<{ items: LeaveRequest[]; total: number; page: number; limit: number }>(`/team-requests${q ? `?${q}` : ''}`);
-  },
   teamRequests: (params?: { teamId?: string; status?: string; type?: string; period?: string; employeeId?: string; page?: number; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params?.teamId) qs.set('teamId', params.teamId);
@@ -399,7 +389,7 @@ export const api = {
     const q = qs.toString();
     return request<{ items: LeaveRequest[]; total: number; page: number; limit: number }>(`/team-requests${q ? `?${q}` : ''}`);
   },
-  createTeamRequest: (dto: { type: string; dateFrom: string; dateTo?: string; hours: number; reason: string; comment?: string; employeeId?: string }) =>
+  createTeamRequest: (dto: { type: string; dateFrom: string; dateTo?: string; hours: number; reason: string; comment?: string; employeeId?: string; teamId?: string }) =>
     request<LeaveRequest>('/team-requests', { method: 'POST', body: JSON.stringify(dto) }),
   updateTeamRequest: (id: string, dto: { type?: string; dateFrom?: string; dateTo?: string; hours?: number; reason?: string; comment?: string }) =>
     request<LeaveRequest>(`/team-requests/${id}`, { method: 'PATCH', body: JSON.stringify(dto) }),
@@ -412,6 +402,8 @@ export const api = {
     request<LeaveRequest>(`/team-requests/${id}/reprocess`, { method: 'POST', body: JSON.stringify(payload ?? {}) }),
   remindTeamRequest: (id: string) =>
     request<{ success: boolean }>(`/team-requests/${id}/remind`, { method: 'POST' }),
+  approveAllTeamRequests: () =>
+    request<{ approved: number }>('/team-requests/approve-all', { method: 'POST' }),
   teamRequestsStats: (teamId?: string) =>
     request<{
       byType: Array<{ type: string; count: number }>;
