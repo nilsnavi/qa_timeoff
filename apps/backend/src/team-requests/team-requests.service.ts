@@ -138,7 +138,7 @@ export class TeamRequestsService {
     const existing = await this.prisma.leaveRequest.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Заявка не найдена');
 
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(currentUser.role);
     if (existing.userId !== currentUser.id && !isManager) {
       throw new ForbiddenException('Недостаточно прав');
     }
@@ -176,7 +176,7 @@ export class TeamRequestsService {
     const existing = await this.prisma.leaveRequest.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Заявка не найдена');
 
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(currentUser.role);
     if (existing.userId !== currentUser.id && !isManager) {
       throw new ForbiddenException('Недостаточно прав');
     }
@@ -201,7 +201,7 @@ export class TeamRequestsService {
     const existing = await this.prisma.leaveRequest.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Заявка не найдена');
 
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(currentUser.role);
     if (!isManager) throw new ForbiddenException('Только руководитель может согласовывать заявки');
 
     const updated = await this.prisma.leaveRequest.update({
@@ -234,7 +234,7 @@ export class TeamRequestsService {
     const existing = await this.prisma.leaveRequest.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Заявка не найдена');
 
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(currentUser.role);
     if (!isManager) throw new ForbiddenException('Только руководитель может отклонять заявки');
 
     const updated = await this.prisma.leaveRequest.update({
@@ -383,7 +383,7 @@ export class TeamRequestsService {
   }
 
   private getVisibleStatuses(user: User): RequestStatus[] {
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(user.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(user.role);
     if (isManager) {
       return [RequestStatus.DRAFT, RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED, RequestStatus.CANCELLED, RequestStatus.ACTIVE, RequestStatus.EXPIRED];
     }
@@ -392,7 +392,7 @@ export class TeamRequestsService {
 
   private getTeamFilter(user: User, paramTeamId?: string): string | undefined {
     if (paramTeamId) return paramTeamId;
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(user.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(user.role);
     if (!isManager) return user.teamId ?? undefined;
     return undefined;
   }

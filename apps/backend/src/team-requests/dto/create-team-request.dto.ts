@@ -2,10 +2,10 @@ import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CreateTeamRequestDto {
   @IsIn(['TIME_OFF', 'VACATION', 'OVERTIME', 'OVERWORK', 'REMOTE_WORK', 'OTHER'])
-  type: string;
+  type!: string;
 
   @IsString()
-  dateFrom: string;
+  dateFrom!: string;
 
   @IsOptional()
   @IsString()
@@ -14,10 +14,10 @@ export class CreateTeamRequestDto {
   @IsInt()
   @Min(1)
   @Max(240)
-  hours: number;
+  hours!: number;
 
   @IsString()
-  reason: string;
+  reason!: string;
 
   @IsOptional()
   @IsString()
