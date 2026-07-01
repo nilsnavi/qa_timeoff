@@ -8,7 +8,22 @@ on:
   workflow_dispatch:
 
 jobs:
+  block-theme:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Блокировка мержа feature/theme
+        run: |
+          if [ "${{ github.head_ref }}" = "feature/theme" ]; then
+            echo "Ветка feature/theme заархивирована. Разработка светлой темы будет вестись с нуля."
+            echo "Мерж этой ветки запрещён — используйте новую ветку для разработки темы."
+            exit 1
+          fi
+          echo "OK"
+
   build-test:
+    needs: block-theme
+    if: always() && (needs.block-theme.result == 'success' || needs.block-theme.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:
