@@ -11,6 +11,7 @@ import { Button, EmptyState, Loader } from '../../components/ui';
 import { DataTable, type Column, type SortDirection } from '../../components/dashboard-v2/DataTable';
 import { CreateTeamRequestModal } from '../../components/team-requests/CreateTeamRequestModal';
 import { ReprocessRequestModal } from '../../components/team-requests/ReprocessRequestModal';
+import { ViewRequestModal } from '../../components/team-requests/ViewRequestModal';
 import { api } from '../../shared/api';
 import { showAppToast } from '../../shared/utils';
 import type { LeaveRequest } from '../../shared/types';
@@ -67,6 +68,7 @@ export function TeamRequestsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [reprocessTarget, setReprocessTarget] = useState<LeaveRequest | null>(null);
+  const [viewTarget, setViewTarget] = useState<LeaveRequest | null>(null);
   const [selectedTeamId, _setSelectedTeamId] = useState<string>('');
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -281,7 +283,7 @@ export function TeamRequestsPage() {
       render: (row) => (
         <div className="flex items-center justify-center gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); setViewTarget(row); }}
             title="Просмотр"
             className="grid h-7 w-7 place-items-center rounded text-white/20 hover:text-white/60 hover:bg-white/[0.06]"
           >
@@ -623,6 +625,15 @@ export function TeamRequestsPage() {
         <CreateTeamRequestModal
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => { setShowCreateModal(false); invalidateAll(); }}
+        />
+      )}
+
+      {/* View modal */}
+      {viewTarget && (
+        <ViewRequestModal
+          request={viewTarget}
+          onClose={() => setViewTarget(null)}
+          onSuccess={() => { setViewTarget(null); invalidateAll(); }}
         />
       )}
 
