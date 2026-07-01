@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Header, Card, EmptyState, ErrorState, Button } from '../components/ui';
 import { useAuth } from '../shared/auth/AuthContext';
+import { api } from '../shared/api';
 import { showAppToast } from '../shared/utils';
-import type { EmployeeBalance, EmployeeBalancesResponse } from '../shared/types';
+import type { EmployeeBalancesParams, EmployeeBalancesResponse } from '../shared/types';
 import { BalanceSummaryCards, BalanceSummarySkeleton } from './balance-employees/BalanceSummaryCards';
 import { EmployeeBalanceFilters, type BalancesFilters } from './balance-employees/EmployeeBalanceFilters';
 import { EmployeeBalancesTable, EmployeeBalancesTableSkeleton } from './balance-employees/EmployeeBalancesTable';
 import { Pagination } from './balance-employees/Pagination';
-import { EMPLOYEE_BALANCES_MOCK, getMockBalancesResponse } from './balance-employees/employee-balances.mock';
+import { BALANCE_TYPE_LABELS } from './balance-employees/employee-balances.mock';
 
 const LIMIT_OPTIONS = [7, 10, 20, 50];
 const DEFAULT_LIMIT = 7;
@@ -18,6 +20,7 @@ type SortField = 'employeeName' | 'department' | 'accruedHours' | 'usedHours' | 
 export function BalanceEmployeesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState<BalancesFilters>({
     search: '',
@@ -30,122 +33,44 @@ export function BalanceEmployeesPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [sort, setSort] = useState<{ field: SortField; dir: 'asc' | 'desc' } | null>(null);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<EmployeeBalancesResponse | null>(null);
 
-  const departments = useMemo(() => {
-    const deps = new Set(EMPLOYEE_BALANCES_MOCK.map((e) => e.department));
-    return Array.from(deps).sort();
-  }, []);
+  const departments = useMemo(() => Object.keys(BALANCE_TYPE_LABELS).length > 0 ? [] : [], []);
 
-  const applyFiltersAndSort = useCallback(
-    (items: EmployeeBalance[]): EmployeeBalance[] => {
-      let result = [...items];
+  const queryParams: EmployeeBalancesParams = useMemo(() => ({
+    search: filters.search || undefined,
+    department: filters.department || undefined,
+    balanceType: filters.balanceType || undefined,
+    period: filters.period,
+    status: filters.status || undefined,
+    problemOnly: filters.problemOnly || undefined,
+    page,
+    limit,
+    sortBy: sort?.field,
+    sortDir: sort?.dir,
+  }), [filters, page, limit, sort]);
 
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        result = result.filter(
-          (e) =>
-            e.employeeName.toLowerCase().includes(q) ||
-            (e.email && e.email.toLowerCase().includes(q)) ||
-            (e.telegramUsername && e.telegramUsername.toLowerCase().includes(q)) ||
-            e.department.toLowerCase().includes(q),
-        );
-      }
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<EmployeeBalancesResponse>({
+    queryKey: ['employeeBalances', queryParams],
+    queryFn: () => api.employeeBalances(queryParams),
+    enabled: !!user && (user.role === 'ADMIN' || user.role === 'MANAGER'),
+    staleTime: 30_000,
+  });
 
-      if (filters.department) {
-        result = result.filter((e) => e.department === filters.department);
-      }
-
-      if (filters.balanceType) {
-        result = result.filter((e) => e.balanceType === filters.balanceType);
-      }
-
-      if (filters.status) {
-        switch (filters.status) {
-          case 'NORMAL':
-            result = result.filter((e) => e.availableHours > 16);
-            break;
-          case 'LOW':
-            result = result.filter((e) => e.availableHours >= 0 && e.availableHours <= 16);
-            break;
-          case 'NEGATIVE':
-            result = result.filter((e) => e.availableHours < 0);
-            break;
-          case 'HAS_PENDING':
-            result = result.filter((e) => e.pendingHours > 0);
-            break;
-        }
-      }
-
-      if (filters.problemOnly) {
-        result = result.filter(
-          (e) =>
-            e.availableHours <= 16 ||
-            e.availableHours < 0 ||
-            e.pendingHours > 0,
-        );
-      }
-
-      if (sort) {
-        result.sort((a, b) => {
-          const aVal = a[sort.field];
-          const bVal = b[sort.field];
-          if (typeof aVal === 'string' && typeof bVal === 'string') {
-            return sort.dir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-          }
-          if (typeof aVal === 'number' && typeof bVal === 'number') {
-            return sort.dir === 'asc' ? aVal - bVal : bVal - aVal;
-          }
-          return 0;
-        });
-      }
-
-      return result;
+  const recalculateMutation = useMutation({
+    mutationFn: () => api.recalculateBalances({ period: filters.period }),
+    onSuccess: () => {
+      showAppToast('Балансы сотрудников пересчитаны');
+      queryClient.invalidateQueries({ queryKey: ['employeeBalances'] });
     },
-    [filters, sort],
-  );
-
-  const paginatedResult = useMemo(() => {
-    if (!data) return null;
-    const filtered = applyFiltersAndSort(data.items);
-    const start = (page - 1) * limit;
-    const paged = filtered.slice(start, start + limit);
-    const uniqueEmployees = new Set(filtered.map((i) => i.employeeId)).size;
-    return {
-      items: paged,
-      total: filtered.length,
-      summary: {
-        totalEmployees: uniqueEmployees,
-        totalAvailableHours: filtered.reduce((s, i) => s + i.availableHours, 0),
-        totalPlannedHours: filtered.reduce((s, i) => s + i.plannedHours, 0),
-        totalPendingHours: filtered.reduce((s, i) => s + i.pendingHours, 0),
-        negativeBalanceCount: filtered.filter((i) => i.availableHours < 0).length,
-      },
-    };
-  }, [data, applyFiltersAndSort, page, limit]);
-
-  const loadData = useCallback(() => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = getMockBalancesResponse(EMPLOYEE_BALANCES_MOCK, 1, DEFAULT_LIMIT);
-      setData(response);
-      setPage(1);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка загрузки данных');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user && (user.role === 'ADMIN' || user.role === 'MANAGER')) {
-      loadData();
-    }
-  }, [user, loadData]);
+    onError: () => {
+      showAppToast('Не удалось пересчитать балансы', undefined, 'error');
+    },
+  });
 
   if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
     return (
@@ -166,7 +91,7 @@ export function BalanceEmployeesPage() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="space-y-6">
         <Header
@@ -177,7 +102,7 @@ export function BalanceEmployeesPage() {
         <ErrorState
           title="Не удалось загрузить балансы сотрудников"
           description="Проверьте подключение или повторите попытку."
-          onRetry={loadData}
+          onRetry={() => refetch()}
         />
       </div>
     );
@@ -206,7 +131,7 @@ export function BalanceEmployeesPage() {
     );
   }
 
-  if (!data && !isLoading) {
+  if (!data || data.items.length === 0) {
     return (
       <div className="space-y-6">
         <Header
@@ -222,8 +147,12 @@ export function BalanceEmployeesPage() {
               <Button variant="secondary" onClick={() => navigate('/settings/organization')}>
                 Настроить правила начисления
               </Button>
-              <Button variant="primary" onClick={loadData}>
-                Пересчитать балансы
+              <Button
+                variant="primary"
+                onClick={() => recalculateMutation.mutate()}
+                disabled={recalculateMutation.isPending}
+              >
+                {recalculateMutation.isPending ? 'Расчет...' : 'Пересчитать балансы'}
               </Button>
             </div>
           }
@@ -243,7 +172,7 @@ export function BalanceEmployeesPage() {
   };
 
   const handlePageChange = (p: number) => {
-    setPage(Math.max(1, Math.min(p, Math.ceil((paginatedResult?.total ?? 1) / limit))));
+    setPage(Math.max(1, Math.min(p, Math.ceil((data?.total ?? 1) / limit))));
   };
 
   const handleLimitChange = (newLimit: number) => {
@@ -251,21 +180,7 @@ export function BalanceEmployeesPage() {
     setPage(1);
   };
 
-  const handleRecalculate = async () => {
-    setIsRecalculating(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      showAppToast('Балансы сотрудников пересчитаны');
-      loadData();
-    } catch {
-      showAppToast('Не удалось пересчитать балансы', undefined, 'error');
-    } finally {
-      setIsRecalculating(false);
-    }
-  };
-
   const handleExport = () => {
-    if (!paginatedResult) return;
     showAppToast('Экспорт подготовлен', 'Файл будет загружен в ближайшее время', 'info');
   };
 
@@ -289,7 +204,7 @@ export function BalanceEmployeesPage() {
         subtitle="Просмотр и контроль остатков отпусков, отгулов и других типов отсутствий сотрудников"
       />
 
-      {paginatedResult && <BalanceSummaryCards summary={paginatedResult.summary} />}
+      <BalanceSummaryCards summary={data.summary} />
 
       <EmployeeBalanceFilters
         filters={filters}
@@ -298,43 +213,28 @@ export function BalanceEmployeesPage() {
           setFilters(newFilters);
           setPage(1);
         }}
-        onRecalculate={handleRecalculate}
+        onRecalculate={() => recalculateMutation.mutate()}
         onExport={handleExport}
-        isRecalculating={isRecalculating}
+        isRecalculating={recalculateMutation.isPending}
       />
 
-      {paginatedResult && (
-        <>
-          <EmployeeBalancesTable
-            items={paginatedResult.items}
-            sort={sort}
-            onSort={handleSort}
-            onView={handleView}
-            onHistory={handleHistory}
-            onEdit={handleEdit}
-          />
-          <Pagination
-            page={page}
-            limit={limit}
-            total={paginatedResult.total}
-            limitOptions={LIMIT_OPTIONS}
-            onPageChange={handlePageChange}
-            onLimitChange={handleLimitChange}
-          />
-        </>
-      )}
+      <EmployeeBalancesTable
+        items={data.items}
+        sort={sort}
+        onSort={handleSort}
+        onView={handleView}
+        onHistory={handleHistory}
+        onEdit={handleEdit}
+      />
 
-      {paginatedResult && paginatedResult.total === 0 && (
-        <div className="enterprise-card grid place-items-center py-10 text-center">
-          <div className="grid max-w-xs gap-3">
-            <div className="mx-auto h-10 w-10 rounded-[10px] bg-white/[0.04]" />
-            <h2 className="text-[16px] font-bold text-white">Нет данных по выбранным фильтрам</h2>
-            <p className="text-[14px] font-medium text-[#B8C0D0]">
-              Измените фильтры или выберите другой период.
-            </p>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        limit={limit}
+        total={data.total}
+        limitOptions={LIMIT_OPTIONS}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+      />
     </div>
   );
 }
