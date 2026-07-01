@@ -106,7 +106,7 @@ export function WorklogCalendarPage() {
     setShowLogModal(true);
   }
 
-  const selectedDayData = selectedDate ? dayData.get(selectedDate) : null;
+  const selectedDayData = selectedDate ? dayData.get(selectedDate) : undefined;
   const todayStr = fmt(today);
   const data = calQuery.data;
 
