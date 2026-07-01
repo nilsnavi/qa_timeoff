@@ -1,6 +1,7 @@
 export type Role = 'EMPLOYEE' | 'LEAD' | 'MANAGER' | 'ADMIN';
 export type RequestStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'ACTIVE' | 'EXPIRED';
 export type LeaveRequestType = 'TIME_OFF' | 'VACATION' | 'OVERTIME' | 'OVERWORK' | 'REMOTE_WORK' | 'OTHER';
+export type BalanceType = 'VACATION' | 'TIME_OFF' | 'SICK_LEAVE' | 'UNPAID_LEAVE' | 'BUSINESS_TRIP' | 'REMOTE_WORK';
 export type CalendarEventType = 'VACATION' | 'TIME_OFF' | 'SICK_LEAVE' | 'HOLIDAY';
 export type CalendarEventStatus = 'CREATED' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 export type VacationType = 'ANNUAL' | 'UNPAID' | 'SICK_LEAVE' | 'OTHER';
@@ -686,4 +687,52 @@ export interface DashboardSummary {
   activity: ActivityItem[];
   notifications: NotificationItem[];
   onboarding: DashboardOnboarding;
+}
+
+export interface EmployeeBalance {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeInitials: string;
+  email?: string;
+  telegramUsername?: string;
+  department: string;
+  role?: Role;
+  balanceType: BalanceType;
+  initialHours: number;
+  accruedHours: number;
+  usedHours: number;
+  plannedHours: number;
+  pendingHours: number;
+  adjustmentHours: number;
+  availableHours: number;
+  projectedHours: number;
+  updatedAt: string;
+}
+
+export interface EmployeeBalancesResponse {
+  items: EmployeeBalance[];
+  total: number;
+  page: number;
+  limit: number;
+  summary: {
+    totalEmployees: number;
+    totalAvailableHours: number;
+    totalPlannedHours: number;
+    totalPendingHours: number;
+    negativeBalanceCount: number;
+  };
+}
+
+export interface EmployeeBalancesParams {
+  search?: string;
+  department?: string;
+  balanceType?: string;
+  period?: number;
+  status?: string;
+  problemOnly?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
