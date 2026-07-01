@@ -229,7 +229,7 @@ export function MyRequestsPage() {
         />
       ) : (
         <DataTable
-          columns={columns as Column<Record<string, unknown>>[]}
+          columns={columns as any[]}
           data={filteredItems as any}
           keyField="id"
           sortKey={sortKey} sortDir={sortDir} onSort={handleSort}
