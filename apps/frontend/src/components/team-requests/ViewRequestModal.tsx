@@ -163,7 +163,7 @@ export function ViewRequestModal({
               <div className="space-y-3">
                 <div className="field-shell">
                   <span className="field-label">Тип заявки</span>
-                  <select value={editType} onChange={e => setEditType(e.target.value)} className="field-input">
+                  <select value={editType} onChange={e => setEditType(e.target.value as LeaveRequest['type'])} className="field-input">
                     {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
