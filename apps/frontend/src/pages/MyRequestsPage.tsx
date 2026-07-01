@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Calendar, ChevronDown, Clock3, Edit3, Plane, X } from 'lucide-react';
+import { Calendar, ChevronDown, Clock3, Edit3, Plane, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, CustomSelect, EmptyState, ErrorState, Field, Modal, SkeletonCard, StatusBadge } from '../components/ui';
 
 import { api } from '../shared/api';
 import { useDashboard } from '../shared/hooks/useDashboard';
-import type { RequestStatus, TimeOffRequest, VacationRequest } from '../shared/types';
+import type { LeaveRequest, RequestStatus, TimeOffRequest, VacationRequest } from '../shared/types';
 import { confirmTelegram, getVacationTypeLabel, showAppToast } from '../shared/utils';
 
 type FilterValue = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
-type RequestKind = 'timeoff' | 'vacation';
+type RequestKind = 'timeoff' | 'vacation' | 'team';
 
 type MyRequestCard = {
   id: string;
@@ -73,13 +73,14 @@ export function MyRequestsPage() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [showCustom, setShowCustom] = useState(false);
-  const [kindFilter, setKindFilter] = useState<'ALL'|'timeoff'|'vacation'>('ALL');
+  const [kindFilter, setKindFilter] = useState<'ALL'|'timeoff'|'vacation'|'team'>('ALL');
   const [cursorTimeOff, setCursorTimeOff] = useState<string | undefined>(undefined);
   const [cursorVacation, setCursorVacation] = useState<string | undefined>(undefined);
   const [hasMoreTimeOff, setHasMoreTimeOff] = useState(true);
   const [hasMoreVacation, setHasMoreVacation] = useState(true);
   const [accTimeOff, setAccTimeOff] = useState<TimeOffRequest[]>([]);
   const [accVacations, setAccVacations] = useState<VacationRequest[]>([]);
+  const [accTeamRequests, setAccTeamRequests] = useState<LeaveRequest[]>([]);
   const [editTarget, setEditTarget] = useState<MyRequestCard | null>(null);
   const [editDate, setEditDate] = useState('');
   const [editHours, setEditHours] = useState(0);
@@ -114,6 +115,17 @@ export function MyRequestsPage() {
     enabled: hasToken && (kindFilter === 'ALL' || kindFilter === 'vacation'),
   });
 
+  const teamRequestsQuery = useQuery({
+    queryKey: ['team-requests', 'my', filter, period, customFrom, customTo],
+    queryFn: () => api.myTeamRequests({
+      status: filter !== 'ALL' ? filter : undefined,
+      from: dateRange?.from,
+      to:   dateRange?.to,
+      limit: PAGE_LIMIT,
+    }),
+    enabled: hasToken && (kindFilter === 'ALL' || kindFilter === 'team'),
+  });
+
   useEffect(() => {
     if (timeOffQuery.data) {
       setAccTimeOff(timeOffQuery.data.slice(0, PAGE_LIMIT));
@@ -131,8 +143,15 @@ export function MyRequestsPage() {
   }, [vacationsQuery.data]);
 
   useEffect(() => {
+    if (teamRequestsQuery.data) {
+      setAccTeamRequests(teamRequestsQuery.data.items.slice(0, PAGE_LIMIT));
+    }
+  }, [teamRequestsQuery.data]);
+
+  useEffect(() => {
     setAccTimeOff([]);
     setAccVacations([]);
+    setAccTeamRequests([]);
     setCursorTimeOff(undefined);
     setCursorVacation(undefined);
     setHasMoreTimeOff(true);
@@ -176,10 +195,11 @@ export function MyRequestsPage() {
       [
         ...accTimeOff.length > 0 ? accTimeOff.map(mapTimeOffRequest) : [],
         ...accVacations.length > 0 ? accVacations.map(mapVacationRequest) : [],
+        ...accTeamRequests.length > 0 ? accTeamRequests.map(mapTeamRequest) : [],
       ]
         .filter(r => kindFilter === 'ALL' || r.kind === kindFilter)
         .sort((a, b) => b.comparableDate.localeCompare(a.comparableDate)),
-    [accTimeOff, accVacations, kindFilter],
+    [accTimeOff, accVacations, accTeamRequests, kindFilter],
   );
 
   const requests = allRequests;
@@ -195,13 +215,14 @@ export function MyRequestsPage() {
     ...f,
     label: `${defaultFilterLabels[f.labelKey]} (${counts[f.value]})`,
   })), [counts]);
-  const isLoading = (timeOffQuery.isLoading || vacationsQuery.isLoading) && allRequests.length === 0;
-  const hasError = (timeOffQuery.isError || vacationsQuery.isError) && allRequests.length === 0;
+  const isLoading = (timeOffQuery.isLoading || vacationsQuery.isLoading || teamRequestsQuery.isLoading) && allRequests.length === 0;
+  const hasError = (timeOffQuery.isError || vacationsQuery.isError || teamRequestsQuery.isError) && allRequests.length === 0;
 
   const invalidateRequests = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
     queryClient.invalidateQueries({ queryKey: ['timeoff'] });
     queryClient.invalidateQueries({ queryKey: ['vacation'] });
+    queryClient.invalidateQueries({ queryKey: ['team-requests'] });
     queryClient.invalidateQueries({ queryKey: ['calendar'] });
   };
 
@@ -217,7 +238,11 @@ export function MyRequestsPage() {
   });
 
   const cancel = useMutation({
-    mutationFn: (request: MyRequestCard) => (request.kind === 'timeoff' ? api.cancelTimeOff(request.id) : api.cancelVacation(request.id)),
+    mutationFn: (request: MyRequestCard) => {
+      if (request.kind === 'timeoff') return api.cancelTimeOff(request.id);
+      if (request.kind === 'vacation') return api.cancelVacation(request.id);
+      return api.deleteTeamRequest(request.id);
+    },
     onSuccess: () => {
       showAppToast('Заявка отменена');
       invalidateRequests();
@@ -228,6 +253,7 @@ export function MyRequestsPage() {
   const retry = () => {
     timeOffQuery.refetch();
     vacationsQuery.refetch();
+    teamRequestsQuery.refetch();
   };
 
   const hasMore = hasMoreTimeOff || hasMoreVacation;
@@ -276,11 +302,12 @@ export function MyRequestsPage() {
           <div className="w-40">
             <CustomSelect
               value={kindFilter}
-              onChange={v => setKindFilter(v as 'ALL'|'timeoff'|'vacation')}
+              onChange={v => setKindFilter(v as 'ALL'|'timeoff'|'vacation'|'team')}
               options={[
                 { value: 'ALL',      label: 'Все типы' },
                 { value: 'timeoff',  label: 'Отгулы'   },
                 { value: 'vacation', label: 'Отпуска'  },
+                { value: 'team',     label: 'Команда'  },
               ]}
               small
             />
@@ -396,18 +423,18 @@ function RequestCard({
   onCancel: () => void;
   onEdit?: () => void;
 }) {
-  const Icon = request.kind === 'timeoff' ? Clock3 : Plane;
+  const Icon = request.kind === 'timeoff' ? Clock3 : request.kind === 'team' ? Users : Plane;
   const canCancel = request.status === 'PENDING' || request.status === 'DRAFT';
 
   return (
     <Card>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-[18px] text-white ${request.kind === 'timeoff' ? 'bg-blue-600' : 'bg-emerald-500'}`}>
+          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-[18px] text-white ${request.kind === 'timeoff' ? 'bg-blue-600' : request.kind === 'team' ? 'bg-purple-600' : 'bg-emerald-500'}`}>
             <Icon size={20} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-[#7A8599]">{request.kind === 'timeoff' ? 'Отгул' : 'Отпуск'}</p>
+            <p className="truncate text-sm font-bold text-[#7A8599]">{request.kind === 'timeoff' ? 'Отгул' : request.kind === 'team' ? 'Заявка команды' : 'Отпуск'}</p>
             <h3 className="text-lg font-black text-white">{request.typeLabel}</h3>
           </div>
         </div>
@@ -416,7 +443,7 @@ function RequestCard({
 
       <div className="grid gap-2 rounded-[20px] bg-[#111A2E]/65 p-3 text-sm font-bold text-[#7A8599] bg-[#111A2E]/60 text-[#7A8599]">
         <InfoRow label="Дата" value={request.dateLabel} />
-        <InfoRow label={request.kind === 'timeoff' ? 'Часы' : 'Дни'} value={request.amountLabel} />
+        <InfoRow label={request.kind === 'vacation' ? 'Дни' : 'Часы'} value={request.amountLabel} />
         <InfoRow label="Комментарий" value={request.comment} />
         <InfoRow label="Создана" value={formatDateTime(request.createdAt)} />
       </div>
@@ -473,6 +500,32 @@ function mapVacationRequest(request: VacationRequest): MyRequestCard {
     comment: request.comment || 'Без комментария',
     createdAt: request.createdAt,
     comparableDate: request.createdAt ?? request.startDate,
+  };
+}
+
+const teamRequestTypeLabels: Record<string, string> = {
+  TIME_OFF: 'Отгул',
+  VACATION: 'Отпуск',
+  OVERTIME: 'Переработка',
+  OVERWORK: 'Доработка',
+  REMOTE_WORK: 'Удалённая работа',
+  OTHER: 'Другое',
+};
+
+function mapTeamRequest(request: LeaveRequest): MyRequestCard {
+  const dates: string[] = [];
+  if (request.dateFrom) dates.push(formatDate(request.dateFrom));
+  if (request.dateTo) dates.push(formatDate(request.dateTo));
+  return {
+    id: request.id,
+    kind: 'team',
+    typeLabel: teamRequestTypeLabels[request.type] ?? request.type,
+    dateLabel: dates.join(' - ') || '—',
+    amountLabel: `${request.hours} ч`,
+    status: request.status,
+    comment: request.reason || request.comment || 'Без комментария',
+    createdAt: request.createdAt,
+    comparableDate: request.createdAt ?? request.dateFrom,
   };
 }
 

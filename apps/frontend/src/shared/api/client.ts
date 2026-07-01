@@ -377,6 +377,16 @@ export const api = {
 
   // ── Team Requests ──────────────────────────────────────────────────
 
+  myTeamRequests: (params?: { status?: string; from?: string; to?: string; limit?: number; page?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status  && params.status  !== 'ALL') qs.set('status',  params.status);
+    if (params?.from)   qs.set('dateFrom',  params.from);
+    if (params?.to)     qs.set('dateTo',    params.to);
+    if (params?.limit)  qs.set('limit',  String(params.limit));
+    if (params?.page)   qs.set('page',   String(params.page));
+    const q = qs.toString();
+    return request<{ items: LeaveRequest[]; total: number; page: number; limit: number }>(`/team-requests${q ? `?${q}` : ''}`);
+  },
   teamRequests: (params?: { teamId?: string; status?: string; type?: string; period?: string; employeeId?: string; page?: number; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params?.teamId) qs.set('teamId', params.teamId);
