@@ -46,10 +46,6 @@ COPY --from=builder /app/apps/backend/dist apps/backend/dist
 COPY --from=builder /app/apps/backend/prisma apps/backend/prisma
 COPY --from=builder /app/packages/shared packages/shared
 
-# Entrypoint runs migrations (and optional seed) before starting Nest
-# Create symlink for packages in workspace node_modules that are needed at root level
-RUN ln -sf /app/apps/backend/node_modules/rxjs /app/node_modules/rxjs
-
 COPY apps/backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
