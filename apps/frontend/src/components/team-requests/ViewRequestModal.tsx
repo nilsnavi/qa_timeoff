@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertCircle, ArrowRight, Calendar, Check, Clock, X,
+  AlertCircle, ArrowRight, Calendar, Check, Clock, Edit3, Save, X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../../shared/api';
+import { useDashboard } from '../../shared/hooks/useDashboard';
 import { showAppToast } from '../../shared/utils';
 import type { LeaveRequest } from '../../shared/types';
 import { Button } from '../ui';
@@ -37,8 +38,20 @@ export function ViewRequestModal({
   onSuccess: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { dashboard } = useDashboard();
+  const currentUser = dashboard.user;
+  const isManager = ['LEAD', 'MANAGER', 'ADMIN'].includes(currentUser.role);
+
   const [rejectComment, setRejectComment] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editType, setEditType] = useState(request.type);
+  const [editDateFrom, setEditDateFrom] = useState(request.dateFrom.slice(0, 10));
+  const [editDateTo, setEditDateTo] = useState(request.dateTo ? request.dateTo.slice(0, 10) : '');
+  const [editHours, setEditHours] = useState(String(request.hours));
+  const [editReason, setEditReason] = useState(request.reason);
+  const [editComment, setEditComment] = useState(request.comment ?? '');
+  const [editErrors, setEditErrors] = useState<string[]>([]);
 
   const auditQuery = useQuery({
     queryKey: ['audit-log', request.id],
@@ -49,6 +62,7 @@ export function ViewRequestModal({
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['team-requests'] });
     queryClient.invalidateQueries({ queryKey: ['audit-log'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
   };
 
   const approveMutation = useMutation({
@@ -68,6 +82,31 @@ export function ViewRequestModal({
     onSuccess: () => { showAppToast('Заявка удалена'); invalidateAll(); onSuccess(); },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: () => api.updateTeamRequest(request.id, {
+      type: editType,
+      dateFrom: editDateFrom,
+      dateTo: editDateTo || undefined,
+      hours: Number(editHours),
+      reason: editReason,
+      comment: editComment || undefined,
+    }),
+    onSuccess: () => { showAppToast('Заявка изменена'); setEditMode(false); invalidateAll(); onSuccess(); },
+    onError: (err: any) => showAppToast(err?.message ?? 'Ошибка при изменении', undefined, 'error'),
+  });
+
+  const handleSave = () => {
+    const errs: string[] = [];
+    if (!editDateFrom) errs.push('Дата начала обязательна');
+    if (editDateFrom && editDateTo && new Date(editDateTo) < new Date(editDateFrom))
+      errs.push('Дата окончания не может быть раньше начала');
+    if (!editHours || Number(editHours) <= 0) errs.push('Часы обязательны');
+    if (!editReason.trim()) errs.push('Причина обязательна');
+    setEditErrors(errs);
+    if (errs.length > 0) return;
+    updateMutation.mutate();
+  };
+
   const slaStatus = getSlaStatus(request);
 
   return (
@@ -79,7 +118,9 @@ export function ViewRequestModal({
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[#0F1829] px-6 py-4 border-b border-white/[0.05] rounded-t-2xl">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#4C7DFF]">Заявка</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#4C7DFF]">
+              {editMode ? 'Редактирование' : 'Просмотр заявки'}
+            </p>
             <h2 className="text-[18px] font-bold text-white font-mono">#{request.id.slice(0, 8)}</h2>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-colors">
@@ -106,48 +147,91 @@ export function ViewRequestModal({
             )}
           </div>
 
-          {/* Main details grid */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-4">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-              <span className="text-[12px] text-white/35">Сотрудник</span>
-              <span className="text-[13px] text-white/80 text-right">
-                <span className="font-medium">{request.user?.fullName ?? '—'}</span>
-                {request.user?.position && <span className="text-white/35 ml-1">{request.user.position}</span>}
-              </span>
-              <span className="text-[12px] text-white/35">Тип заявки</span>
-              <span className="text-[13px] text-white/80 text-right">{TYPE_LABELS[request.type] ?? request.type}</span>
-              <span className="text-[12px] text-white/35">Период</span>
-              <span className="text-[13px] text-white/80 text-right">
-                <Calendar size={11} className="inline mr-1 text-white/25" />
-                {fmtDate(request.dateFrom)}{request.dateTo ? ` — ${fmtDate(request.dateTo)}` : ''}
-              </span>
-              <span className="text-[12px] text-white/35">Часы</span>
-              <span className="text-[13px] font-bold text-white text-right">{request.hours}ч</span>
-              <span className="text-[12px] text-white/35">Причина</span>
-              <span className="text-[13px] text-white/60 text-right line-clamp-2">{request.reason}</span>
-              {request.comment && (
-                <>
-                  <span className="text-[12px] text-white/35">Комментарий</span>
-                  <span className="text-[13px] text-white/45 italic text-right">"{request.comment}"</span>
-                </>
-              )}
-              {request.slaDueDate && (
-                <>
-                  <span className="text-[12px] text-white/35">SLA до</span>
-                  <span className="text-[13px] text-white/60 text-right">{fmtDate(request.slaDueDate)}</span>
-                </>
-              )}
+          {/* Edit errors */}
+          {editErrors.length > 0 && (
+            <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/15 px-4 py-3">
+              <AlertCircle size={14} className="text-rose-400 shrink-0 mt-0.5" />
+              <div>
+                {editErrors.map(e => <p key={e} className="text-[12px] text-rose-400">{e}</p>)}
+              </div>
             </div>
+          )}
+
+          {/* Main details */}
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-4">
+            {editMode ? (
+              <div className="space-y-3">
+                <div className="field-shell">
+                  <span className="field-label">Тип заявки</span>
+                  <select value={editType} onChange={e => setEditType(e.target.value)} className="field-input">
+                    {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="field-shell">
+                    <span className="field-label">Дата начала *</span>
+                    <input type="date" value={editDateFrom} onChange={e => setEditDateFrom(e.target.value)} className="field-input" />
+                  </div>
+                  <div className="field-shell">
+                    <span className="field-label">Дата окончания</span>
+                    <input type="date" value={editDateTo} onChange={e => setEditDateTo(e.target.value)} className="field-input" />
+                  </div>
+                </div>
+                <div className="field-shell">
+                  <span className="field-label">Часы *</span>
+                  <input type="number" step="0.5" min="0.5" max="240" value={editHours} onChange={e => setEditHours(e.target.value)} className="field-input" />
+                </div>
+                <div className="field-shell">
+                  <span className="field-label">Причина *</span>
+                  <input value={editReason} onChange={e => setEditReason(e.target.value)} className="field-input" />
+                </div>
+                <div className="field-shell">
+                  <span className="field-label">Комментарий</span>
+                  <textarea value={editComment} onChange={e => setEditComment(e.target.value)} rows={2} className="field-input resize-none" />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                <span className="text-[12px] text-white/35">Сотрудник</span>
+                <span className="text-[13px] text-white/80 text-right">
+                  <span className="font-medium">{request.user?.fullName ?? '—'}</span>
+                  {request.user?.position && <span className="text-white/35 ml-1">{request.user.position}</span>}
+                </span>
+                <span className="text-[12px] text-white/35">Тип заявки</span>
+                <span className="text-[13px] text-white/80 text-right">{TYPE_LABELS[request.type] ?? request.type}</span>
+                <span className="text-[12px] text-white/35">Период</span>
+                <span className="text-[13px] text-white/80 text-right">
+                  <Calendar size={11} className="inline mr-1 text-white/25" />
+                  {fmtDate(request.dateFrom)}{request.dateTo ? ` — ${fmtDate(request.dateTo)}` : ''}
+                </span>
+                <span className="text-[12px] text-white/35">Часы</span>
+                <span className="text-[13px] font-bold text-white text-right">{request.hours}ч</span>
+                <span className="text-[12px] text-white/35">Причина</span>
+                <span className="text-[13px] text-white/60 text-right line-clamp-2">{request.reason}</span>
+                {request.comment && (
+                  <>
+                    <span className="text-[12px] text-white/35">Комментарий</span>
+                    <span className="text-[13px] text-white/45 italic text-right">"{request.comment}"</span>
+                  </>
+                )}
+                {request.slaDueDate && (
+                  <>
+                    <span className="text-[12px] text-white/35">SLA до</span>
+                    <span className="text-[13px] text-white/60 text-right">{fmtDate(request.slaDueDate)}</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Approver info */}
           {request.approver && (
             <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-4">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-[#4C7DFF]/20 flex items-center justify-center">
                   <span className="text-[9px] font-bold text-[#4C7DFF]">{request.approver.fullName[0].toUpperCase()}</span>
                 </div>
-                <span className="text-[12px] text-white/35">Согласующий: </span>
+                <span className="text-[12px] text-white/35">Согласующий:</span>
                 <span className="text-[13px] text-white/80 font-medium">{request.approver.fullName}</span>
                 {request.approvedAt && <span className="text-[11px] text-white/25 ml-auto">{fmtDate(request.approvedAt)}</span>}
               </div>
@@ -159,7 +243,7 @@ export function ViewRequestModal({
             </div>
           )}
 
-          {/* SLA warning for pending */}
+          {/* SLA warning */}
           {request.status === 'PENDING' && slaStatus.severity !== 'ok' && (
             <div className={[
               'flex items-start gap-2.5 rounded-xl px-4 py-3',
@@ -202,47 +286,56 @@ export function ViewRequestModal({
           </div>
         </div>
 
-        {/* Footer with actions */}
+        {/* Footer */}
         <div className="sticky bottom-0 flex items-center justify-between gap-3 bg-[#0F1829] px-6 py-4 border-t border-white/[0.05] rounded-b-2xl">
-          <Button variant="secondary" onClick={onClose}>Закрыть</Button>
+          <Button variant="secondary" onClick={() => editMode ? setEditMode(false) : onClose()}>
+            {editMode ? 'Отмена' : 'Закрыть'}
+          </Button>
           <div className="flex items-center gap-2">
-            {request.status === 'PENDING' && (
-              <>
-                {showRejectInput ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={rejectComment}
-                      onChange={e => setRejectComment(e.target.value)}
-                      placeholder="Причина отклонения..."
-                      className="h-9 w-48 rounded-lg bg-white/[0.04] border border-rose-500/20 px-3 text-[13px] text-white/70 placeholder:text-white/15 outline-none"
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => rejectMutation.mutate()}
-                      disabled={rejectMutation.isPending}
-                      className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400"
-                    >
-                      Подтвердить
+            {editMode ? (
+              <Button onClick={handleSave} disabled={updateMutation.isPending}>
+                <Save size={14} className="mr-1" /> {updateMutation.isPending ? 'Сохраняем...' : 'Сохранить'}
+              </Button>
+            ) : (
+              isManager && (
+                <>
+                  {request.status === 'PENDING' && (
+                    <>
+                      {showRejectInput ? (
+                        <div className="flex items-center gap-2">
+                          <input value={rejectComment} onChange={e => setRejectComment(e.target.value)}
+                            placeholder="Причина отклонения..."
+                            className="h-9 w-48 rounded-lg bg-white/[0.04] border border-rose-500/20 px-3 text-[13px] text-white/70 placeholder:text-white/15 outline-none" autoFocus />
+                          <Button size="sm" onClick={() => rejectMutation.mutate()} disabled={rejectMutation.isPending}
+                            className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400">
+                            Подтвердить
+                          </Button>
+                          <button onClick={() => { setShowRejectInput(false); setRejectComment(''); }} className="text-[12px] text-white/30 hover:text-white/60">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button onClick={() => setShowRejectInput(true)} className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400">
+                            <X size={14} className="mr-1" /> Отклонить
+                          </Button>
+                          <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
+                            <Check size={14} className="mr-1" /> Одобрить
+                          </Button>
+                          <Button variant="secondary" onClick={() => { setEditMode(true); setEditErrors([]); }}>
+                            <Edit3 size={14} className="mr-1" /> Изменить
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {(request.status === 'APPROVED' || request.status === 'ACTIVE' || request.status === 'DRAFT') && (
+                    <Button variant="secondary" onClick={() => { setEditMode(true); setEditErrors([]); }}>
+                      <Edit3 size={14} className="mr-1" /> Изменить
                     </Button>
-                    <button onClick={() => { setShowRejectInput(false); setRejectComment(''); }} className="text-[12px] text-white/30 hover:text-white/60">
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <Button
-                      onClick={() => setShowRejectInput(true)}
-                      className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400"
-                    >
-                      <X size={14} className="mr-1" /> Отклонить
-                    </Button>
-                    <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
-                      <Check size={14} className="mr-1" /> Одобрить
-                    </Button>
-                  </>
-                )}
-              </>
+                  )}
+                </>
+              )
             )}
             {request.status === 'DRAFT' && (
               <Button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400">
