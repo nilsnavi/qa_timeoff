@@ -6,6 +6,8 @@ const statusLabels: Record<RequestStatus, string> = {
   APPROVED: 'Согласовано',
   REJECTED: 'Отклонено',
   CANCELLED: 'Отменено',
+  ACTIVE: 'Активно',
+  EXPIRED: 'Истекло',
 };
 
 const roleLabels: Record<Role, string> = {

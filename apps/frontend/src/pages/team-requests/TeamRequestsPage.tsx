@@ -391,7 +391,7 @@ export function TeamRequestsPage() {
             />
           ) : (
             <DataTable
-              columns={columns as Column<Record<string, unknown>>[]}
+              columns={columns as any[]}
               data={filteredItems as any}
               keyField="id"
               sortKey={sortKey}
@@ -464,7 +464,7 @@ export function TeamRequestsPage() {
                     <span className="text-[14px] font-semibold text-white">{item.value}</span>
                   </div>
                 ))}
-                {(sc.expiring ?? 0) > 0 && (
+                {(statsQuery.data?.expiring ?? 0) > 0 && (
                   <div className="flex items-center gap-2 mt-2 rounded-lg bg-orange-500/10 px-3 py-2">
                     <Clock size={13} className="text-orange-400 shrink-0" />
                     <span className="text-[12px] text-orange-400">
