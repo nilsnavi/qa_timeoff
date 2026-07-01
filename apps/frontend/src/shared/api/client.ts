@@ -1,4 +1,4 @@
-import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, CompanySettings, Dashboard, DashboardSummary, ImportUserResult, Invite, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PermissionMatrix, PermissionDto, PositionHistory, RequestStatus, Role, RoleAuditEntry, RoleDetail, RoleKpi, RoleUser, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
+import type { AiForecast, AuditLogEntry, AuditLogResponse, BalanceOperation, CalendarEvent, CalendarEventEntry, CompanySettings, Dashboard, DashboardSummary, EmployeeBalancesParams, EmployeeBalancesResponse, ImportUserResult, Invite, KpiPeriod, KpiRecalculationResult, KpiResponse, LeaveRequest, LeaveRequestSummary, NotificationItem, Overtime, OvertimeCalendarEntry, OvertimeReport, PaginatedCalendarEvents, PaginatedLeaveRequests, PayrollReport, PermissionMatrix, PermissionDto, PositionHistory, RequestStatus, Role, RoleAuditEntry, RoleDetail, RoleKpi, RoleUser, Team, TimeBalance, TimeOffRequest, User, VacationRequest, VacationType, WorkloadAnalyticsResponse, WorkloadReport } from '../types';
 import { ApiError, mapApiError, NetworkError, TimeoutError } from './errors';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -589,4 +589,22 @@ export const api = {
         }>;
       }>;
     }>(`/worklog/calendar?year=${year}&month=${month}`),
+
+  employeeBalances: (params?: EmployeeBalancesParams) => {
+    const search = new URLSearchParams();
+    if (params?.search) search.set('search', params.search);
+    if (params?.department) search.set('department', params.department);
+    if (params?.balanceType) search.set('balanceType', params.balanceType);
+    if (params?.period) search.set('period', String(params.period));
+    if (params?.status) search.set('status', params.status);
+    if (params?.problemOnly !== undefined) search.set('problemOnly', String(params.problemOnly));
+    if (params?.page) search.set('page', String(params.page));
+    if (params?.limit) search.set('limit', String(params.limit));
+    if (params?.sortBy) search.set('sortBy', params.sortBy);
+    if (params?.sortDir) search.set('sortDir', params.sortDir);
+    const qs = search.toString();
+    return request<EmployeeBalancesResponse>(`/balances/employees${qs ? `?${qs}` : ''}`);
+  },
+  recalculateBalances: (payload: { period: number }) =>
+    request<{ success: boolean; updatedAt: string }>('/balances/recalculate', { method: 'POST', body: JSON.stringify(payload) }),
 };
