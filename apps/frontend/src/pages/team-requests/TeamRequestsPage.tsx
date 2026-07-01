@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3, Bell, Check, ChevronDown, Clock, Download, ExternalLink, Eye,
-  Plus, RefreshCcw, Search, Users, X
+  Filter, Plus, RefreshCcw, Search, Users, X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +61,9 @@ export function TeamRequestsPage() {
 
   const [activeTab, setActiveTab] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [reprocessTarget, setReprocessTarget] = useState<LeaveRequest | null>(null);
   const [selectedTeamId, _setSelectedTeamId] = useState<string>('');
@@ -68,9 +71,15 @@ export function TeamRequestsPage() {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
 
+  const { data: allUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: api.users,
+    staleTime: 5 * 60_000,
+  });
+
   const requestsQuery = useQuery({
-    queryKey: ['team-requests', { status: activeTab, page, teamId: selectedTeamId }],
-    queryFn: () => api.teamRequests({ status: activeTab || undefined, page, limit: 25, teamId: selectedTeamId || undefined }),
+    queryKey: ['team-requests', { status: activeTab, page, teamId: selectedTeamId, type: typeFilter, employeeId: employeeFilter }],
+    queryFn: () => api.teamRequests({ status: activeTab || undefined, page, limit: 25, teamId: selectedTeamId || undefined, type: typeFilter || undefined, employeeId: employeeFilter || undefined }),
     staleTime: 30_000,
   });
 
@@ -365,6 +374,54 @@ export function TeamRequestsPage() {
             <Plus size={16} className="mr-1" /> Создать заявку
           </Button>
         </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setShowFilters(f => !f)}
+          className={clsx(
+            'flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors',
+            showFilters ? 'bg-[#4C7DFF]/15 text-[#4C7DFF]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]',
+          )}
+        >
+          <Filter size={14} />
+          Фильтры
+        </button>
+        {showFilters && (
+          <>
+            <div className="h-6 w-px bg-white/[0.06]" />
+            <select
+              value={typeFilter}
+              onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
+              className="h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 text-[13px] text-white/70 outline-none focus:border-[#4C7DFF]/40 cursor-pointer"
+            >
+              <option value="">Все типы</option>
+              {Object.entries(TYPE_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+            <div className="h-6 w-px bg-white/[0.06]" />
+            <select
+              value={employeeFilter}
+              onChange={e => { setEmployeeFilter(e.target.value); setPage(1); }}
+              className="h-9 max-w-[220px] rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 text-[13px] text-white/70 outline-none focus:border-[#4C7DFF]/40 cursor-pointer"
+            >
+              <option value="">Все сотрудники</option>
+              {allUsers?.map(u => (
+                <option key={u.id} value={u.id}>{u.fullName}</option>
+              ))}
+            </select>
+            {(typeFilter || employeeFilter) && (
+              <button
+                onClick={() => { setTypeFilter(''); setEmployeeFilter(''); setPage(1); }}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] text-white/30 hover:text-rose-400 transition-colors"
+              >
+                <X size={12} /> Сбросить
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {/* KPI Row */}
