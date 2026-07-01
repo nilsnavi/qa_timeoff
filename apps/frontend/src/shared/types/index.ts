@@ -1,6 +1,6 @@
 export type Role = 'EMPLOYEE' | 'LEAD' | 'MANAGER' | 'ADMIN';
-export type RequestStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-export type LeaveRequestType = 'TIME_OFF' | 'VACATION';
+export type RequestStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'ACTIVE' | 'EXPIRED';
+export type LeaveRequestType = 'TIME_OFF' | 'VACATION' | 'OVERTIME' | 'OVERWORK' | 'REMOTE_WORK' | 'OTHER';
 export type CalendarEventType = 'VACATION' | 'TIME_OFF' | 'SICK_LEAVE' | 'HOLIDAY';
 export type CalendarEventStatus = 'CREATED' | 'PENDING' | 'APPROVED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 export type VacationType = 'ANNUAL' | 'UNPAID' | 'SICK_LEAVE' | 'OTHER';

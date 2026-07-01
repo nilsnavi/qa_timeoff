@@ -20,6 +20,8 @@ enum RequestStatus {
   APPROVED
   REJECTED
   CANCELLED
+  ACTIVE
+  EXPIRED
 }
 
 enum BalanceOperationType {
@@ -392,6 +394,10 @@ model KpiPeriod {
 enum LeaveRequestType {
   TIME_OFF
   VACATION
+  OVERTIME
+  OVERWORK
+  REMOTE_WORK
+  OTHER
 }
 
 /// Модель LeaveRequest используется для унифицированного API заявок

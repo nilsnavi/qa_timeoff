@@ -375,6 +375,46 @@ export const api = {
   rejectLeaveRequest: (id: string, approverComment?: string) =>
     request<LeaveRequest>(`/leave-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ approverComment }) }),
 
+  // ── Team Requests ──────────────────────────────────────────────────
+
+  teamRequests: (params?: { teamId?: string; status?: string; type?: string; period?: string; employeeId?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.teamId) qs.set('teamId', params.teamId);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.type) qs.set('type', params.type);
+    if (params?.period) qs.set('period', params.period);
+    if (params?.employeeId) qs.set('employeeId', params.employeeId);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const q = qs.toString();
+    return request<{ items: LeaveRequest[]; total: number; page: number; limit: number }>(`/team-requests${q ? `?${q}` : ''}`);
+  },
+  createTeamRequest: (dto: { type: string; dateFrom: string; dateTo?: string; hours: number; reason: string; comment?: string; employeeId?: string }) =>
+    request<LeaveRequest>('/team-requests', { method: 'POST', body: JSON.stringify(dto) }),
+  updateTeamRequest: (id: string, dto: { type?: string; dateFrom?: string; dateTo?: string; hours?: number; reason?: string; comment?: string }) =>
+    request<LeaveRequest>(`/team-requests/${id}`, { method: 'PATCH', body: JSON.stringify(dto) }),
+  deleteTeamRequest: (id: string) => request<LeaveRequest>(`/team-requests/${id}`, { method: 'DELETE' }),
+  approveTeamRequest: (id: string, comment?: string) =>
+    request<LeaveRequest>(`/team-requests/${id}/approve`, { method: 'POST', body: JSON.stringify({ comment }) }),
+  rejectTeamRequest: (id: string, comment?: string) =>
+    request<LeaveRequest>(`/team-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ comment }) }),
+  reprocessTeamRequest: (id: string) =>
+    request<LeaveRequest>(`/team-requests/${id}/reprocess`, { method: 'POST' }),
+  teamRequestsStats: (teamId?: string) =>
+    request<{
+      byType: Array<{ type: string; count: number }>;
+      statusCounts: { total: number; pending: number; approved: number; rejected: number; draft: number; active: number; expired: number; cancelled: number };
+      expiring: number;
+    }>(`/team-requests/analytics/stats${teamId ? `?teamId=${teamId}` : ''}`),
+  teamRequestsLoad: (teamId?: string) =>
+    request<{
+      teamMembers: number;
+      totalLoadHours: number;
+      maxCapacity: number;
+      loadPercent: number;
+      byUser: Array<{ userId: string; fullName: string; hours: number }>;
+    }>(`/team-requests/analytics/load${teamId ? `?teamId=${teamId}` : ''}`),
+
   // ── Audit Log ────────────────────────────────────────────────────
 
   auditLog: (params?: { entityType?: string; entityId?: string }) => {

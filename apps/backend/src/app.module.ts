@@ -30,6 +30,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RequestsModule } from './requests/requests.module';
 import { RolesModule } from './roles/roles.module';
 import { TeamsModule } from './teams/teams.module';
+import { TeamRequestsModule } from './team-requests/team-requests.module';
 import { TimeOffModule } from './timeoff/timeoff.module';
 import { UsersModule } from './users/users.module';
 import { VacationModule } from './vacation/vacation.module';
@@ -60,6 +61,7 @@ import { WorklogModule } from './worklog/worklog.module';
     ImportsModule,
     UsersModule,
     TeamsModule,
+    TeamRequestsModule,
     BalanceModule,
     TimeOffModule,
     VacationModule,

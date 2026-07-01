@@ -27,6 +27,7 @@ const EmployeesPage = lazy(() => import('../pages/EmployeesPage').then((module) 
 const BalanceEmployeesPage = lazy(() => import('../pages/BalanceEmployeesPage').then((module) => ({ default: module.BalanceEmployeesPage })));
 const TimesheetPage = lazy(() => import('../pages/timetracking/TimesheetPage').then((module) => ({ default: module.TimesheetPage })));
 const WorklogCalendarPage = lazy(() => import('../pages/timetracking/WorklogCalendarPage').then((module) => ({ default: module.WorklogCalendarPage })));
+const TeamRequestsPage = lazy(() => import('../pages/team-requests/TeamRequestsPage').then((module) => ({ default: module.TeamRequestsPage })));
 const JiraIntegrationPage = lazy(() => import('../pages/settings/JiraIntegrationPage').then((module) => ({ default: module.JiraIntegrationPage })));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPage />}>{node}</Suspense>;
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
           { path: 'leave-requests', element: <Navigate to="/requests/my" replace /> },
           { path: 'requests/manager', element: withSuspense(<ManagerRequestsPage />) },
           { path: 'requests/approvals', element: withSuspense(<ManagerRequestsPage />) },
+          { path: 'requests/team', element: withSuspense(<TeamRequestsPage />) },
           { path: 'requests/my', element: withSuspense(<MyRequestsPage />) },
           { path: 'requests', element: withSuspense(<RequestsPage />) },
           { path: 'requests/new', element: <Navigate to="/timeoff/new" replace /> },

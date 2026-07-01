@@ -55,7 +55,7 @@ const sidebarSections: NavSection[] = [
     icon: ClipboardList,
     children: [
       { label: 'Мои заявки', to: '/requests/my', icon: FileText, roles: ['ALL'] },
-      { label: 'Заявки команды', to: '/requests/manager', icon: Users, roles: ['LEAD', 'MANAGER', 'ADMIN'] },
+      { label: 'Заявки команды', to: '/requests/team', icon: Users, roles: ['LEAD', 'MANAGER', 'ADMIN'] },
       { label: 'Календарь', to: '/calendar', icon: CalendarDays, roles: ['ALL'] },
     ],
   },
@@ -115,6 +115,7 @@ const breadcrumbs: Record<string, string> = {
   '/requests': 'Заявки',
   '/requests/my': 'Мои заявки',
   '/requests/manager': 'Заявки команды',
+  '/requests/team': 'Заявки команды',
   '/requests/approvals': 'Согласование',
   '/calendar': 'Календарь',
   '/balance': 'Мой баланс',
