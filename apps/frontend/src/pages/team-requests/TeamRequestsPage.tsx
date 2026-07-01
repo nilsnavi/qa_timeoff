@@ -12,7 +12,6 @@ import { DataTable, type Column, type SortDirection } from '../../components/das
 import { CreateTeamRequestModal } from '../../components/team-requests/CreateTeamRequestModal';
 import { ReprocessRequestModal } from '../../components/team-requests/ReprocessRequestModal';
 import { ViewRequestModal } from '../../components/team-requests/ViewRequestModal';
-import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api';
 import { showAppToast } from '../../shared/utils';
 import type { LeaveRequest } from '../../shared/types';
@@ -61,8 +60,7 @@ const DONUT_COLORS = ['#4C7DFF', '#7C5CFF', '#A78BFA', '#E879F9', '#FB923C', '#3
 export function TeamRequestsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = true;
 
   const tooltipStyle = useMemo(() => ({
     background: isDark ? '#0F1829' : '#FFFFFF',
