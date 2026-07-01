@@ -4,6 +4,7 @@ import {
   Clock, Crown, Download, FileSpreadsheet, Loader2, TrendingUp, TriangleAlert, Users, X,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { useTheme } from '../shared/theme/ThemeContext';
 import {
   BarChart, Bar as ReBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   LineChart, Line, Cell, ReferenceLine,
@@ -41,7 +42,8 @@ function formatDate(d: string) {
 }
 
 export function AnalyticsPage() {
-  const isDark = true;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const tooltipStyle = useMemo(() => ({
     background: isDark ? '#0D1425' : '#FFFFFF',

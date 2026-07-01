@@ -346,6 +346,20 @@ input, select, textarea, .field-shell {
 [data-theme="light"] .text-\[\#94A3B8\] { color: #64748B; }
 [data-theme="light"] .text-\[\#64748B\] { color: #475569; }
 
+/* AnalyticsPage: dark card backgrounds → light */
+[data-theme="light"] .bg-\[\#0F1929\] { background-color: #FFFFFF; }
+[data-theme="light"] .bg-\[\#0D1425\] { background-color: #F2F4F7; }
+[data-theme="light"] .bg-\[\#091020\] { background-color: #F5F7FA; }
+
+/* AnalyticsPage: dark borders → light gray */
+[data-theme="light"] .border-\[\#1E2D45\] { border-color: #E2E5EA; }
+[data-theme="light"] .border-\[\#1E2D45\]\/50 { border-color: rgb(226 229 234 / 0.5); }
+[data-theme="light"] .border-\[\#1A2942\] { border-color: #D8DCE3; }
+
+/* AnalyticsPage: slate text → darker for white bg */
+[data-theme="light"] .text-\[\#94A3B8\] { color: #64748B; }
+[data-theme="light"] .text-\[\#64748B\] { color: #475569; }
+
 /* ── Desktop layout overrides ────────────────────────────────── */
 
 @media (min-width: 1024px) {
