@@ -4,6 +4,7 @@ import {
   Clock, Crown, Download, FileSpreadsheet, Loader2, TrendingUp, TriangleAlert, Users, X,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { useTheme } from '../shared/theme/ThemeContext';
 import {
   BarChart, Bar as ReBar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   LineChart, Line, Cell, ReferenceLine,
@@ -41,6 +42,18 @@ function formatDate(d: string) {
 }
 
 export function AnalyticsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const tooltipStyle = useMemo(() => ({
+    background: isDark ? '#0D1425' : '#FFFFFF',
+    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+    borderRadius: 10,
+  }), [isDark]);
+
+  const yAxisTickStyle = useMemo(() => ({ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }), [isDark]);
+  const xAxisTickStyle = useMemo(() => ({ fontSize: 10, fill: isDark ? '#64748B' : '#475569' }), [isDark]);
+  const gridStroke = useMemo(() => isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)', [isDark]);
   const { dashboard } = useDashboard();
   const canView = ['ADMIN', 'MANAGER', 'LEAD'].includes(dashboard.user.role);
 
@@ -365,11 +378,11 @@ export function AnalyticsPage() {
                   <h3 className="text-[13px] font-bold text-white mb-3">Нагрузка по сотрудникам (ТОП-10)</h3>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart layout="vertical" data={data.employeeLoad.slice(0, 10)} margin={{ top: 4, right: 50, left: 4, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: '#64748B' }} />
-                      <YAxis type="category" dataKey="shortName" width={110} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: xAxisTickStyle.fill }} />
+                      <YAxis type="category" dataKey="shortName" width={110} tick={yAxisTickStyle} />
                       <Tooltip
-                        contentStyle={{ background: '#0D1425', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10 }}
+                        contentStyle={tooltipStyle}
                         itemStyle={{ color: '#4C7DFF', fontSize: 12 }}
                         formatter={(value: any, name: any, props: any) => [`${value} ч`, props.payload.fullName]}
                       />
