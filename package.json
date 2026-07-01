@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "dev": "npm run dev --workspace @qa-timeoff/frontend",
     "dev:frontend": "npm run dev --workspace @qa-timeoff/frontend",
     "dev:backend": "npm run start:dev --workspace @qa-timeoff/backend",

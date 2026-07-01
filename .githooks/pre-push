@@ -1,0 +1,20 @@
+#!/bin/sh
+# Pre-push hook: проверяет TypeScript-сборку без ошибок.
+# Блокирует пуш, если найдены ошибки типов в backend или frontend.
+
+set -e
+
+echo ""
+echo "===== Pre-push: prisma generate ====="
+npm run prisma:generate
+
+echo ""
+echo "===== Pre-push: проверка типов backend ====="
+npm run build --workspace @qa-timeoff/backend --if-present
+
+echo ""
+echo "===== Pre-push: проверка типов frontend ====="
+npx tsc --project apps/frontend/tsconfig.json --noEmit
+
+echo ""
+echo "Сборка успешна. Пуш разрешён."
