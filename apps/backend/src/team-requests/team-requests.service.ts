@@ -550,7 +550,7 @@ export class TeamRequestsService {
   }
 
   async approveAll(currentUser: User) {
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(currentUser.role);
     if (!isManager) throw new ForbiddenException('Только руководитель может утверждать заявки');
 
     const teamFilter = this.getTeamFilter(currentUser);
