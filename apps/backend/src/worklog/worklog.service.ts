@@ -112,6 +112,40 @@ export class WorklogService {
     };
   }
 
+  async getMonthlyCalendar(user: User, year: number, month: number) {
+    const start = new Date(year, month - 1, 1);
+    const end   = new Date(year, month, 0, 23, 59, 59);
+
+    const entries = await this.prisma.worklogEntry.findMany({
+      where: { userId: user.id, date: { gte: start, lte: end } },
+      include: { jiraIssue: { select: { issueKey: true, summary: true, url: true, projectKey: true } } },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    const byDay = new Map<string, { entries: typeof entries; totalHours: number }>();
+
+    for (const e of entries) {
+      const key = e.date.toISOString().slice(0, 10);
+      if (!byDay.has(key)) byDay.set(key, { entries: [], totalHours: 0 });
+      const day = byDay.get(key)!;
+      day.entries.push(e);
+      day.totalHours += e.hours;
+    }
+
+    const totalHours   = entries.reduce((sum, e) => sum + e.hours, 0);
+    const daysWorked   = byDay.size;
+    const failedSync   = entries.filter(e => e.syncStatus === 'FAILED').length;
+
+    return {
+      year,
+      month,
+      totalHours,
+      daysWorked,
+      failedSync,
+      byDay: Array.from(byDay.entries()).map(([date, v]) => ({ date, ...v })),
+    };
+  }
+
   async getTeamReport(currentUser: User, params: { startDate: string; endDate: string; teamId?: string }) {
     const allowedRoles: Role[] = [Role.LEAD, Role.MANAGER, Role.ADMIN];
     if (!allowedRoles.includes(currentUser.role as Role)) {

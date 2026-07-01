@@ -27,6 +27,17 @@ export class WorklogController {
     return this.worklogService.getWeeklySummary(user, weekStart);
   }
 
+  @Get('calendar')
+  monthlyCalendar(
+    @CurrentUser() user: User,
+    @Query('year')  year:  string,
+    @Query('month') month: string,
+  ) {
+    const y = Number(year)  || new Date().getFullYear();
+    const m = Number(month) || new Date().getMonth() + 1;
+    return this.worklogService.getMonthlyCalendar(user, y, m);
+  }
+
   @Get('team-report')
   teamReport(
     @CurrentUser() user: User,

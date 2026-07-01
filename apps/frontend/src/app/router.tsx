@@ -26,6 +26,7 @@ const InviteAcceptPage = lazy(() => import('../pages/InviteAcceptPage').then((mo
 const EmployeesPage = lazy(() => import('../pages/EmployeesPage').then((module) => ({ default: module.EmployeesPage })));
 const BalanceEmployeesPage = lazy(() => import('../pages/BalanceEmployeesPage').then((module) => ({ default: module.BalanceEmployeesPage })));
 const TimesheetPage = lazy(() => import('../pages/timetracking/TimesheetPage').then((module) => ({ default: module.TimesheetPage })));
+const WorklogCalendarPage = lazy(() => import('../pages/timetracking/WorklogCalendarPage').then((module) => ({ default: module.WorklogCalendarPage })));
 const JiraIntegrationPage = lazy(() => import('../pages/settings/JiraIntegrationPage').then((module) => ({ default: module.JiraIntegrationPage })));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<FallbackPage />}>{node}</Suspense>;
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
           { path: 'invites', element: withSuspense(<InvitesPage />) },
           { path: 'logs', element: withSuspense(<AuditLogPage />) },
           { path: 'timetracking', element: withSuspense(<TimesheetPage />) },
+          { path: 'timetracking/calendar', element: withSuspense(<WorklogCalendarPage />) },
           { path: 'settings/integrations/jira', element: withSuspense(<JiraIntegrationPage />) },
           { path: '*', element: <Navigate to="/" replace /> },
         ],

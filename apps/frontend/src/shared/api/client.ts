@@ -524,4 +524,25 @@ export const api = {
   updateWorklog: (id: string, dto: { hours?: number; comment?: string }) =>
     request(`/worklog/${id}`, { method: 'PATCH', body: JSON.stringify(dto) }),
   deleteWorklog: (id: string) => request(`/worklog/${id}`, { method: 'DELETE' }),
+  monthlyWorklog: (year: number, month: number) =>
+    request<{
+      year: number;
+      month: number;
+      totalHours: number;
+      daysWorked: number;
+      failedSync: number;
+      byDay: Array<{
+        date: string;
+        totalHours: number;
+        entries: Array<{
+          id: string;
+          hours: number;
+          comment: string | null;
+          syncStatus: 'PENDING' | 'SYNCED' | 'FAILED';
+          jiraIssueId: string | null;
+          issueKeyManual: string | null;
+          jiraIssue: { issueKey: string; summary: string; url: string; projectKey: string } | null;
+        }>;
+      }>;
+    }>(`/worklog/calendar?year=${year}&month=${month}`),
 };
