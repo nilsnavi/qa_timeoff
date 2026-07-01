@@ -7,6 +7,7 @@ describe('validateEnv', () => {
     DATABASE_URL: 'postgresql://user:pass@localhost:5432/db?schema=public',
     JWT_SECRET: '12345678901234567890123456789012',
     TELEGRAM_BOT_TOKEN: 'token',
+    ENCRYPTION_KEY: '12345678901234567890123456789012',
   };
 
   it('должен валидировать корректный env', () => {
