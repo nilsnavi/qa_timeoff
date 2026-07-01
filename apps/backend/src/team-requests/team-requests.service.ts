@@ -409,7 +409,7 @@ export class TeamRequestsService {
     });
     if (!existing) throw new NotFoundException('Заявка не найдена');
 
-    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    const isManager = ([Role.LEAD, Role.MANAGER, Role.ADMIN] as string[]).includes(currentUser.role);
     if (!isManager) throw new ForbiddenException('Только руководитель может отправлять напоминания');
 
     const approvers = await this.prisma.user.findMany({
