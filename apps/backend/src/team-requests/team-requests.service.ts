@@ -106,20 +106,30 @@ export class TeamRequestsService {
     const dateFrom = new Date(dto.dateFrom);
     const dateTo = dto.dateTo ? new Date(dto.dateTo) : null;
     const userId = dto.employeeId ?? currentUser.id;
+
+    let teamId = currentUser.teamId;
+    if (dto.employeeId && dto.employeeId !== currentUser.id) {
+      const targetUser = await this.prisma.user.findUnique({
+        where: { id: dto.employeeId },
+        select: { teamId: true },
+      });
+      if (targetUser?.teamId) teamId = targetUser.teamId;
+    }
+
     const slaDueDate = new Date();
     slaDueDate.setDate(slaDueDate.getDate() + 2);
 
     const request = await this.prisma.leaveRequest.create({
       data: {
         userId,
-        teamId: currentUser.teamId,
+        teamId,
         type: dto.type as LeaveRequestType,
         dateFrom,
         dateTo,
         hours: dto.hours,
         reason: dto.reason,
         comment: dto.comment,
-        status: RequestStatus.DRAFT,
+        status: RequestStatus.PENDING,
         slaDueDate,
       },
       include: teamRequestInclude,
@@ -127,7 +137,7 @@ export class TeamRequestsService {
 
     const approvers = await this.prisma.user.findMany({
       where: {
-        teamId: currentUser.teamId ?? undefined,
+        teamId: teamId ?? undefined,
         role: { in: ['LEAD', 'MANAGER', 'ADMIN'] },
         isActive: true,
         id: { not: userId },
@@ -542,7 +552,7 @@ export class TeamRequestsService {
     if (isManager) {
       return [RequestStatus.DRAFT, RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED, RequestStatus.CANCELLED, RequestStatus.ACTIVE, RequestStatus.EXPIRED];
     }
-    return [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED, RequestStatus.CANCELLED, RequestStatus.ACTIVE, RequestStatus.EXPIRED];
+    return [RequestStatus.DRAFT, RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.REJECTED, RequestStatus.CANCELLED, RequestStatus.ACTIVE, RequestStatus.EXPIRED];
   }
 
   private getTeamFilter(user: User, paramTeamId?: string): string | undefined {

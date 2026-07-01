@@ -327,7 +327,7 @@ export function CreateTeamRequestModal({
               <div className="flex items-center gap-2 h-[42px] px-3 rounded-[10px] bg-white/[0.03] border border-white/[0.06]">
                 <Clock size={14} className="text-amber-400" />
                 <span className="text-[13px] text-amber-400 font-semibold">
-                  {isReprocess ? 'На согласовании' : 'Черновик'}
+                  {isReprocess ? 'На согласовании' : 'На согласовании'}
                 </span>
               </div>
             </div>
@@ -408,7 +408,7 @@ export function CreateTeamRequestModal({
               <span className="text-[12px] text-white/35">Часы</span>
               <span className="text-[12px] font-medium text-white/70 text-right">{hours}ч</span>
               <span className="text-[12px] text-white/35">Статус</span>
-              <span className="text-[12px] font-medium text-amber-400 text-right">{isReprocess ? 'На согласовании' : 'Черновик'}</span>
+              <span className="text-[12px] font-medium text-amber-400 text-right">На согласовании</span>
             </div>
           </div>
         </div>
@@ -426,7 +426,7 @@ export function CreateTeamRequestModal({
               onClick={handleSubmit}
               disabled={createMutation.isPending}
             >
-              {createMutation.isPending ? 'Создаём...' : isReprocess ? 'Отправить на согласование' : 'Создать заявку'}
+              {createMutation.isPending ? 'Создаём...' : 'Отправить на согласование'}
             </Button>
           </div>
         </div>
