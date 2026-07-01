@@ -17,6 +17,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { validateEnv } from './config/env.validation';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { EmployeeBalancesModule } from './employee-balances/employee-balances.module';
 import { EventsModule } from './events/events.module';
 import { ExportModule } from './export/export.module';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
@@ -53,6 +54,7 @@ import { WorklogModule } from './worklog/worklog.module';
     PrismaModule,
     AuthModule,
     DashboardModule,
+    EmployeeBalancesModule,
     EventsModule,
     LeaveRequestsModule,
     RequestsModule,
