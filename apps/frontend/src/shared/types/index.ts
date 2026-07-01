@@ -126,6 +126,8 @@ export interface LeaveRequest {
   user: User;
   createdAt: string;
   updatedAt: string;
+  slaDueDate?: string;
+  lastReminderSentAt?: string;
 }
 
 export interface LeaveRequestSummary {

@@ -66,6 +66,11 @@ export class TeamRequestsController {
     return this.service.reprocess(user, id);
   }
 
+  @Post(':id/remind')
+  remind(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.remind(user, id);
+  }
+
   @Get('analytics/stats')
   getStats(@CurrentUser() user: User, @Query('teamId') teamId?: string) {
     return this.service.getStats(user, teamId);

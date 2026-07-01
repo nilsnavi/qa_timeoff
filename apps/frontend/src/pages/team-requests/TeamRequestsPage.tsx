@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  BarChart3, Check, ChevronDown, Clock, Download, ExternalLink, Eye,
+  BarChart3, Bell, Check, ChevronDown, Clock, Download, ExternalLink, Eye,
   Plus, RefreshCcw, Search, Users, X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { Button, EmptyState, Loader, Modal } from '../../components/ui';
 import { DataTable, type Column, type SortDirection } from '../../components/dashboard-v2/DataTable';
+import { CreateTeamRequestModal } from '../../components/team-requests/CreateTeamRequestModal';
 import { api } from '../../shared/api';
 import { showAppToast } from '../../shared/utils';
 import type { LeaveRequest } from '../../shared/types';
@@ -62,7 +63,7 @@ export function TeamRequestsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [reprocessTarget, setReprocessTarget] = useState<LeaveRequest | null>(null);
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [selectedTeamId, _setSelectedTeamId] = useState<string>('');
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
@@ -122,9 +123,9 @@ export function TeamRequestsPage() {
   };
 
   const data = requestsQuery.data;
-  const items = data?.items ?? [];
 
   const sortedItems = useMemo(() => {
+    const items = data?.items ?? [];
     if (!sortKey || !sortDir) return items;
     return [...items].sort((a, b) => {
       const aVal = (a as any)[sortKey] ?? '';
@@ -132,7 +133,7 @@ export function TeamRequestsPage() {
       const cmp = String(aVal).localeCompare(String(bVal));
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [items, sortKey, sortDir]);
+  }, [data?.items, sortKey, sortDir]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return sortedItems;
@@ -218,6 +219,27 @@ export function TeamRequestsPage() {
       ),
     },
     {
+      key: 'slaDueDate',
+      header: 'SLA',
+      width: '80px',
+      render: (row) => {
+        if (!row.slaDueDate || row.status !== 'PENDING') return <span className="text-[12px] text-white/15">—</span>;
+        const now = new Date();
+        const sla = new Date(row.slaDueDate);
+        const diffHours = (sla.getTime() - now.getTime()) / 3600000;
+        const overdue = diffHours < 0;
+        const warning = diffHours >= 0 && diffHours < 48;
+        return (
+          <span className={clsx(
+            'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold',
+            overdue ? 'bg-rose-500/15 text-rose-400' : warning ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400',
+          )}>
+            {overdue ? 'Просрочен' : warning ? 'Скоро' : 'В норме'}
+          </span>
+        );
+      },
+    },
+    {
       key: 'approver',
       header: 'Согласующие',
       width: '120px',
@@ -276,6 +298,18 @@ export function TeamRequestsPage() {
                 className="grid h-7 w-7 place-items-center rounded text-rose-400/40 hover:text-rose-400 hover:bg-rose-500/10"
               >
                 <X size={14} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  api.remindTeamRequest(row.id).then(() => {
+                    showAppToast('Напоминание отправлено руководителям');
+                  }).catch(() => showAppToast('Ошибка отправки напоминания', undefined, 'error'));
+                }}
+                title="Напомнить"
+                className="grid h-7 w-7 place-items-center rounded text-amber-400/40 hover:text-amber-400 hover:bg-amber-500/10"
+              >
+                <Bell size={13} />
               </button>
             </>
           )}
@@ -402,7 +436,7 @@ export function TeamRequestsPage() {
               pageSize={25}
               onPageChange={setPage}
               emptyMessage={searchQuery ? 'Ничего не найдено' : 'Нет заявок'}
-              onRowClick={(row: any) => {}}
+              onRowClick={() => {}}
             />
           )}
         </div>
@@ -556,82 +590,5 @@ export function TeamRequestsPage() {
         </Modal>
       )}
     </div>
-  );
-}
-
-function CreateTeamRequestModal({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [type, setType] = useState('TIME_OFF');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [hours, setHours] = useState('8');
-  const [reason, setReason] = useState('');
-  const [comment, setComment] = useState('');
-
-  const mutation = useMutation({
-    mutationFn: () => api.createTeamRequest({
-      type,
-      dateFrom,
-      dateTo: dateTo || undefined,
-      hours: Number(hours),
-      reason,
-      comment: comment || undefined,
-    }),
-    onSuccess: () => {
-      showAppToast('Заявка создана');
-      onSuccess();
-    },
-    onError: (err: any) => showAppToast(err?.message ?? 'Ошибка создания', undefined, 'error'),
-  });
-
-  return (
-    <Modal open title="Создать заявку" onClose={onClose}
-      footer={
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Отмена</Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !dateFrom || !reason} className="flex-1">
-            {mutation.isPending ? 'Создаём...' : 'Создать'}
-          </Button>
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        <div className="field-shell">
-          <span className="field-label">Тип заявки</span>
-          <select value={type} onChange={e => setType(e.target.value)} className="field-input">
-            {Object.entries(TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="field-shell">
-            <span className="field-label">Дата начала</span>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="field-input" />
-          </div>
-          <div className="field-shell">
-            <span className="field-label">Дата окончания</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="field-input" />
-          </div>
-        </div>
-        <div className="field-shell">
-          <span className="field-label">Часы</span>
-          <input type="number" min={1} max={240} value={hours} onChange={e => setHours(e.target.value)} className="field-input" />
-        </div>
-        <div className="field-shell">
-          <span className="field-label">Причина</span>
-          <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Укажите причину" className="field-input" />
-        </div>
-        <div className="field-shell">
-          <span className="field-label">Комментарий</span>
-          <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2} placeholder="Дополнительная информация" className="field-input resize-none" />
-        </div>
-      </div>
-    </Modal>
   );
 }

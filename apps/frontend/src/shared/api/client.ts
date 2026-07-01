@@ -400,6 +400,8 @@ export const api = {
     request<LeaveRequest>(`/team-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ comment }) }),
   reprocessTeamRequest: (id: string) =>
     request<LeaveRequest>(`/team-requests/${id}/reprocess`, { method: 'POST' }),
+  remindTeamRequest: (id: string) =>
+    request<{ success: boolean }>(`/team-requests/${id}/remind`, { method: 'POST' }),
   teamRequestsStats: (teamId?: string) =>
     request<{
       byType: Array<{ type: string; count: number }>;

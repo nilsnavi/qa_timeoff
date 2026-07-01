@@ -1,6 +1,8 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { LeaveRequestType, Prisma, RequestStatus, Role, User } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { EventBusService, LeaveRequestEvents } from '../events';
+import { NotificationType } from '../notifications/notification-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTeamRequestDto } from './dto/create-team-request.dto';
 import { UpdateTeamRequestDto } from './dto/update-team-request.dto';
@@ -37,6 +39,7 @@ export class TeamRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findAll(currentUser: User, params: {
@@ -103,6 +106,8 @@ export class TeamRequestsService {
     const dateFrom = new Date(dto.dateFrom);
     const dateTo = dto.dateTo ? new Date(dto.dateTo) : null;
     const userId = dto.employeeId ?? currentUser.id;
+    const slaDueDate = new Date();
+    slaDueDate.setDate(slaDueDate.getDate() + 2);
 
     const request = await this.prisma.leaveRequest.create({
       data: {
@@ -115,9 +120,31 @@ export class TeamRequestsService {
         reason: dto.reason,
         comment: dto.comment,
         status: RequestStatus.DRAFT,
+        slaDueDate,
       },
       include: teamRequestInclude,
     });
+
+    const approvers = await this.prisma.user.findMany({
+      where: {
+        teamId: currentUser.teamId ?? undefined,
+        role: { in: ['LEAD', 'MANAGER', 'ADMIN'] },
+        isActive: true,
+        id: { not: userId },
+      },
+      select: { id: true },
+    });
+
+    if (approvers.length > 0) {
+      await this.prisma.notification.createMany({
+        data: approvers.map(a => ({
+          userId: a.id,
+          title: 'Новая заявка',
+          message: `${currentUser.fullName} создал заявку: ${dto.hours}ч`,
+          type: NotificationType.REQUEST_CREATED,
+        })),
+      });
+    }
 
     await this.audit.log({
       actorId: currentUser.id,
@@ -131,6 +158,17 @@ export class TeamRequestsService {
     });
 
     this.logger.log(`Team request created: ${request.id} by ${currentUser.fullName}`);
+
+    this.eventBus.emit(LeaveRequestEvents.CREATED, {
+      requestId: request.id,
+      userId: request.userId,
+      teamId: request.teamId,
+      type: request.type,
+      hours: request.hours,
+      dateFrom: request.dateFrom.toISOString(),
+      dateTo: request.dateTo?.toISOString(),
+    });
+
     return request;
   }
 
@@ -227,6 +265,23 @@ export class TeamRequestsService {
       newValue: { status: RequestStatus.APPROVED } as any,
     });
 
+    await this.prisma.notification.create({
+      data: {
+        userId: existing.userId,
+        title: 'Заявка одобрена',
+        message: `Ваша заявка на ${existing.hours}ч одобрена${comment ? `: ${comment}` : ''}`,
+        type: NotificationType.REQUEST_APPROVED,
+      },
+    });
+
+    this.eventBus.emit(LeaveRequestEvents.APPROVED, {
+      requestId: id,
+      userId: existing.userId,
+      teamId: existing.teamId,
+      approvedById: currentUser.id,
+      hours: existing.hours,
+    });
+
     return updated;
   }
 
@@ -259,12 +314,32 @@ export class TeamRequestsService {
       newValue: { status: RequestStatus.REJECTED } as any,
     });
 
+    await this.prisma.notification.create({
+      data: {
+        userId: existing.userId,
+        title: 'Заявка отклонена',
+        message: `Ваша заявка отклонена${comment ? `: ${comment}` : ''}`,
+        type: NotificationType.REQUEST_REJECTED,
+      },
+    });
+
+    this.eventBus.emit(LeaveRequestEvents.REJECTED, {
+      requestId: id,
+      userId: existing.userId,
+      teamId: existing.teamId,
+      rejectedById: currentUser.id,
+      reason: comment,
+    });
+
     return updated;
   }
 
   async reprocess(currentUser: User, id: string) {
     const existing = await this.prisma.leaveRequest.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Заявка не найдена');
+
+    const slaDueDate = new Date();
+    slaDueDate.setDate(slaDueDate.getDate() + 2);
 
     const reprocessed = await this.prisma.leaveRequest.create({
       data: {
@@ -277,6 +352,7 @@ export class TeamRequestsService {
         reason: `Переработка: ${existing.reason}`,
         comment: existing.comment,
         status: RequestStatus.PENDING,
+        slaDueDate,
       },
       include: teamRequestInclude,
     });
@@ -292,8 +368,87 @@ export class TeamRequestsService {
       newValue: { reprocessedId: reprocessed.id } as any,
     });
 
+    const approvers = await this.prisma.user.findMany({
+      where: {
+        teamId: existing.teamId ?? undefined,
+        role: { in: ['LEAD', 'MANAGER', 'ADMIN'] },
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    if (approvers.length > 0) {
+      await this.prisma.notification.createMany({
+        data: approvers.map(a => ({
+          userId: a.id,
+          title: 'Переработка заявки',
+          message: `Переработка заявки #${id.slice(0, 8)} требует согласования`,
+          type: NotificationType.REQUEST_CREATED,
+        })),
+      });
+    }
+
+    this.eventBus.emit(LeaveRequestEvents.CREATED, {
+      requestId: reprocessed.id,
+      userId: reprocessed.userId,
+      teamId: reprocessed.teamId,
+      type: reprocessed.type,
+      hours: reprocessed.hours,
+      dateFrom: reprocessed.dateFrom.toISOString(),
+      dateTo: reprocessed.dateTo?.toISOString(),
+    });
+
     this.logger.log(`Request reprocessed: ${id} -> ${reprocessed.id}`);
     return reprocessed;
+  }
+
+  async remind(currentUser: User, id: string) {
+    const existing = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+      include: { user: { select: { fullName: true, teamId: true } } },
+    });
+    if (!existing) throw new NotFoundException('Заявка не найдена');
+
+    const isManager = [Role.LEAD, Role.MANAGER, Role.ADMIN].includes(currentUser.role as Role);
+    if (!isManager) throw new ForbiddenException('Только руководитель может отправлять напоминания');
+
+    const approvers = await this.prisma.user.findMany({
+      where: {
+        teamId: existing.teamId ?? existing.user.teamId ?? undefined,
+        role: { in: ['LEAD', 'MANAGER', 'ADMIN'] },
+        isActive: true,
+        id: { not: currentUser.id },
+      },
+      select: { id: true },
+    });
+
+    if (approvers.length > 0) {
+      await this.prisma.notification.createMany({
+        data: approvers.map(a => ({
+          userId: a.id,
+          title: 'Напоминание о заявке',
+          message: `${currentUser.fullName} напоминает: заявка #${id.slice(0, 8)} от ${existing.user.fullName} требует согласования`,
+          type: NotificationType.VACATION_REMINDER,
+        })),
+      });
+    }
+
+    await this.prisma.leaveRequest.update({
+      where: { id },
+      data: { lastReminderSentAt: new Date() },
+    });
+
+    await this.audit.log({
+      actorId: currentUser.id,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'REMINDER',
+      entityType: 'LeaveRequest',
+      entityId: id,
+      entityName: `Напоминание для #${id.slice(0, 8)}`,
+    });
+
+    return { success: true };
   }
 
   async getStats(currentUser: User, teamId?: string) {

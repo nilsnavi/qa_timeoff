@@ -422,6 +422,8 @@ model LeaveRequest {
   approvedAt      DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  slaDueDate      DateTime?
+  lastReminderSentAt DateTime?
 
   @@index([userId])
   @@index([teamId])
