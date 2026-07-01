@@ -344,23 +344,25 @@ export class TeamRequestsService {
     return updated;
   }
 
-  async reprocess(currentUser: User, id: string) {
+  async reprocess(currentUser: User, id: string, type?: string, comment?: string) {
     const existing = await this.prisma.leaveRequest.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Заявка не найдена');
 
     const slaDueDate = new Date();
     slaDueDate.setDate(slaDueDate.getDate() + 2);
 
+    const reprocessType = (type === 'OVERTIME' ? LeaveRequestType.OVERTIME : LeaveRequestType.OVERWORK) as LeaveRequestType;
+
     const reprocessed = await this.prisma.leaveRequest.create({
       data: {
         userId: existing.userId,
         teamId: existing.teamId,
-        type: LeaveRequestType.OVERWORK,
+        type: reprocessType,
         dateFrom: existing.dateFrom,
         dateTo: existing.dateTo,
         hours: existing.hours,
         reason: `Переработка: ${existing.reason}`,
-        comment: existing.comment,
+        comment: comment || existing.comment,
         status: RequestStatus.PENDING,
         slaDueDate,
       },

@@ -62,8 +62,13 @@ export class TeamRequestsController {
   }
 
   @Post(':id/reprocess')
-  reprocess(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.service.reprocess(user, id);
+  reprocess(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body('type') type?: string,
+    @Body('comment') comment?: string,
+  ) {
+    return this.service.reprocess(user, id, type, comment);
   }
 
   @Post(':id/remind')

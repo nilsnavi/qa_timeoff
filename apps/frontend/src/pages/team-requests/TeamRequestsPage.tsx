@@ -7,9 +7,10 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { Button, EmptyState, Loader, Modal } from '../../components/ui';
+import { Button, EmptyState, Loader } from '../../components/ui';
 import { DataTable, type Column, type SortDirection } from '../../components/dashboard-v2/DataTable';
 import { CreateTeamRequestModal } from '../../components/team-requests/CreateTeamRequestModal';
+import { ReprocessRequestModal } from '../../components/team-requests/ReprocessRequestModal';
 import { api } from '../../shared/api';
 import { showAppToast } from '../../shared/utils';
 import type { LeaveRequest } from '../../shared/types';
@@ -114,12 +115,6 @@ export function TeamRequestsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deleteTeamRequest(id),
     onSuccess: () => { showAppToast('Заявка удалена'); invalidateAll(); },
-  });
-
-  const reprocessMutation = useMutation({
-    mutationFn: (id: string) => api.reprocessTeamRequest(id),
-    onSuccess: () => { showAppToast('Заявка отправлена на переработку'); setReprocessTarget(null); invalidateAll(); },
-    onError: () => showAppToast('Ошибка переработки', undefined, 'error'),
   });
 
   const handleSort = (key: string) => {
@@ -631,20 +626,13 @@ export function TeamRequestsPage() {
         />
       )}
 
-      {/* Reprocess confirm */}
+      {/* Reprocess modal */}
       {reprocessTarget && (
-        <Modal open title="Переработка заявки" onClose={() => setReprocessTarget(null)}
-          footer={
-            <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => setReprocessTarget(null)} className="flex-1">Отмена</Button>
-              <Button onClick={() => reprocessMutation.mutate(reprocessTarget.id)} className="flex-1">Создать переработку</Button>
-            </div>
-          }
-        >
-          <p className="text-[14px] text-white/60">
-            Будет создана новая заявка типа <b>Переработка</b> со статусом <b>На согласовании</b> на основе заявки #{reprocessTarget.id.slice(0, 8)}.
-          </p>
-        </Modal>
+        <ReprocessRequestModal
+          request={reprocessTarget}
+          onClose={() => setReprocessTarget(null)}
+          onSuccess={() => setReprocessTarget(null)}
+        />
       )}
     </div>
   );

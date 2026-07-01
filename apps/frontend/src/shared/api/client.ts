@@ -408,8 +408,8 @@ export const api = {
     request<LeaveRequest>(`/team-requests/${id}/approve`, { method: 'POST', body: JSON.stringify({ comment }) }),
   rejectTeamRequest: (id: string, comment?: string) =>
     request<LeaveRequest>(`/team-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ comment }) }),
-  reprocessTeamRequest: (id: string) =>
-    request<LeaveRequest>(`/team-requests/${id}/reprocess`, { method: 'POST' }),
+  reprocessTeamRequest: (id: string, payload?: { type?: string; comment?: string }) =>
+    request<LeaveRequest>(`/team-requests/${id}/reprocess`, { method: 'POST', body: JSON.stringify(payload ?? {}) }),
   remindTeamRequest: (id: string) =>
     request<{ success: boolean }>(`/team-requests/${id}/remind`, { method: 'POST' }),
   teamRequestsStats: (teamId?: string) =>
