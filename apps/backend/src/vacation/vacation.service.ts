@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { BalanceOperationType, Prisma, RequestStatus, Role, User, VacationType } from '@prisma/client';
+import { BalanceOperationType, LeaveRequestType, Prisma, RequestStatus, Role, User, VacationType } from '@prisma/client';
 import { EventBusService } from '../events/event-bus.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { NotificationType } from '../notifications/notification-types';
@@ -72,6 +72,20 @@ export class VacationService {
           })),
         });
       }
+
+      await tx.leaveRequest.create({
+        data: {
+          userId: currentUser.id,
+          teamId: currentUser.teamId ?? null,
+          type: LeaveRequestType.VACATION,
+          dateFrom: startDate,
+          dateTo: endDate,
+          hours: daysCount,
+          reason: dto.comment ?? '',
+          comment: dto.comment,
+          status: RequestStatus.PENDING,
+        },
+      });
 
       return request;
     });
